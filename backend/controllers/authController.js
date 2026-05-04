@@ -2,6 +2,8 @@ const pool = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecreto';
+
 // REGISTER
 exports.register = async (req, res) => {
   try {
@@ -75,7 +77,7 @@ exports.login = async (req, res) => {
     // Crear token
     const token = jwt.sign(
       { id: user.id, username: user.username },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '24h' }
     );
 

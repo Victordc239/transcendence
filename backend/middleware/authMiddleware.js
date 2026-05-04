@@ -6,10 +6,15 @@ module.exports = (req, res, next) => {
     if (!authHeader)
         return res.status(401).json({ error: 'No token provided' });
 
-    const token = authHeader.split(' ')[1];
+    const [scheme, token] = authHeader.split(' ');
+    if (scheme !== 'Bearer' || !token) {
+        return res.status(401).json({ error: 'Formato de token inválido' });
+    }
+
+    const secret = process.env.JWT_SECRET || 'supersecreto';
 
     try {
-        const decoded = jwt.verify(token, 'secreto_super_seguro');
+        const decoded = jwt.verify(token, secret);
         req.user = decoded;
         next();
     } catch (err) {

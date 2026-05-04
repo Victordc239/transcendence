@@ -1,11 +1,11 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-    user: 'user',
-    host: 'localhost',
-    database: 'transcendence',
-    password: 'password',
-    port: 5432,
+  host: 'localhost',       // ⚠️ cambia a 'db' si usas Docker para backend
+  user: 'user',
+  password: 'password',
+  database: 'transcendence',
+  port: 5432,
 });
 
 module.exports = pool;

@@ -1,34 +1,18 @@
-const jwt = require('jsonwebtoken');
+const express = require('express');
+const initDB = require('./initDb');
 
-exports.login = async (req, res) => {
-    const { username, password } = req.body;
+const app = express();
+app.use(express.json());
 
-    try {
-        const result = await pool.query(
-            'SELECT * FROM users WHERE username = $1',
-            [username]
-        );
+const PORT = 3000;
 
-        if (result.rows.length === 0)
-            return res.status(401).json({ error: 'Usuario no encontrado' });
+// Inicializar DB al arrancar
+initDB();
 
-        const user = result.rows[0];
+app.get('/', (req, res) => {
+  res.send('Servidor funcionando 🚀');
+});
 
-        const valid = await bcrypt.compare(password, user.password);
-
-        if (!valid)
-            return res.status(401).json({ error: 'Password incorrecta' });
-
-        // 🔥 AQUÍ LO NUEVO
-        const token = jwt.sign(
-            { userId: user.id, username: user.username },
-            'secreto_super_seguro',
-            { expiresIn: '1h' }
-        );
-
-        res.json({ message: 'Login correcto', token });
-
-    } catch (err) {
-        res.status(500).json({ error: 'Error en login' });
-    }
-};
+app.listen(PORT, () => {
+  console.log(`Servidor en http://localhost:${PORT}`);
+});

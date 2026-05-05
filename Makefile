@@ -1,8 +1,5 @@
 NAME        := transcendence
 COMPOSE     := docker compose
-BACKEND_DIR := backend
-NODE        := node
-NPM         := npm
 
 all: up
 
@@ -12,6 +9,8 @@ help:
 	@echo "  make down             -> stop containers"
 	@echo "  make restart          -> restart everything"
 	@echo "  make logs             -> show db logs"
+	@echo "  make logs-back    -> backend logs"
+	@echo "  make logs-front   -> frontend logs"
 	@echo "  make clean            -> clean temporary artifacts"
 	@echo "  make fclean           -> stop containers and remove node_modules"
 	@echo "  make re               -> full reset and start again"
@@ -28,13 +27,20 @@ restart: down up
 logs:
 	$(COMPOSE) logs -f db
 
+logs-back:
+	$(COMPOSE) logs -f backend
+
+logs-front:
+	$(COMPOSE) logs -f frontend
+
 clean:
 	@echo "Nothing to clean."
 
 fclean:
 	$(COMPOSE) down -v --remove-orphans
 	rm -rf backend/node_modules
+	rm -rf frontend/node_modules
 
 re: fclean up
 
-.PHONY: all help up down restart logs clean fclean re
+.PHONY: all help up down restart logs logs-back logs-front clean fclean re

@@ -1,17 +1,16 @@
-interface InputProps {
-  type?: string;
-  placeholder?: string;
-}
+import type { InputHTMLAttributes } from "react";
+
+interface InputProps
+  extends InputHTMLAttributes<HTMLInputElement> {}
 
 function Input({
-  type = "text",
-  placeholder,
+  className = "",
+  ...props
 }: InputProps) {
   return (
     <input
-      type={type}
-      placeholder={placeholder}
-      className="
+      {...props}
+      className={`
         w-full rounded-2xl
         border border-white/20
         bg-white/40
@@ -21,7 +20,9 @@ function Input({
         placeholder:text-slate-500
         focus:ring-2
         focus:ring-pinkPrimary
-      "
+        transition
+        ${className}
+      `}
     />
   );
 }

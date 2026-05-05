@@ -6,7 +6,7 @@ import {
 
 import "./index.css";
 
-import { router } from "./app/router";
+import { router } from "./router";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

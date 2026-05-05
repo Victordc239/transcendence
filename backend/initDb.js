@@ -9,7 +9,8 @@ async function initDB() {
         email VARCHAR(255) UNIQUE NOT NULL,
         password TEXT NOT NULL,
         avatar_url TEXT DEFAULT '/uploads/default-avatar.png',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 

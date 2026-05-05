@@ -11,6 +11,29 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    networks:
+      - transcendence_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d transcendence"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: transcendence_backend
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    networks:
+      - transcendence_network
 
 volumes:
   db_data:
+
+networks:
+  transcendence_network:

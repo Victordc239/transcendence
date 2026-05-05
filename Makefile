@@ -8,9 +8,6 @@ all: up
 
 help:
 	@echo "Targets available:"
-	@echo "  make install-backend  -> install backend dependencies"
-	@echo "  make db               -> start PostgreSQL container"
-	@echo "  make backend          -> run the backend server"
 	@echo "  make up               -> start db and backend"
 	@echo "  make down             -> stop containers"
 	@echo "  make restart          -> restart everything"
@@ -19,19 +16,9 @@ help:
 	@echo "  make fclean           -> stop containers and remove node_modules"
 	@echo "  make re               -> full reset and start again"
 
-install-backend:
-	@cd $(BACKEND_DIR) && $(NPM) install
 
-db:
-	$(COMPOSE) up -d db
-
-backend:
-	@cd $(BACKEND_DIR) && $(NODE) server.js
-
-up: db install-backend
-	@echo "Esperando a PostgreSQL..."
-	@sleep 5
-	@cd $(BACKEND_DIR) && $(NODE) server.js
+up:
+	$(COMPOSE) up --build -d
 
 down:
 	$(COMPOSE) down
@@ -44,10 +31,10 @@ logs:
 clean:
 	@echo "Nothing to clean."
 
-fclean: down
+fclean:
 	$(COMPOSE) down -v --remove-orphans
-	@rm -rf $(BACKEND_DIR)/node_modules
+	rm -rf backend/node_modules
 
-re: fclean install-backend up
+re: fclean up
 
-.PHONY: all help install-backend db backend up down restart logs clean fclean re
+.PHONY: all help up down restart logs clean fclean re

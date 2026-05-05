@@ -1,0 +1,198 @@
+🧠 1. ¿Qué es Node.js en tu proyecto?
+	⚙️ Node.js = el motor que ejecuta tu backend
+
+	Node NO es tu framework, es el runtime.
+
+	👉 Es lo que permite ejecutar JavaScript fuera del navegador.
+
+	En tu caso:
+		ejecuta server.js
+		levanta Express
+		conecta con PostgreSQL
+		gestiona requests HTTP
+
+	🔥 Flujo mental
+		Docker → Node → server.js → Express → API REST → DB
+
+📁 2. Estructura de tu backend
+	Tienes esto:
+		backend/
+		├── controllers/
+		├── routes/
+		├── middleware/
+		├── db.js
+		├── initDb.js
+		├── server.js
+		├── package.json
+		├── Dockerfile
+
+🚀 3. server.js (EL CEREBRO)
+	📌 Es el punto de entrada
+	Aquí pasa TODO:
+	🔹 Qué hace:
+		crea el servidor Express
+		carga variables .env
+		conecta rutas
+		inicializa DB
+		arranca el servidor
+	🔥 flujo:
+		initDB()
+		→ app.use(routes)
+		→ app.listen(3000)
+	🧠 idea simple:
+		“Este archivo enciende todo el backend”
+
+📡 4. routes/ (LAS PUERTAS DE ENTRADA)
+	Aquí defines las URLs de la API.
+	Ejemplo:
+		authRoutes.js
+			POST /auth/register
+			POST /auth/login
+		userRoutes.js
+			GET  /users/me
+			PUT  /users/me
+			GET  /users/:id
+		friendsRoutes.js
+			POST   /friends/request/:id
+			POST   /friends/accept/:id
+			DELETE /friends/:id
+			GET    /friends
+	🧠 idea clave:
+		routes = “qué URLs existen”
+
+🧠 5. controllers/ (LA LÓGICA REAL)
+	Aquí está el trabajo duro.
+	👉 Las routes NO hacen lógica.
+	👉 Solo llaman a controllers.
+	ejemplo:
+		router.post('/login', authController.login)
+	authController.js hace:
+		busca usuario en DB
+		compara password
+		genera JWT
+		devuelve token
+	userController.js hace:
+		obtiene usuario logueado
+		actualiza perfil
+		busca usuarios por id
+	friendsController.js hace:
+		enviar solicitud
+		aceptar amistad
+		eliminar relación
+		listar amigos
+	🧠 idea clave:
+		controllers = “qué hace la aplicación”
+
+🔐 6. middleware/ (LOS GUARDIAS)
+	Aquí tienes:
+		authMiddleware.js
+	Qué hace:
+		Interpreta esto:
+			Authorization: Bearer TOKEN
+		y hace:
+			extrae token
+			verifica JWT
+		si es válido:
+			req.user = decoded
+			deja pasar
+		si no:
+			bloquea request (401)
+	🧠 idea clave:
+		middleware = “filtros antes de entrar a la lógica”
+
+🗄️ 7. db.js (CONEXIÓN A POSTGRES)
+	Aquí creas el pool:
+		new Pool({
+		host,
+		user,
+		password,
+		database,
+		})
+	qué hace:
+		abre conexión con PostgreSQL
+		permite hacer queries:
+		pool.query("SELECT * FROM users")
+	🧠 idea clave:
+		db.js = “puente entre Node y la base de datos”
+
+🏗️ 8. initDb.js (CREADOR DE TABLAS)
+	Se ejecuta al iniciar backend:
+	hace:
+		tabla users:
+			usuarios del sistema
+		tabla friendships:
+			sistema de amigos
+			pending / accepted
+	🧠 idea clave:
+		initDb = “construye la base de datos si no existe”
+
+📦 9. package.json (DEPENDENCIAS)
+	Define:
+		express
+		pg
+		bcrypt
+		jsonwebtoken
+		dotenv
+	también:
+		scripts
+		metadata del proyecto
+	🧠 idea clave:
+		package.json = “lista de herramientas del backend”
+
+🐳 10. Dockerfile (CONTENEDOR BACKEND)
+	FROM node:18
+	WORKDIR /app
+	COPY . .
+	RUN npm install
+	CMD ["node", "server.js"]
+
+	qué hace:
+		crea entorno Node limpio
+		instala dependencias
+		ejecuta servidor
+	🧠 idea clave:
+		Dockerfile = “cómo se construye tu backend en cualquier máquina”
+
+🧩 11. docker-compose.yml (ORQUESTADOR)
+	Aquí conectas todo:
+	servicios:
+		🟡 db
+			PostgreSQL
+		🔵 backend
+			Node API
+	conecta:
+		backend → db (por red interna Docker)
+	🧠 idea clave:
+		docker-compose = “enciende todo el sistema con un comando”
+
+🔄 12. FLUJO COMPLETO REAL
+	Ejemplo login:
+		Frontend
+		↓
+		POST /auth/login (routes)
+		↓
+		authController.login
+		↓
+		db.js → PostgreSQL
+		↓
+		bcrypt + jwt
+		↓
+		respuesta JSON
+
+🧠 RESUMEN FINAL (IMPORTANTE)
+
+	Tu backend está dividido así:
+	🧭 server.js
+		👉 arranca todo
+	🌐 routes/
+		👉 define URLs
+	🧠 controllers/
+		👉 lógica de negocio
+	🛡 middleware/
+		👉 seguridad (JWT)
+	🗄 db.js
+		👉 conexión base de datos
+	🏗 initDb.js
+		👉 crea tablas
+	🐳 Docker
+		👉 entorno reproducible

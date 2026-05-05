@@ -6,6 +6,7 @@ const initDB = require('./initDb');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const friendsRoutes = require('./routes/friendsRoutes');
+const gameRoutes = require('./routes/gameRoutes');
 const authMiddleware = require('./middleware/authMiddleware');
 
 const app = express();
@@ -16,12 +17,13 @@ const PORT = process.env.PORT || 3000;
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/friends', friendsRoutes);
+app.use('/games', gameRoutes);
 
 app.get('/me', authMiddleware, (req, res) => {
   res.json({ user: req.user });
 });
 
-app.get('/', (req, res) => {
+app.get('/', (req, res) => {gameRoutes
   res.send('Servidor funcionando 🚀');
 });
 

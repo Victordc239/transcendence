@@ -1,16 +1,12 @@
 🧠 1. ¿Qué es Node.js en tu proyecto?
 	⚙️ Node.js = el motor que ejecuta tu backend
-
 	Node NO es tu framework, es el runtime.
-
 	👉 Es lo que permite ejecutar JavaScript fuera del navegador.
-
 	En tu caso:
 		ejecuta server.js
 		levanta Express
 		conecta con PostgreSQL
 		gestiona requests HTTP
-
 	🔥 Flujo mental
 		Docker → Node → server.js → Express → API REST → DB
 

@@ -25,6 +25,10 @@ app.get('/', (req, res) => {
   res.send('Servidor funcionando 🚀');
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 async function start() {
   try {
     await initDB();

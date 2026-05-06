@@ -3,7 +3,47 @@
 @tailwind utilities;
 
 :root {
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
+
+  --bg-primary: #f8fafc;
+  --bg-secondary: #eef2ff;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+
+  --pink-primary: #f9a8d4;
+  --purple-primary: #c4b5fd;
+  --blue-primary: #93c5fd;
+  --green-primary: #86efac;
+
+  --glass-bg: rgba(255, 255, 255, 0.35);
+  --glass-border: rgba(255, 255, 255, 0.18);
+}
+
+.dark {
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+
+  --pink-primary: #f472b6;
+  --purple-primary: #a78bfa;
+  --blue-primary: #60a5fa;
+  --green-primary: #4ade80;
+
+  --glass-bg: rgba(15, 23, 42, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 body {
@@ -11,16 +51,49 @@ body {
   min-width: 320px;
   min-height: 100vh;
 
-  background: linear-gradient(
-    135deg,
-    #fdf2f8,
-    #ede9fe,
-    #dbeafe
-  );
+  background:
+    linear-gradient(
+      135deg,
+      var(--bg-primary),
+      var(--bg-secondary)
+    );
 
-  color: #1e293b;
+  color: var(--text-primary);
+
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
 }
 
-* {
-  box-sizing: border-box;
+button,
+input {
+  font: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+
+  border: 1px solid var(--glass-border);
+
+  backdrop-filter: blur(20px);
+
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.neon-glow {
+  box-shadow:
+    0 0 24px rgba(168, 85, 247, 0.2);
 }

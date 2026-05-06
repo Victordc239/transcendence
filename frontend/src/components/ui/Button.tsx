@@ -1,4 +1,6 @@
-import type { ButtonHTMLAttributes } from "react";
+import type {
+  ButtonHTMLAttributes,
+} from "react";
 
 interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement> {}
@@ -12,7 +14,8 @@ function Button({
     <button
       {...props}
       className={`
-        w-full rounded-2xl
+        w-full rounded-glass
+        border border-glassBorder
         bg-gradient-to-r
         from-pinkPrimary
         to-purplePrimary
@@ -20,9 +23,12 @@ function Button({
         font-semibold
         text-white
         shadow-glass
+        backdrop-blur-xl
         transition-all
+        duration-300
+        ease-smooth
         hover:scale-[1.02]
-        hover:opacity-90
+        hover:shadow-neon
         active:scale-[0.98]
         ${className}
       `}

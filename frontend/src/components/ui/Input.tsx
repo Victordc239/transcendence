@@ -1,4 +1,6 @@
-import type { InputHTMLAttributes } from "react";
+import type {
+  InputHTMLAttributes,
+} from "react";
 
 interface InputProps
   extends InputHTMLAttributes<HTMLInputElement> {}
@@ -11,16 +13,19 @@ function Input({
     <input
       {...props}
       className={`
-        w-full rounded-2xl
-        border border-white/20
-        bg-white/40
+        w-full rounded-glass
+        border border-glassBorder
+        bg-glass
         px-4 py-3
+        text-textPrimary
         outline-none
-        backdrop-blur-md
-        placeholder:text-slate-500
+        backdrop-blur-xl
+        transition-all
+        duration-300
+        placeholder:text-textSecondary
+        focus:shadow-neon
         focus:ring-2
         focus:ring-pinkPrimary
-        transition
         ${className}
       `}
     />

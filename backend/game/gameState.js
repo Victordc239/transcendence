@@ -5,7 +5,12 @@ function createNewGame(hostId) {
       {
         id: hostId,
         color: "red",
-        pieces: [0, 0, 0, 0]
+        pieces: [
+          { position: "base" },
+          { position: "base" },
+          { position: "base" },
+          { position: "base" }
+        ]
       }
     ],
     turn: hostId,

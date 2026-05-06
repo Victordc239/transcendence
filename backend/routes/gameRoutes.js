@@ -7,4 +7,8 @@ const gameController = require('../controllers/gameController');
 router.post('/', authMiddleware, gameController.createGame);
 router.get('/:id', authMiddleware, gameController.getGame);
 
+router.post('/:id/join', authMiddleware, gameController.joinGame);
+router.post('/:id/roll', authMiddleware, gameController.rollDice);
+router.post('/:id/move', authMiddleware, gameController.movePiece);
+
 module.exports = router;

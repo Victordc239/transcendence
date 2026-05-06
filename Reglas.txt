@@ -1,0 +1,16 @@
+Reglas parchis:
+-Cada jugador tiene 4 fichas y debe llevarlas desde su casa hasta la meta.
+-Se juega con un dado. -Para sacar una ficha de casa necesitas un 5. 
+-Si caes en una casilla ocupada por un rival (no segura), lo comes y lo mandas a casa. 
+-Las casillas seguras protegen a las fichas: no pueden ser comidas. 
+-No pueden haber más de 2 fichas en una casilla (formando una barrera). 
+-Una barrera bloquea el paso de otras fichas. 
+-Gana quien mete primero sus 4 fichas en la meta. 
+-Si sacas un 6, repites turno. -Si sacas 3 veces seguidas el mismo numero, la última ficha movida vuelve a casa. 
+-Cuando comes una ficha, avanzas 20 casillas con la ficha que elijas. 
+-Cuando metes una ficha en meta, avanzas 10 casillas con otra ficha. 
+-Si tienes fichas en casa y sacas un 5, estás obligado a sacar ficha. 
+-Si una ficha está en la recta final (pasillo de su color), ya no puede ser comida. 
+-Para entrar en la casilla de meta, necesitas el número exacto; si no, no te mueves. 
+-Si no puedes mover ninguna ficha, pierdes turno.
+- Mínimo 2 jugadores y máximo 4 jugadores.

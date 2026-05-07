@@ -39,7 +39,6 @@ clean:
 fclean:
 	$(COMPOSE) down -v --remove-orphans
 	rm -rf backend/node_modules
-	rm -rf frontend/node_modules
 
 re: fclean up
 

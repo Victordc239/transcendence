@@ -97,3 +97,7 @@ input {
   box-shadow:
     0 0 24px rgba(168, 85, 247, 0.2);
 }
+
+html {
+  color-scheme: light dark;
+}

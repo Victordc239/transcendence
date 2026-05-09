@@ -78,6 +78,69 @@ const pool = new Pool({
 module.exports = pool;
 
 
+./sockets/authSocket.js:
+const jwt = require('jsonwebtoken');
+
+function socketAuth(socket, next) {
+  const token = socket.handshake.auth?.token;
+
+  if (!token)
+    return next(new Error("No token"));
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+
+    socket.user = decoded;
+
+    next();
+  } catch (err) {
+    next(new Error("Invalid token"));
+  }
+}
+
+module.exports = socketAuth;
+
+
+
+./sockets/gameSocket.js:
+vacio
+
+
+
+./sockets/index.js:
+const { Server } = require('socket.io');
+
+const socketAuth = require('./socketAuth');
+const registerGameSocket = require('./gameSocket');
+
+function initSockets(httpServer) {
+  const io = new Server(httpServer, {
+    cors: {
+      origin: "*"
+    }
+  });
+
+  io.use(socketAuth);
+
+  io.on("connection", (socket) => {
+    console.log("User connected:", socket.user.id);
+
+    registerGameSocket(io, socket);
+
+    socket.on("disconnect", () => {
+      console.log("User disconnected");
+    });
+  });
+}
+
+module.exports = initSockets;
+
+
+
+
 
 ./routes/userRoutes.js:
 const express = require('express');

@@ -1,6 +1,6 @@
 const { Server } = require('socket.io');
 
-const socketAuth = require('./socketAuth');
+const authSocket = require('./authSocket');
 const registerGameSocket = require('./gameSocket');
 
 function initSockets(httpServer) {
@@ -10,7 +10,7 @@ function initSockets(httpServer) {
     }
   });
 
-  io.use(socketAuth);
+  io.use(authSocket);
 
   io.on("connection", (socket) => {
     console.log("User connected:", socket.user.id);

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-function socketAuth(socket, next) {
+function authSocket(socket, next) {
   const token = socket.handshake.auth?.token;
 
   if (!token)
@@ -20,4 +20,4 @@ function socketAuth(socket, next) {
   }
 }
 
-module.exports = socketAuth;
+module.exports = authSocket;

@@ -1,9 +1,42 @@
 ./server.js:
+const express = require('express');
+const cors = require('cors');
+const http = require('http');
+
+const initDB = require('./initDb');
 const initSockets = require('./sockets');
+
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const friendsRoutes = require('./routes/friendsRoutes');
+const gameRoutes = require('./routes/gameRoutes');
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/friends', friendsRoutes);
+app.use('/games', gameRoutes);
 
 const httpServer = http.createServer(app);
 
 initSockets(httpServer);
+
+const PORT = process.env.PORT || 3000;
+
+initDB()
+  .then(() => {
+    httpServer.listen(PORT, () => {
+      console.log(`Backend running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('DB init failed:', err);
+    process.exit(1);
+  });
 
 ./initDb.js:
 const pool = require('./db');
@@ -81,7 +114,7 @@ module.exports = pool;
 ./sockets/authSocket.js:
 const jwt = require('jsonwebtoken');
 
-function socketAuth(socket, next) {
+function authSocket(socket, next) {
   const token = socket.handshake.auth?.token;
 
   if (!token)
@@ -101,7 +134,7 @@ function socketAuth(socket, next) {
   }
 }
 
-module.exports = socketAuth;
+module.exports = authSocket;
 
 
 
@@ -113,7 +146,7 @@ vacio
 ./sockets/index.js:
 const { Server } = require('socket.io');
 
-const socketAuth = require('./socketAuth');
+const authSocket = require('./authSocket');
 const registerGameSocket = require('./gameSocket');
 
 function initSockets(httpServer) {
@@ -123,7 +156,7 @@ function initSockets(httpServer) {
     }
   });
 
-  io.use(socketAuth);
+  io.use(authSocket);
 
   io.on("connection", (socket) => {
     console.log("User connected:", socket.user.id);

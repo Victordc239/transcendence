@@ -1,4 +1,5 @@
 const { createNewGame } = require('../game/gameState');
+
 const {
   rollDice,
   movePiece,
@@ -6,7 +7,11 @@ const {
   canJoinGame
 } = require('../game/gameEngine');
 
-let games = {};
+const {
+  getGame,
+  createGame,
+  saveGame
+} = require('../game/gameManager');
 
 /* -----------------------------
    CREATE GAME
@@ -15,7 +20,8 @@ exports.createGame = (req, res) => {
   const userId = req.user.id;
 
   const game = createNewGame(userId);
-  games[game.id] = game;
+
+  createGame(game);
 
   res.json(game);
 };
@@ -24,7 +30,7 @@ exports.createGame = (req, res) => {
    GET GAME
 ------------------------------ */
 exports.getGame = (req, res) => {
-  const game = games[req.params.id];
+  const game = getGame(req.params.id);
 
   if (!game)
     return res.status(404).json({ error: 'Game not found' });
@@ -36,13 +42,14 @@ exports.getGame = (req, res) => {
    JOIN GAME
 ------------------------------ */
 exports.joinGame = (req, res) => {
-  const game = games[req.params.id];
+  const game = getGame(req.params.id);
   const userId = req.user.id;
 
   if (!game)
     return res.status(404).json({ error: 'Game not found' });
 
   const check = canJoinGame(game, userId);
+
   if (!check.ok)
     return res.status(400).json({ error: check.error });
 
@@ -63,6 +70,8 @@ exports.joinGame = (req, res) => {
     game.status = "playing";
   }
 
+  saveGame(game);
+
   res.json(game);
 };
 
@@ -70,7 +79,7 @@ exports.joinGame = (req, res) => {
    ROLL DICE
 ------------------------------ */
 exports.rollDice = (req, res) => {
-  const game = games[req.params.id];
+  const game = getGame(req.params.id);
   const userId = req.user.id;
 
   if (!game)
@@ -81,6 +90,8 @@ exports.rollDice = (req, res) => {
 
   game.dice = rollDice();
 
+  saveGame(game);
+
   res.json({ dice: game.dice });
 };
 
@@ -88,8 +99,10 @@ exports.rollDice = (req, res) => {
    MOVE PIECE
 ------------------------------ */
 exports.movePiece = (req, res) => {
-  const game = games[req.params.id];
+  const game = getGame(req.params.id);
+
   const { pieceIndex } = req.body;
+
   const userId = req.user.id;
 
   if (!game)
@@ -107,7 +120,10 @@ exports.movePiece = (req, res) => {
     return res.status(400).json({ error: 'Invalid move' });
 
   nextTurn(game);
+
   game.dice = null;
+
+  saveGame(game);
 
   res.json(game);
 };

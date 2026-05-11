@@ -247,6 +247,11 @@ const { Server } = require('socket.io');
 const authSocket = require('./authSocket');
 const registerGameSocket = require('./gameSocket');
 
+const {
+  addUserSocket,
+  removeUserSocket
+} = require('./presence');
+
 function initSockets(httpServer) {
   const io = new Server(httpServer, {
     cors: {
@@ -257,18 +262,97 @@ function initSockets(httpServer) {
   io.use(authSocket);
 
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.user.id);
+
+    const userId = socket.user.id;
+
+    console.log("User connected:", userId);
+
+    /* -----------------------------
+       USER ONLINE
+    ------------------------------ */
+
+    addUserSocket(userId, socket.id);
+
+    io.emit("presence:update", {
+      userId,
+      online: true
+    });
+
+    /* -----------------------------
+       REGISTER GAME EVENTS
+    ------------------------------ */
 
     registerGameSocket(io, socket);
 
+    /* -----------------------------
+       DISCONNECT
+    ------------------------------ */
+
     socket.on("disconnect", () => {
-      console.log("User disconnected");
+
+      console.log("User disconnected:", userId);
+
+      removeUserSocket(userId, socket.id);
+
+      io.emit("presence:update", {
+        userId,
+        online: false
+      });
     });
   });
 }
 
 module.exports = initSockets;
 
+
+
+./sockets/presence.js:
+const onlineUsers = new Map();
+
+/*
+  Estructura:
+
+  onlineUsers = Map {
+    userId => Set(socketId)
+  }
+*/
+
+function addUserSocket(userId, socketId) {
+  if (!onlineUsers.has(userId)) {
+    onlineUsers.set(userId, new Set());
+  }
+
+  onlineUsers.get(userId).add(socketId);
+}
+
+function removeUserSocket(userId, socketId) {
+  if (!onlineUsers.has(userId)) {
+    return;
+  }
+
+  const sockets = onlineUsers.get(userId);
+
+  sockets.delete(socketId);
+
+  if (sockets.size === 0) {
+    onlineUsers.delete(userId);
+  }
+}
+
+function isUserOnline(userId) {
+  return onlineUsers.has(userId);
+}
+
+function getOnlineUsers() {
+  return Array.from(onlineUsers.keys());
+}
+
+module.exports = {
+  addUserSocket,
+  removeUserSocket,
+  isUserOnline,
+  getOnlineUsers
+};
 
 
 
@@ -314,9 +398,15 @@ const authMiddleware = require('../middleware/authMiddleware');
 const friendsController = require('../controllers/friendsController');
 
 router.post('/request/:id', authMiddleware, friendsController.sendRequest);
+
 router.post('/accept/:id', authMiddleware, friendsController.acceptRequest);
+
 router.delete('/:id', authMiddleware, friendsController.deleteRelation);
+
 router.get('/', authMiddleware, friendsController.getFriends);
+
+router.get('/online', authMiddleware, friendsController.getOnlineFriends);
+
 router.get('/requests', authMiddleware, friendsController.getPendingRequests);
 
 module.exports = router;
@@ -765,6 +855,51 @@ exports.getPendingRequests = async (req, res) => {
     return res.status(500).json({ error: 'Error en el servidor' });
   }
 };
+
+const {
+  isUserOnline
+} = require('../sockets/presence');
+
+exports.getOnlineFriends = async (req, res) => {
+  try {
+
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `
+      SELECT
+        u.id,
+        u.username,
+        u.avatar_url
+      FROM friendships f
+      JOIN users u
+        ON (u.id = CASE
+          WHEN f.requester_id = $1 THEN f.addressee_id
+          ELSE f.requester_id
+        END)
+      WHERE (f.requester_id = $1 OR f.addressee_id = $1)
+        AND f.status = 'accepted'
+      `,
+      [userId]
+    );
+
+    const onlineFriends = result.rows.map(friend => ({
+      ...friend,
+      online: isUserOnline(friend.id)
+    }));
+
+    return res.json({
+      friends: onlineFriends
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: 'Error en el servidor'
+    });
+  }
+};
+
 
 
 ./controllers/gameController.js:

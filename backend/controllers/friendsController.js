@@ -183,3 +183,47 @@ exports.getPendingRequests = async (req, res) => {
     return res.status(500).json({ error: 'Error en el servidor' });
   }
 };
+
+const {
+  isUserOnline
+} = require('../sockets/presence');
+
+exports.getOnlineFriends = async (req, res) => {
+  try {
+
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `
+      SELECT
+        u.id,
+        u.username,
+        u.avatar_url
+      FROM friendships f
+      JOIN users u
+        ON (u.id = CASE
+          WHEN f.requester_id = $1 THEN f.addressee_id
+          ELSE f.requester_id
+        END)
+      WHERE (f.requester_id = $1 OR f.addressee_id = $1)
+        AND f.status = 'accepted'
+      `,
+      [userId]
+    );
+
+    const onlineFriends = result.rows.map(friend => ({
+      ...friend,
+      online: isUserOnline(friend.id)
+    }));
+
+    return res.json({
+      friends: onlineFriends
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: 'Error en el servidor'
+    });
+  }
+};

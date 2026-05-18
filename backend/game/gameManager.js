@@ -1,20 +1,77 @@
-const games = {};
+const pool = require('../db');
 
-function getGame(gameId) {
-  return games[gameId];
+/* =============================
+   GET GAME
+============================= */
+
+async function getGame(gameId) {
+
+  const result = await pool.query(
+    `
+    SELECT state
+    FROM games
+    WHERE id = $1
+    `,
+    [gameId]
+  );
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  return result.rows[0].state;
 }
 
-function saveGame(game) {
-  games[game.id] = game;
+/* =============================
+   CREATE GAME
+============================= */
+
+async function createGame(game) {
+
+  await pool.query(
+    `
+    INSERT INTO games (
+      id,
+      host_id,
+      state,
+      status
+    )
+    VALUES ($1, $2, $3, $4)
+    `,
+    [
+      game.id,
+      game.players[0].id,
+      JSON.stringify(game),
+      game.status
+    ]
+  );
 }
 
-function createGame(game) {
-  games[game.id] = game;
+/* =============================
+   SAVE GAME
+============================= */
+
+async function saveGame(game) {
+
+  await pool.query(
+    `
+    UPDATE games
+    SET
+      state = $1,
+      status = $2,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $3
+    `,
+    [
+      JSON.stringify(game),
+      game.status,
+      game.id
+    ]
+  );
 }
 
 module.exports = {
-  games,
   getGame,
-  saveGame,
-  createGame
+  createGame,
+  saveGame
 };

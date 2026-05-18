@@ -43,6 +43,11 @@ const pool = require('./db');
 
 async function initDB() {
   try {
+
+    /* =============================
+       USERS
+    ============================== */
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -54,6 +59,10 @@ async function initDB() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    /* =============================
+       FRIENDSHIPS
+    ============================== */
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS friendships (
@@ -68,7 +77,23 @@ async function initDB() {
       );
     `);
 
-    console.log('✅ Tablas users y friendships listas');
+    /* =============================
+       GAMES
+    ============================== */
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS games (
+        id VARCHAR(255) PRIMARY KEY,
+        host_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        state JSONB NOT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'waiting',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    console.log('✅ Tablas listas');
+
   } catch (err) {
     console.error('❌ Error creando tablas:', err);
     throw err;
@@ -148,9 +173,9 @@ function registerGameSocket(io, socket) {
   /* -----------------------------
      JOIN GAME ROOM
   ------------------------------ */
-  socket.on("game:join", ({ gameId }) => {
+  socket.on("game:join", async ({ gameId }) => {
 
-    const game = getGame(gameId);
+    const game = await getGame(gameId);
 
     if (!game) {
       return socket.emit("error", {
@@ -170,9 +195,9 @@ function registerGameSocket(io, socket) {
   /* -----------------------------
      GET GAME STATE
   ------------------------------ */
-  socket.on("game:state", ({ gameId }) => {
+  socket.on("game:state", async ({ gameId }) => {
 
-    const game = getGame(gameId);
+    const game = await getGame(gameId);
 
     if (!game) {
       return socket.emit("error", {
@@ -186,9 +211,9 @@ function registerGameSocket(io, socket) {
   /* -----------------------------
      CHAT MESSAGE
   ------------------------------ */
-  socket.on("chat:send", ({ gameId, message }) => {
+  socket.on("chat:send", async ({ gameId, message }) => {
 
-    const game = getGame(gameId);
+    const game = await getGame(gameId);
 
     if (!game) {
       return socket.emit("error", {
@@ -196,7 +221,6 @@ function registerGameSocket(io, socket) {
       });
     }
 
-    // comprobar que el usuario pertenece a la partida
     const player = game.players.find(
       p => p.id === socket.user.id
     );
@@ -207,7 +231,6 @@ function registerGameSocket(io, socket) {
       });
     }
 
-    // validar mensaje
     if (!message || typeof message !== "string") {
       return;
     }
@@ -231,8 +254,10 @@ function registerGameSocket(io, socket) {
       createdAt: new Date().toISOString()
     };
 
-    // enviar a TODOS los sockets de la room
-    io.to(gameId).emit("chat:message", chatMessage);
+    io.to(gameId).emit(
+      "chat:message",
+      chatMessage
+    );
   });
 
 }
@@ -482,25 +507,82 @@ module.exports = { createNewGame };
 
 
 ./game/gameManager.js:
-const games = {};
+const pool = require('../db');
 
-function getGame(gameId) {
-  return games[gameId];
+/* =============================
+   GET GAME
+============================= */
+
+async function getGame(gameId) {
+
+  const result = await pool.query(
+    `
+    SELECT state
+    FROM games
+    WHERE id = $1
+    `,
+    [gameId]
+  );
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  return result.rows[0].state;
 }
 
-function saveGame(game) {
-  games[game.id] = game;
+/* =============================
+   CREATE GAME
+============================= */
+
+async function createGame(game) {
+
+  await pool.query(
+    `
+    INSERT INTO games (
+      id,
+      host_id,
+      state,
+      status
+    )
+    VALUES ($1, $2, $3, $4)
+    `,
+    [
+      game.id,
+      game.players[0].id,
+      JSON.stringify(game),
+      game.status
+    ]
+  );
 }
 
-function createGame(game) {
-  games[game.id] = game;
+/* =============================
+   SAVE GAME
+============================= */
+
+async function saveGame(game) {
+
+  await pool.query(
+    `
+    UPDATE games
+    SET
+      state = $1,
+      status = $2,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $3
+    `,
+    [
+      JSON.stringify(game),
+      game.status,
+      game.id
+    ]
+  );
 }
 
 module.exports = {
-  games,
   getGame,
-  saveGame,
-  createGame
+  createGame,
+  saveGame
 };
 
 
@@ -921,118 +1003,203 @@ const {
 /* -----------------------------
    CREATE GAME
 ------------------------------ */
-exports.createGame = (req, res) => {
-  const userId = req.user.id;
+exports.createGame = async (req, res) => {
 
-  const game = createNewGame(userId);
+  try {
 
-  createGame(game);
+    const userId = req.user.id;
 
-  res.json(game);
+    const game = createNewGame(userId);
+
+    await createGame(game);
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: 'Server error'
+    });
+  }
 };
 
 /* -----------------------------
    GET GAME
 ------------------------------ */
-exports.getGame = (req, res) => {
-  const game = getGame(req.params.id);
+exports.getGame = async (req, res) => {
 
-  if (!game)
-    return res.status(404).json({ error: 'Game not found' });
+  try {
 
-  res.json(game);
+    const game = await getGame(req.params.id);
+
+    if (!game)
+      return res.status(404).json({
+        error: 'Game not found'
+      });
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: 'Server error'
+    });
+  }
 };
 
 /* -----------------------------
    JOIN GAME
 ------------------------------ */
-exports.joinGame = (req, res) => {
-  const game = getGame(req.params.id);
-  const userId = req.user.id;
+exports.joinGame = async (req, res) => {
 
-  if (!game)
-    return res.status(404).json({ error: 'Game not found' });
+  try {
 
-  const check = canJoinGame(game, userId);
+    const game = await getGame(req.params.id);
 
-  if (!check.ok)
-    return res.status(400).json({ error: check.error });
+    const userId = req.user.id;
 
-  const colors = ["red", "blue", "green", "yellow"];
+    if (!game)
+      return res.status(404).json({
+        error: 'Game not found'
+      });
 
-  game.players.push({
-    id: userId,
-    color: colors[game.players.length],
-    pieces: [
-      { position: "base" },
-      { position: "base" },
-      { position: "base" },
-      { position: "base" }
-    ]
-  });
+    const check = canJoinGame(game, userId);
 
-  if (game.players.length >= 2) {
-    game.status = "playing";
+    if (!check.ok)
+      return res.status(400).json({
+        error: check.error
+      });
+
+    const colors = ["red", "blue", "green", "yellow"];
+
+    game.players.push({
+      id: userId,
+      color: colors[game.players.length],
+      pieces: [
+        { position: "base" },
+        { position: "base" },
+        { position: "base" },
+        { position: "base" }
+      ]
+    });
+
+    if (game.players.length >= 2) {
+      game.status = "playing";
+    }
+
+    await saveGame(game);
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: 'Server error'
+    });
   }
-
-  saveGame(game);
-
-  res.json(game);
 };
 
 /* -----------------------------
    ROLL DICE
 ------------------------------ */
-exports.rollDice = (req, res) => {
-  const game = getGame(req.params.id);
-  const userId = req.user.id;
+exports.rollDice = async (req, res) => {
 
-  if (!game)
-    return res.status(404).json({ error: 'Game not found' });
+  try {
 
-  if (game.turn !== userId)
-    return res.status(403).json({ error: 'Not your turn' });
+    const game = await getGame(req.params.id);
 
-  game.dice = rollDice();
+    const userId = req.user.id;
 
-  saveGame(game);
+    if (!game)
+      return res.status(404).json({
+        error: 'Game not found'
+      });
 
-  res.json({ dice: game.dice });
+    if (game.turn !== userId)
+      return res.status(403).json({
+        error: 'Not your turn'
+      });
+
+    game.dice = rollDice();
+
+    await saveGame(game);
+
+    res.json({
+      dice: game.dice
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: 'Server error'
+    });
+  }
 };
 
 /* -----------------------------
    MOVE PIECE
 ------------------------------ */
-exports.movePiece = (req, res) => {
-  const game = getGame(req.params.id);
+exports.movePiece = async (req, res) => {
 
-  const { pieceIndex } = req.body;
+  try {
 
-  const userId = req.user.id;
+    const game = await getGame(req.params.id);
 
-  if (!game)
-    return res.status(404).json({ error: 'Game not found' });
+    const { pieceIndex } = req.body;
 
-  if (game.turn !== userId)
-    return res.status(403).json({ error: 'Not your turn' });
+    const userId = req.user.id;
 
-  if (game.dice === null)
-    return res.status(400).json({ error: 'Roll dice first' });
+    if (!game)
+      return res.status(404).json({
+        error: 'Game not found'
+      });
 
-  const moved = movePiece(game, userId, pieceIndex);
+    if (game.turn !== userId)
+      return res.status(403).json({
+        error: 'Not your turn'
+      });
 
-  if (!moved)
-    return res.status(400).json({ error: 'Invalid move' });
+    if (game.dice === null)
+      return res.status(400).json({
+        error: 'Roll dice first'
+      });
 
-  nextTurn(game);
+    const moved = movePiece(
+      game,
+      userId,
+      pieceIndex
+    );
 
-  game.dice = null;
+    if (!moved)
+      return res.status(400).json({
+        error: 'Invalid move'
+      });
 
-  saveGame(game);
+    nextTurn(game);
 
-  res.json(game);
+    game.dice = null;
+
+    await saveGame(game);
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: 'Server error'
+    });
+  }
 };
-
 
 
 

@@ -7,9 +7,9 @@ function registerGameSocket(io, socket) {
   /* -----------------------------
      JOIN GAME ROOM
   ------------------------------ */
-  socket.on("game:join", ({ gameId }) => {
+  socket.on("game:join", async ({ gameId }) => {
 
-    const game = getGame(gameId);
+    const game = await getGame(gameId);
 
     if (!game) {
       return socket.emit("error", {
@@ -29,9 +29,9 @@ function registerGameSocket(io, socket) {
   /* -----------------------------
      GET GAME STATE
   ------------------------------ */
-  socket.on("game:state", ({ gameId }) => {
+  socket.on("game:state", async ({ gameId }) => {
 
-    const game = getGame(gameId);
+    const game = await getGame(gameId);
 
     if (!game) {
       return socket.emit("error", {
@@ -45,9 +45,9 @@ function registerGameSocket(io, socket) {
   /* -----------------------------
      CHAT MESSAGE
   ------------------------------ */
-  socket.on("chat:send", ({ gameId, message }) => {
+  socket.on("chat:send", async ({ gameId, message }) => {
 
-    const game = getGame(gameId);
+    const game = await getGame(gameId);
 
     if (!game) {
       return socket.emit("error", {
@@ -55,7 +55,6 @@ function registerGameSocket(io, socket) {
       });
     }
 
-    // comprobar que el usuario pertenece a la partida
     const player = game.players.find(
       p => p.id === socket.user.id
     );
@@ -66,7 +65,6 @@ function registerGameSocket(io, socket) {
       });
     }
 
-    // validar mensaje
     if (!message || typeof message !== "string") {
       return;
     }
@@ -90,8 +88,10 @@ function registerGameSocket(io, socket) {
       createdAt: new Date().toISOString()
     };
 
-    // enviar a TODOS los sockets de la room
-    io.to(gameId).emit("chat:message", chatMessage);
+    io.to(gameId).emit(
+      "chat:message",
+      chatMessage
+    );
   });
 
 }

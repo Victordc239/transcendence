@@ -16,114 +16,200 @@ const {
 /* -----------------------------
    CREATE GAME
 ------------------------------ */
-exports.createGame = (req, res) => {
-  const userId = req.user.id;
+exports.createGame = async (req, res) => {
 
-  const game = createNewGame(userId);
+  try {
 
-  createGame(game);
+    const userId = req.user.id;
 
-  res.json(game);
+    const game = createNewGame(userId);
+
+    await createGame(game);
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: 'Server error'
+    });
+  }
 };
 
 /* -----------------------------
    GET GAME
 ------------------------------ */
-exports.getGame = (req, res) => {
-  const game = getGame(req.params.id);
+exports.getGame = async (req, res) => {
 
-  if (!game)
-    return res.status(404).json({ error: 'Game not found' });
+  try {
 
-  res.json(game);
+    const game = await getGame(req.params.id);
+
+    if (!game)
+      return res.status(404).json({
+        error: 'Game not found'
+      });
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: 'Server error'
+    });
+  }
 };
 
 /* -----------------------------
    JOIN GAME
 ------------------------------ */
-exports.joinGame = (req, res) => {
-  const game = getGame(req.params.id);
-  const userId = req.user.id;
+exports.joinGame = async (req, res) => {
 
-  if (!game)
-    return res.status(404).json({ error: 'Game not found' });
+  try {
 
-  const check = canJoinGame(game, userId);
+    const game = await getGame(req.params.id);
 
-  if (!check.ok)
-    return res.status(400).json({ error: check.error });
+    const userId = req.user.id;
 
-  const colors = ["red", "blue", "green", "yellow"];
+    if (!game)
+      return res.status(404).json({
+        error: 'Game not found'
+      });
 
-  game.players.push({
-    id: userId,
-    color: colors[game.players.length],
-    pieces: [
-      { position: "base" },
-      { position: "base" },
-      { position: "base" },
-      { position: "base" }
-    ]
-  });
+    const check = canJoinGame(game, userId);
 
-  if (game.players.length >= 2) {
-    game.status = "playing";
+    if (!check.ok)
+      return res.status(400).json({
+        error: check.error
+      });
+
+    const colors = ["red", "blue", "green", "yellow"];
+
+    game.players.push({
+      id: userId,
+      color: colors[game.players.length],
+      pieces: [
+        { position: "base" },
+        { position: "base" },
+        { position: "base" },
+        { position: "base" }
+      ]
+    });
+
+    if (game.players.length >= 2) {
+      game.status = "playing";
+    }
+
+    await saveGame(game);
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: 'Server error'
+    });
   }
-
-  saveGame(game);
-
-  res.json(game);
 };
 
 /* -----------------------------
    ROLL DICE
 ------------------------------ */
-exports.rollDice = (req, res) => {
-  const game = getGame(req.params.id);
-  const userId = req.user.id;
+exports.rollDice = async (req, res) => {
 
-  if (!game)
-    return res.status(404).json({ error: 'Game not found' });
+  try {
 
-  if (game.turn !== userId)
-    return res.status(403).json({ error: 'Not your turn' });
+    const game = await getGame(req.params.id);
 
-  game.dice = rollDice();
+    const userId = req.user.id;
 
-  saveGame(game);
+    if (!game)
+      return res.status(404).json({
+        error: 'Game not found'
+      });
 
-  res.json({ dice: game.dice });
+    if (game.turn !== userId)
+      return res.status(403).json({
+        error: 'Not your turn'
+      });
+
+    game.dice = rollDice();
+
+    await saveGame(game);
+
+    res.json({
+      dice: game.dice
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: 'Server error'
+    });
+  }
 };
 
 /* -----------------------------
    MOVE PIECE
 ------------------------------ */
-exports.movePiece = (req, res) => {
-  const game = getGame(req.params.id);
+exports.movePiece = async (req, res) => {
 
-  const { pieceIndex } = req.body;
+  try {
 
-  const userId = req.user.id;
+    const game = await getGame(req.params.id);
 
-  if (!game)
-    return res.status(404).json({ error: 'Game not found' });
+    const { pieceIndex } = req.body;
 
-  if (game.turn !== userId)
-    return res.status(403).json({ error: 'Not your turn' });
+    const userId = req.user.id;
 
-  if (game.dice === null)
-    return res.status(400).json({ error: 'Roll dice first' });
+    if (!game)
+      return res.status(404).json({
+        error: 'Game not found'
+      });
 
-  const moved = movePiece(game, userId, pieceIndex);
+    if (game.turn !== userId)
+      return res.status(403).json({
+        error: 'Not your turn'
+      });
 
-  if (!moved)
-    return res.status(400).json({ error: 'Invalid move' });
+    if (game.dice === null)
+      return res.status(400).json({
+        error: 'Roll dice first'
+      });
 
-  nextTurn(game);
+    const moved = movePiece(
+      game,
+      userId,
+      pieceIndex
+    );
 
-  game.dice = null;
+    if (!moved)
+      return res.status(400).json({
+        error: 'Invalid move'
+      });
 
-  saveGame(game);
+    nextTurn(game);
 
-  res.json(game);
+    game.dice = null;
+
+    await saveGame(game);
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: 'Server error'
+    });
+  }
 };

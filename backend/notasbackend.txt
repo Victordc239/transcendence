@@ -1,3 +1,38 @@
+./socket.js:
+let io = null;
+
+/* =============================
+   SET IO INSTANCE
+============================= */
+
+function setIO(serverIO) {
+  io = serverIO;
+}
+
+/* =============================
+   GET IO INSTANCE
+============================= */
+
+function getIO() {
+
+  if (!io) {
+    throw new Error("Socket.io not initialized");
+  }
+
+  return io;
+}
+
+module.exports = {
+  setIO,
+  getIO
+};
+
+
+
+
+
+
+
 ./server.js:
 const express = require('express');
 const cors = require('cors');
@@ -277,12 +312,23 @@ const {
   removeUserSocket
 } = require('./presence');
 
+const {
+  setIO
+} = require('../socket');
+
 function initSockets(httpServer) {
+
   const io = new Server(httpServer, {
     cors: {
       origin: "*"
     }
   });
+
+  /* =============================
+     SAVE GLOBAL IO
+  ============================= */
+
+  setIO(io);
 
   io.use(authSocket);
 
@@ -1000,6 +1046,10 @@ const {
   saveGame
 } = require('../game/gameManager');
 
+const {
+  getIO
+} = require('../socket');
+
 /* -----------------------------
    CREATE GAME
 ------------------------------ */
@@ -1012,6 +1062,10 @@ exports.createGame = async (req, res) => {
     const game = createNewGame(userId);
 
     await createGame(game);
+
+    const io = getIO();
+
+    io.emit("game:created", game);
 
     res.json(game);
 
@@ -1093,6 +1147,13 @@ exports.joinGame = async (req, res) => {
 
     await saveGame(game);
 
+    const io = getIO();
+
+    io.to(game.id).emit(
+      "game:update",
+      game
+    );
+
     res.json(game);
 
   } catch (error) {
@@ -1129,6 +1190,13 @@ exports.rollDice = async (req, res) => {
     game.dice = rollDice();
 
     await saveGame(game);
+
+    const io = getIO();
+
+    io.to(game.id).emit(
+      "game:update",
+      game
+    );
 
     res.json({
       dice: game.dice
@@ -1188,6 +1256,13 @@ exports.movePiece = async (req, res) => {
     game.dice = null;
 
     await saveGame(game);
+
+    const io = getIO();
+
+    io.to(game.id).emit(
+      "game:update",
+      game
+    );
 
     res.json(game);
 

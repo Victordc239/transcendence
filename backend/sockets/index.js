@@ -8,12 +8,23 @@ const {
   removeUserSocket
 } = require('./presence');
 
+const {
+  setIO
+} = require('../socket');
+
 function initSockets(httpServer) {
+
   const io = new Server(httpServer, {
     cors: {
       origin: "*"
     }
   });
+
+  /* =============================
+     SAVE GLOBAL IO
+  ============================= */
+
+  setIO(io);
 
   io.use(authSocket);
 

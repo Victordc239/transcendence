@@ -13,6 +13,10 @@ const {
   saveGame
 } = require('../game/gameManager');
 
+const {
+  getIO
+} = require('../socket');
+
 /* -----------------------------
    CREATE GAME
 ------------------------------ */
@@ -25,6 +29,10 @@ exports.createGame = async (req, res) => {
     const game = createNewGame(userId);
 
     await createGame(game);
+
+    const io = getIO();
+
+    io.emit("game:created", game);
 
     res.json(game);
 
@@ -106,6 +114,13 @@ exports.joinGame = async (req, res) => {
 
     await saveGame(game);
 
+    const io = getIO();
+
+    io.to(game.id).emit(
+      "game:update",
+      game
+    );
+
     res.json(game);
 
   } catch (error) {
@@ -142,6 +157,13 @@ exports.rollDice = async (req, res) => {
     game.dice = rollDice();
 
     await saveGame(game);
+
+    const io = getIO();
+
+    io.to(game.id).emit(
+      "game:update",
+      game
+    );
 
     res.json({
       dice: game.dice
@@ -201,6 +223,13 @@ exports.movePiece = async (req, res) => {
     game.dice = null;
 
     await saveGame(game);
+
+    const io = getIO();
+
+    io.to(game.id).emit(
+      "game:update",
+      game
+    );
 
     res.json(game);
 

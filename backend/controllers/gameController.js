@@ -8,7 +8,7 @@ const {
 } = require('../game/gameEngine');
 
 const {
-  getGame,
+  getGame: getGameById,
   createGame,
   saveGame
 } = require('../game/gameManager');
@@ -53,7 +53,7 @@ exports.getGame = async (req, res) => {
 
   try {
 
-    const game = await getGame(req.params.id);
+    const game = await getGameById(req.params.id);
 
     if (!game)
       return res.status(404).json({
@@ -79,7 +79,7 @@ exports.joinGame = async (req, res) => {
 
   try {
 
-    const game = await getGame(req.params.id);
+    const game = await getGameById(req.params.id);
 
     const userId = req.user.id;
 
@@ -140,7 +140,7 @@ exports.rollDice = async (req, res) => {
 
   try {
 
-    const game = await getGame(req.params.id);
+    const game = await getGameById(req.params.id);
 
     const userId = req.user.id;
 
@@ -186,7 +186,7 @@ exports.movePiece = async (req, res) => {
 
   try {
 
-    const game = await getGame(req.params.id);
+    const game = await getGameById(req.params.id);
 
     const { pieceIndex } = req.body;
 

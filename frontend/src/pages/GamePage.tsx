@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { socket, connectSocket } from "../socket/socket";
 import { useAuth } from "../context/AuthContext";
@@ -51,9 +51,29 @@ export default function GamePage() {
     };
   }, [id, token]);
 
-  const handleRoll = async () => {
+  /*const handleRoll = async () => {
     if (!token || !id) return;
     await rollDice(token, id);
+  };*/
+
+  const [rolling, setRolling] = useState(false);
+
+  const handleRoll = async () => {
+    if (!token || !id) return;
+
+    try {
+      setRolling(true);
+
+      await rollDice(token, id);
+
+    } catch (err) {
+      console.error(err);
+
+    } finally {
+      setTimeout(() => {
+        setRolling(false);
+      }, 600);
+    }
   };
 
   const handleMove = async (index: number) => {
@@ -79,6 +99,19 @@ export default function GamePage() {
 
         <div className="mt-2 text-white/70">
           Turn: {game.turn}
+        </div>
+
+        <div
+          className={`
+            mt-4 w-24 h-24 rounded-3xl
+            flex items-center justify-center
+            bg-white/10 backdrop-blur-xl
+            text-4xl font-bold
+            transition-all duration-300
+            ${rolling ? "scale-110 rotate-12" : ""}
+          `}
+        >
+          {game.dice ?? "🎲"}
         </div>
 
         <div className="mt-10 relative w-[600px] h-[600px] mx-auto">

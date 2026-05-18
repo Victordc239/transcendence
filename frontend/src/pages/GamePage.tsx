@@ -5,6 +5,9 @@ import { useAuth } from "../context/AuthContext";
 import { useGameStore } from "../store/gameStore";
 import { rollDice, movePiece } from "../api/game.api";
 
+import ParchisBoard from "../components/game/ParchisBoard";
+import GamePieces from "../components/game/GamePieces";
+
 export default function GamePage() {
   const { id } = useParams();
   const { token } = useAuth();
@@ -76,6 +79,11 @@ export default function GamePage() {
 
         <div className="mt-2 text-white/70">
           Turn: {game.turn}
+        </div>
+
+        <div className="mt-10 relative w-[600px] h-[600px] mx-auto">
+          <ParchisBoard />
+          <GamePieces game={game} />
         </div>
 
         <div className="mt-2 text-white/70">

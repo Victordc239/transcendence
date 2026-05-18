@@ -28,7 +28,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/game",
+    path: "/game/:id",
     element: (
       <ProtectedRoute>
         <GamePage />

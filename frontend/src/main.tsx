@@ -8,12 +8,16 @@ import { router } from "./router";
 
 import { ThemeProvider } from "./theme/ThemeProvider";
 
+import { AuthProvider } from "./context/AuthContext";
+
 ReactDOM.createRoot(
   document.getElementById("root")!
 ).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <RouterProvider router={router} />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

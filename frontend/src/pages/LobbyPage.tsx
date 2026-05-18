@@ -11,7 +11,7 @@ function LobbyPage() {
     navigate("/");
   };
 
-  const handleCreateGame = async () => {
+  /*const handleCreateGame = async () => {
     if (!token) return;
 
     const game = await createGame(token);
@@ -19,7 +19,51 @@ function LobbyPage() {
     if (game?.id) {
       navigate(`/game/${game.id}`);
     }
-  };
+  };*/
+
+  /*const handleCreateGame = async () => {
+  try {
+    if (!token) {
+      console.error("NO TOKEN - usuario no autenticado");
+      return;
+    }
+
+    console.log("Creating game...");
+
+    const game = await createGame(token);
+
+    console.log("Game created:", game);
+
+    if (game?.id) {
+      navigate(`/game/${game.id}`);
+    } else {
+      console.error("No game id returned", game);
+    }
+
+  } catch (err) {
+    console.error("Error creating game:", err);
+  }
+};*/
+
+const handleCreateGame = async () => {
+  try {
+    if (!token) {
+      console.warn("No token");
+      return;
+    }
+
+    const game = await createGame(token);
+
+    console.log("GAME CREATED:", game);
+
+    if (game?.id) {
+      navigate(`/game/${game.id}`);
+    }
+  } catch (err) {
+    console.error("CREATE GAME ERROR:", err);
+    alert("Error creando partida");
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white">

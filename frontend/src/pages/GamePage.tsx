@@ -58,33 +58,62 @@ export default function GamePage() {
     await movePiece(token, id, index);
   };
 
-  if (!game) return <div>Loading game...</div>;
+  if (!game) {
+    return (
+      <div className="p-6 text-white">
+        Loading game...
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 text-white">
-      <h1>Game {game.id}</h1>
+    <div className="min-h-screen bg-slate-950 text-white p-6">
+      <div className="max-w-4xl mx-auto">
 
-      <p>Turn: {game.turn}</p>
-      <p>Dice: {game.dice}</p>
+        <h1 className="text-3xl font-bold">
+          Game {game.id}
+        </h1>
 
-      <button onClick={handleRoll}>Roll Dice</button>
+        <div className="mt-2 text-white/70">
+          Turn: {game.turn}
+        </div>
 
-      <div className="mt-6">
-        {game.players.map((p) => (
-          <div key={p.id}>
-            <p>{p.color}</p>
+        <div className="mt-2 text-white/70">
+          Dice: {game.dice ?? "-"}
+        </div>
 
-            {p.pieces.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => handleMove(i)}
-                className="m-1 px-2 py-1 bg-white/10"
-              >
-                Move {i}
-              </button>
-            ))}
-          </div>
-        ))}
+        <button
+          onClick={handleRoll}
+          className="mt-4 px-4 py-2 bg-purple-500 rounded-xl"
+        >
+          Roll Dice
+        </button>
+
+        <div className="mt-8 space-y-6">
+          {game.players.map((p) => (
+            <div
+              key={p.id}
+              className="p-4 rounded-xl bg-white/5"
+            >
+              <p className="font-semibold text-lg">
+                {p.color}
+              </p>
+
+              <div className="flex gap-2 mt-2">
+                {p.pieces.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleMove(i)}
+                    className="px-3 py-1 bg-white/10 rounded-lg"
+                  >
+                    Move {i}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
       </div>
     </div>
   );

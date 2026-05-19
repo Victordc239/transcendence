@@ -1,8 +1,8 @@
 export type PlayerColor =
-  | "red"
-  | "blue"
+  | "pink"
+  | "purple"
   | "green"
-  | "yellow";
+  | "blue";
 
 export interface Piece {
   id: number;

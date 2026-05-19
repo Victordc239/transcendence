@@ -82,17 +82,25 @@ export default function GamePieces({ game }: any) {
           let pos;
 
           // 🔥 BASE STATE
-          if (piece.position === "base") {
-            pos = bases[player.color]?.[i];
-          }
+          //if (piece.position === "base") {
+            //pos = bases[player.color]?.[i];
+          //}
 
           // 🔥 TRACK STATE (VALIDACIÓN FUERTE)
-          else if (typeof piece.position === "number") {
-            pos = mainTrack[piece.position];
+          //else if (typeof piece.position === "number") {
+            //pos = mainTrack[piece.position];
 
             // 🚨 safety fallback
-            if (!pos) pos = CENTER;
+            //if (!pos) pos = CENTER;
+          //}
+
+          if (piece.position === "base") {
+            pos = bases[player.color]?.[i];
+          } else if (typeof piece.position === "number") {
+            pos = mainTrack[piece.position];
           }
+
+          if (!pos) return null;
 
           // 🔥 HOME / FINISH / ERROR STATE
           else {

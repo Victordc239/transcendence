@@ -53,7 +53,7 @@ export const CENTER: Point = grid(7, 7);
 ========================= */
 
 export const bases: Record<string, Point[]> = {
-  red: [
+  pink: [
     grid(1, 1),
     grid(2, 1),
     grid(1, 2),
@@ -71,7 +71,7 @@ export const bases: Record<string, Point[]> = {
     grid(1, 13),
     grid(2, 13),
   ],
-  yellow: [
+  purple: [
     grid(12, 12),
     grid(13, 12),
     grid(12, 13),

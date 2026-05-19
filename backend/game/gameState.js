@@ -12,7 +12,7 @@ function createNewGame(hostId) {
     players: [
       {
         id: hostId,
-        color: "red",
+        color: "pink",
         pieces: createPieces()
       }
     ],

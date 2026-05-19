@@ -28,7 +28,7 @@ export const mainTrack: Point[] = Array.from({ length: 52 }).map((_, i) => {
  * Bases de jugadores (4 esquinas)
  */
 export const bases: Record<string, Point[]> = {
-  red: [
+  pink: [
     { x: 80, y: 80 },
     { x: 140, y: 80 },
     { x: 80, y: 140 },
@@ -46,7 +46,7 @@ export const bases: Record<string, Point[]> = {
     { x: 80, y: 520 },
     { x: 140, y: 520 },
   ],
-  yellow: [
+  purple: [
     { x: 460, y: 460 },
     { x: 520, y: 460 },
     { x: 460, y: 520 },

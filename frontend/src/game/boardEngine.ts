@@ -24,7 +24,7 @@ export const CENTER: Point = {
 ========================= */
 
 export const bases: Record<string, Point[]> = {
-  red: [
+  pink: [
     { x: 80, y: 80 },
     { x: 120, y: 80 },
     { x: 80, y: 120 },
@@ -42,7 +42,7 @@ export const bases: Record<string, Point[]> = {
     { x: 80, y: 520 },
     { x: 120, y: 520 },
   ],
-  yellow: [
+  purple: [
     { x: 480, y: 480 },
     { x: 520, y: 480 },
     { x: 480, y: 520 },

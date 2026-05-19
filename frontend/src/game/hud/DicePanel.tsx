@@ -1,4 +1,4 @@
-export default function DicePanel({ value, onRoll }: any) {
+/*export default function DicePanel({ value, onRoll }: any) {
   return (
     <div className="p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
       <div className="text-white text-sm mb-2">Dice</div>
@@ -13,6 +13,14 @@ export default function DicePanel({ value, onRoll }: any) {
       >
         Roll
       </button>
+    </div>
+  );
+} */
+
+export default function DicePanel({ game }: any) {
+  return (
+    <div className="p-3 rounded-xl bg-white/5 text-center">
+      <div className="text-4xl">{game.dice ?? "🎲"}</div>
     </div>
   );
 }

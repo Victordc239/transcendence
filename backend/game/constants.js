@@ -1,8 +1,8 @@
 const COLORS = [
-  "red",
-  "blue",
+  "pink",
+  "purple",
   "green",
-  "yellow"
+  "blue"
 ];
 
 const GAME_STATUS = {

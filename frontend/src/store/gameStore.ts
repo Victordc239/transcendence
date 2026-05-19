@@ -38,7 +38,7 @@ export type Piece = {
 
 export type Player = {
   id: number;
-  color: "red" | "blue" | "green" | "yellow";
+  color: "pink" | "purple" | "green" | "blue";
   pieces: Piece[];
 };
 

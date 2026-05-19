@@ -523,10 +523,10 @@
 
 ./game/constants.js:
   const COLORS = [
-    "red",
-    "blue",
+    "pink",
+    "purple",
     "green",
-    "yellow"
+    "blue"
   ];
 
   const GAME_STATUS = {
@@ -909,7 +909,7 @@
       players: [
         {
           id: hostId,
-          color: "red",
+          color: "pink",
           pieces: createPieces()
         }
       ],

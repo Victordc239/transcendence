@@ -1,10 +1,13 @@
-const { createNewGame } = require('../game/gameState');
+const {
+  createNewGame
+} = require('../game/gameState');
 
 const {
   rollDice,
-  movePiece,
-  nextTurn,
-  canJoinGame
+  addPlayerToGame,
+  executeMove,
+  canJoinGame,
+  canRollDice
 } = require('../game/gameEngine');
 
 const {
@@ -17,9 +20,10 @@ const {
   getIO
 } = require('../socket');
 
-/* -----------------------------
+/* =============================
    CREATE GAME
------------------------------- */
+============================= */
+
 exports.createGame = async (req, res) => {
 
   try {
@@ -30,94 +34,8 @@ exports.createGame = async (req, res) => {
 
     await createGame(game);
 
-    const io = getIO();
-
-    io.emit("game:created", game);
-
-    res.json(game);
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-      error: 'Server error'
-    });
-  }
-};
-
-/* -----------------------------
-   GET GAME
------------------------------- */
-exports.getGame = async (req, res) => {
-
-  try {
-
-    const game = await getGameById(req.params.id);
-
-    if (!game)
-      return res.status(404).json({
-        error: 'Game not found'
-      });
-
-    res.json(game);
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-      error: 'Server error'
-    });
-  }
-};
-
-/* -----------------------------
-   JOIN GAME
------------------------------- */
-exports.joinGame = async (req, res) => {
-
-  try {
-
-    const game = await getGameById(req.params.id);
-
-    const userId = req.user.id;
-
-    if (!game)
-      return res.status(404).json({
-        error: 'Game not found'
-      });
-
-    const check = canJoinGame(game, userId);
-
-    if (!check.ok)
-      return res.status(400).json({
-        error: check.error
-      });
-
-    const colors = ["red", "blue", "green", "yellow"];
-
-    game.players.push({
-      id: userId,
-      color: colors[game.players.length],
-      pieces: [
-        { position: "base" },
-        { position: "base" },
-        { position: "base" },
-        { position: "base" }
-      ]
-    });
-
-    if (game.players.length >= 2) {
-      game.status = "playing";
-    }
-
-    await saveGame(game);
-
-    const io = getIO();
-
-    io.to(game.id).emit(
-      "game:update",
+    getIO().emit(
+      "game:created",
       game
     );
 
@@ -128,42 +46,130 @@ exports.joinGame = async (req, res) => {
     console.error(error);
 
     res.status(500).json({
-      error: 'Server error'
+      error: "Server error"
     });
   }
 };
 
-/* -----------------------------
+/* =============================
+   GET GAME
+============================= */
+
+exports.getGame = async (req, res) => {
+
+  try {
+
+    const game = await getGameById(
+      req.params.id
+    );
+
+    if (!game) {
+      return res.status(404).json({
+        error: "Game not found"
+      });
+    }
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Server error"
+    });
+  }
+};
+
+/* =============================
+   JOIN GAME
+============================= */
+
+exports.joinGame = async (req, res) => {
+
+  try {
+
+    const game = await getGameById(
+      req.params.id
+    );
+
+    if (!game) {
+      return res.status(404).json({
+        error: "Game not found"
+      });
+    }
+
+    const userId = req.user.id;
+
+    const validation = canJoinGame(
+      game,
+      userId
+    );
+
+    if (!validation.ok) {
+      return res.status(400).json({
+        error: validation.error
+      });
+    }
+
+    addPlayerToGame(game, userId);
+
+    await saveGame(game);
+
+    getIO()
+      .to(game.id)
+      .emit("game:update", game);
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Server error"
+    });
+  }
+};
+
+/* =============================
    ROLL DICE
------------------------------- */
+============================= */
+
 exports.rollDice = async (req, res) => {
 
   try {
 
-    const game = await getGameById(req.params.id);
+    const game = await getGameById(
+      req.params.id
+    );
+
+    if (!game) {
+      return res.status(404).json({
+        error: "Game not found"
+      });
+    }
 
     const userId = req.user.id;
 
-    if (!game)
-      return res.status(404).json({
-        error: 'Game not found'
-      });
+    const validation = canRollDice(
+      game,
+      userId
+    );
 
-    if (game.turn !== userId)
-      return res.status(403).json({
-        error: 'Not your turn'
+    if (!validation.ok) {
+      return res.status(400).json({
+        error: validation.error
       });
+    }
 
     game.dice = rollDice();
 
     await saveGame(game);
 
-    const io = getIO();
-
-    io.to(game.id).emit(
-      "game:update",
-      game
-    );
+    getIO()
+      .to(game.id)
+      .emit("game:update", game);
 
     res.json({
       dice: game.dice
@@ -174,62 +180,52 @@ exports.rollDice = async (req, res) => {
     console.error(error);
 
     res.status(500).json({
-      error: 'Server error'
+      error: "Server error"
     });
   }
 };
 
-/* -----------------------------
+/* =============================
    MOVE PIECE
------------------------------- */
+============================= */
+
 exports.movePiece = async (req, res) => {
 
   try {
 
-    const game = await getGameById(req.params.id);
+    const game = await getGameById(
+      req.params.id
+    );
 
-    const { pieceIndex } = req.body;
+    if (!game) {
+      return res.status(404).json({
+        error: "Game not found"
+      });
+    }
 
     const userId = req.user.id;
 
-    if (!game)
-      return res.status(404).json({
-        error: 'Game not found'
-      });
+    const {
+      pieceIndex
+    } = req.body;
 
-    if (game.turn !== userId)
-      return res.status(403).json({
-        error: 'Not your turn'
-      });
-
-    if (game.dice === null)
-      return res.status(400).json({
-        error: 'Roll dice first'
-      });
-
-    const moved = movePiece(
+    const result = executeMove(
       game,
       userId,
       pieceIndex
     );
 
-    if (!moved)
+    if (!result.ok) {
       return res.status(400).json({
-        error: 'Invalid move'
+        error: result.error
       });
-
-    nextTurn(game);
-
-    game.dice = null;
+    }
 
     await saveGame(game);
 
-    const io = getIO();
-
-    io.to(game.id).emit(
-      "game:update",
-      game
-    );
+    getIO()
+      .to(game.id)
+      .emit("game:update", game);
 
     res.json(game);
 
@@ -238,7 +234,7 @@ exports.movePiece = async (req, res) => {
     console.error(error);
 
     res.status(500).json({
-      error: 'Server error'
+      error: "Server error"
     });
   }
 };

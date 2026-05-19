@@ -1,60 +1,79 @@
+const {
+  COLORS,
+  GAME_STATUS
+} = require('./constants');
+
+const canJoinGame = require('./validators/canJoinGame');
+const canRollDice = require('./validators/canRollDice');
+const canMovePiece = require('./validators/canMovePiece');
+
+const applyMove = require('./rules/applyMove');
+const nextTurn = require('./rules/nextTurn');
+const checkCapture = require('./rules/checkCapture');
+const checkWin = require('./rules/checkWin');
+
+const createPieces = require('./utils/createPieces');
+
 function rollDice() {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-function nextTurn(game) {
-  const index = game.players.findIndex(p => p.id === game.turn);
-  const nextIndex = (index + 1) % game.players.length;
-  game.turn = game.players[nextIndex].id;
+function addPlayerToGame(game, userId) {
+
+  game.players.push({
+    id: userId,
+    color: COLORS[game.players.length],
+    pieces: createPieces()
+  });
+
+  if (game.players.length >= 2) {
+    game.status = GAME_STATUS.PLAYING;
+  }
 }
 
-/* -----------------------------
-   REGLAS DEL JUEGO (IMPORTANTE)
------------------------------- */
+function executeMove(game, playerId, pieceIndex) {
 
-function canJoinGame(game, userId) {
-  if (game.status !== "waiting")
-    return { ok: false, error: "Game already started" };
+  const validation = canMovePiece(
+    game,
+    playerId,
+    pieceIndex
+  );
 
-  if (game.players.length >= 4)
-    return { ok: false, error: "Game full" };
-
-  if (game.players.find(p => p.id === userId))
-    return { ok: false, error: "Already in game" };
-
-  return { ok: true };
-}
-
-function movePiece(game, playerId, pieceIndex) {
-  const player = game.players.find(p => p.id === playerId);
-  if (!player) return false;
-
-  const piece = player.pieces[pieceIndex];
-  if (!piece) return false;
-
-  // salir de base
-  if (piece.position === "base") {
-    if (game.dice === 5) {
-      piece.position = 0;
-      return true;
-    }
-    return false;
+  if (!validation.ok) {
+    return validation;
   }
 
-  // movimiento normal
-  piece.position += game.dice;
+  applyMove(game, playerId, pieceIndex);
 
-  // meta
-  if (piece.position >= 56) {
-    piece.position = 56;
+  checkCapture(game, playerId);
+
+  const won = checkWin(game, playerId);
+
+  if (won) {
+
+    game.status = GAME_STATUS.FINISHED;
+
+    game.winner = playerId;
+
+    return {
+      ok: true,
+      finished: true
+    };
   }
 
-  return true;
+  nextTurn(game);
+
+  game.dice = null;
+
+  return {
+    ok: true
+  };
 }
 
 module.exports = {
   rollDice,
-  nextTurn,
-  movePiece,
-  canJoinGame
+  addPlayerToGame,
+  executeMove,
+  canJoinGame,
+  canRollDice
 };

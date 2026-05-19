@@ -1,22 +1,32 @@
+const createPieces = require('./utils/createPieces');
+
+const {
+  GAME_STATUS
+} = require('./constants');
+
 function createNewGame(hostId) {
+
   return {
     id: Date.now().toString(),
+
     players: [
       {
         id: hostId,
         color: "red",
-        pieces: [
-          { position: "base" },
-          { position: "base" },
-          { position: "base" },
-          { position: "base" }
-        ]
+        pieces: createPieces()
       }
     ],
+
     turn: hostId,
+
     dice: null,
-    status: "waiting", // waiting | playing | finished
+
+    winner: null,
+
+    status: GAME_STATUS.WAITING
   };
 }
 
-module.exports = { createNewGame };
+module.exports = {
+  createNewGame
+};

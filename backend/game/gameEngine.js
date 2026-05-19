@@ -27,7 +27,10 @@ function addPlayerToGame(game, userId) {
   });
 
   if (game.players.length >= 2) {
+
     game.status = GAME_STATUS.PLAYING;
+
+    game.turn = game.players[0].id;
   }
 }
 

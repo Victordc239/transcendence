@@ -1,3 +1,6 @@
+const getAvailableMoves = require('../game/rules/getAvailableMoves');
+const nextTurn = require('../game/rules/nextTurn');
+
 const {
   createNewGame
 } = require('../game/gameState');
@@ -164,6 +167,18 @@ exports.rollDice = async (req, res) => {
     }
 
     game.dice = rollDice();
+
+    const availableMoves = getAvailableMoves(
+      game,
+      userId
+    );
+
+    if (availableMoves.length === 0) {
+
+      game.dice = null;
+
+      nextTurn(game);
+    }
 
     await saveGame(game);
 

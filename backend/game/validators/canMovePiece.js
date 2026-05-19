@@ -3,11 +3,19 @@ const getPiece = require('../utils/getPiece');
 
 const {
   BASE_POSITION,
-  FINAL_POSITION
+  FINAL_POSITION,
+  GAME_STATUS
 } = require('../constants');
 
 function canMovePiece(game, playerId, pieceIndex) {
 
+  if (game.status !== GAME_STATUS.PLAYING) {
+    return {
+      ok: false,
+      error: "Game has not started yet"
+    };
+  }
+  
   const player = getPlayer(game, playerId);
 
   if (!player) {

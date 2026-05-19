@@ -647,7 +647,18 @@
 
 
 ./game/validators/canRollDice.js:
+  const {
+    GAME_STATUS
+  } = require('../constants');
+
   function canRollDice(game, userId) {
+
+    if (game.status !== GAME_STATUS.PLAYING) {
+      return {
+        ok: false,
+        error: "Game has not started yet"
+      };
+    }
 
     if (game.turn !== userId) {
       return {
@@ -678,11 +689,19 @@
 
   const {
     BASE_POSITION,
-    FINAL_POSITION
+    FINAL_POSITION,
+    GAME_STATUS
   } = require('../constants');
 
   function canMovePiece(game, playerId, pieceIndex) {
 
+    if (game.status !== GAME_STATUS.PLAYING) {
+      return {
+        ok: false,
+        error: "Game has not started yet"
+      };
+    }
+    
     const player = getPlayer(game, playerId);
 
     if (!player) {
@@ -1022,7 +1041,10 @@
     });
 
     if (game.players.length >= 2) {
+
       game.status = GAME_STATUS.PLAYING;
+
+      game.turn = game.players[0].id;
     }
   }
 
@@ -1409,6 +1431,9 @@
 
 
 ./controllers/gameController.js:
+  const getAvailableMoves = require('../game/rules/getAvailableMoves');
+  const nextTurn = require('../game/rules/nextTurn');
+
   const {
     createNewGame
   } = require('../game/gameState');
@@ -1575,6 +1600,18 @@
       }
 
       game.dice = rollDice();
+
+      const availableMoves = getAvailableMoves(
+        game,
+        userId
+      );
+
+      if (availableMoves.length === 0) {
+
+        game.dice = null;
+
+        nextTurn(game);
+      }
 
       await saveGame(game);
 

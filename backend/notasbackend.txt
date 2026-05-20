@@ -44,7 +44,10 @@
 
   const app = express();
 
-  app.use(cors());
+  app.use(cors({
+    origin: true,
+    credentials: true
+  }));
   app.use(express.json());
 
   app.use('/auth', authRoutes);
@@ -199,6 +202,19 @@
     getGame
   } = require('../game/gameManager');
 
+  const setPlayerConnection = require(
+    '../game/rules/setPlayerConnection'
+  );
+
+  const isGameAbandoned = require(
+    '../game/rules/isGameAbandoned'
+  );
+
+  const {
+    saveGame,
+    deleteGame
+  } = require('../game/gameManager');
+
   function registerGameSocket(io, socket) {
 
     /* -----------------------------
@@ -213,6 +229,14 @@
           message: "Game not found"
         });
       }
+
+      setPlayerConnection(
+        game,
+        socket.user.id,
+        true
+      );
+
+      await saveGame(game);
 
       socket.join(gameId);
 
@@ -289,6 +313,59 @@
         "chat:message",
         chatMessage
       );
+    });
+
+    /* -----------------------------
+      PLAYER DISCONNECT
+    ------------------------------ */
+    socket.on("disconnect", async () => {
+
+      try {
+
+        const joinedGames =
+          Array.from(socket.rooms)
+            .filter(room => room !== socket.id);
+
+        for (const gameId of joinedGames) {
+
+          const game = await getGame(gameId);
+
+          if (!game) {
+            continue;
+          }
+
+          setPlayerConnection(
+            game,
+            socket.user.id,
+            false
+          );
+
+          const abandoned =
+            isGameAbandoned(game);
+
+          if (abandoned) {
+
+            await deleteGame(gameId);
+
+            console.log(
+              `Game ${gameId} deleted`
+            );
+
+            continue;
+          }
+
+          await saveGame(game);
+
+          io.to(gameId).emit(
+            "game:update",
+            game
+          );
+        }
+
+      } catch (err) {
+
+        console.error(err);
+      }
     });
 
   }
@@ -756,6 +833,28 @@
 
 
 
+./game/rules/setPlayerConnection.js:
+  function setPlayerConnection(
+    game,
+    playerId,
+    connected
+  ) {
+
+    const player = game.players.find(
+      p => p.id === playerId
+    );
+
+    if (!player) {
+      return;
+    }
+
+    player.connected = connected;
+  }
+
+  module.exports = setPlayerConnection;
+
+
+
 ./game/rules/nextTurn.js:
   function nextTurn(game) {
 
@@ -770,6 +869,18 @@
   }
 
   module.exports = nextTurn;
+
+
+
+./game/rules/isGameAbandoned.js:
+  function isGameAbandoned(game) {
+
+    return game.players.every(
+      player => !player.connected
+    );
+  }
+
+  module.exports = isGameAbandoned;
 
 
 
@@ -910,6 +1021,7 @@
         {
           id: hostId,
           color: "pink",
+          connected: true,
           pieces: createPieces()
         }
       ],
@@ -1003,10 +1115,26 @@
     );
   }
 
+  /* =============================
+    DELETE GAME
+  ============================= */
+
+  async function deleteGame(gameId) {
+
+    await pool.query(
+      `
+      DELETE FROM games
+      WHERE id = $1
+      `,
+      [gameId]
+    );
+  }
+
   module.exports = {
     getGame,
     createGame,
-    saveGame
+    saveGame,
+    deleteGame
   };
 
 
@@ -1037,6 +1165,7 @@
     game.players.push({
       id: userId,
       color: COLORS[game.players.length],
+      connected: true,
       pieces: createPieces()
     });
 
@@ -1094,7 +1223,6 @@
     canJoinGame,
     canRollDice
   };
-
 
 
 ./controllers/authController.js:

@@ -23,6 +23,7 @@ function addPlayerToGame(game, userId) {
   game.players.push({
     id: userId,
     color: COLORS[game.players.length],
+    connected: true,
     pieces: createPieces()
   });
 

@@ -2,6 +2,19 @@ const {
   getGame
 } = require('../game/gameManager');
 
+const setPlayerConnection = require(
+  '../game/rules/setPlayerConnection'
+);
+
+const isGameAbandoned = require(
+  '../game/rules/isGameAbandoned'
+);
+
+const {
+  saveGame,
+  deleteGame
+} = require('../game/gameManager');
+
 function registerGameSocket(io, socket) {
 
   /* -----------------------------
@@ -16,6 +29,14 @@ function registerGameSocket(io, socket) {
         message: "Game not found"
       });
     }
+
+    setPlayerConnection(
+      game,
+      socket.user.id,
+      true
+    );
+
+    await saveGame(game);
 
     socket.join(gameId);
 
@@ -92,6 +113,59 @@ function registerGameSocket(io, socket) {
       "chat:message",
       chatMessage
     );
+  });
+
+  /* -----------------------------
+    PLAYER DISCONNECT
+  ------------------------------ */
+  socket.on("disconnect", async () => {
+
+    try {
+
+      const joinedGames =
+        Array.from(socket.rooms)
+          .filter(room => room !== socket.id);
+
+      for (const gameId of joinedGames) {
+
+        const game = await getGame(gameId);
+
+        if (!game) {
+          continue;
+        }
+
+        setPlayerConnection(
+          game,
+          socket.user.id,
+          false
+        );
+
+        const abandoned =
+          isGameAbandoned(game);
+
+        if (abandoned) {
+
+          await deleteGame(gameId);
+
+          console.log(
+            `Game ${gameId} deleted`
+          );
+
+          continue;
+        }
+
+        await saveGame(game);
+
+        io.to(gameId).emit(
+          "game:update",
+          game
+        );
+      }
+
+    } catch (err) {
+
+      console.error(err);
+    }
   });
 
 }

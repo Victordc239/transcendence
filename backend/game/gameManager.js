@@ -70,8 +70,24 @@ async function saveGame(game) {
   );
 }
 
+/* =============================
+  DELETE GAME
+============================= */
+
+async function deleteGame(gameId) {
+
+  await pool.query(
+    `
+    DELETE FROM games
+    WHERE id = $1
+    `,
+    [gameId]
+  );
+}
+
 module.exports = {
   getGame,
   createGame,
-  saveGame
+  saveGame,
+  deleteGame
 };

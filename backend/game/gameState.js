@@ -13,6 +13,7 @@ function createNewGame(hostId) {
       {
         id: hostId,
         color: "pink",
+        connected: true,
         pieces: createPieces()
       }
     ],

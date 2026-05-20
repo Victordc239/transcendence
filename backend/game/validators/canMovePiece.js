@@ -1,5 +1,11 @@
 const getPlayer = require('../utils/getPlayer');
 const getPiece = require('../utils/getPiece');
+const getGlobalPosition = require('../utils/getGlobalPosition');
+const getBlockades = require('../rules/getBlockades');
+
+const {
+  BOARD_SIZE
+} = require('../constants');
 
 const {
   BASE_POSITION,
@@ -67,6 +73,42 @@ function canMovePiece(game, playerId, pieceIndex) {
       ok: false,
       error: "Move exceeds final position"
     };
+  }
+
+  /*
+    No puede atravesar bloqueos
+  */
+
+  if (
+    piece.position !== BASE_POSITION &&
+    piece.position < FINAL_STRETCH_START
+  ) {
+
+    const blockades = getBlockades(game);
+
+    const currentGlobal =
+      getGlobalPosition(
+        player.color,
+        piece.position
+      );
+
+    for (let step = 1; step <= game.dice; step++) {
+
+      const nextGlobal =
+        (currentGlobal + step) % BOARD_SIZE;
+
+      const blocked = blockades.find(
+        blockade =>
+          blockade.position === nextGlobal
+      );
+
+      if (blocked) {
+        return {
+          ok: false,
+          error: "Blockade blocks the way"
+        };
+      }
+    }
   }
 
   return {

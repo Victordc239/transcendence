@@ -15,7 +15,7 @@ function canMovePiece(game, playerId, pieceIndex) {
       error: "Game has not started yet"
     };
   }
-  
+
   const player = getPlayer(game, playerId);
 
   if (!player) {
@@ -41,6 +41,10 @@ function canMovePiece(game, playerId, pieceIndex) {
     };
   }
 
+  /*
+    Sacar ficha
+  */
+
   if (
     piece.position === BASE_POSITION &&
     game.dice !== 5
@@ -50,6 +54,10 @@ function canMovePiece(game, playerId, pieceIndex) {
       error: "Need 5 to leave base"
     };
   }
+
+  /*
+    No puede pasar meta
+  */
 
   if (
     piece.position !== BASE_POSITION &&

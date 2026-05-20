@@ -606,20 +606,91 @@
     "blue"
   ];
 
+  /* =================================
+    GAME STATUS
+  ================================= */
+
   const GAME_STATUS = {
     WAITING: "waiting",
     PLAYING: "playing",
     FINISHED: "finished"
   };
 
-  const BASE_POSITION = "base";
+  /* =================================
+    BOARD
+  ================================= */
 
-  const FINAL_POSITION = 56;
+  /*
+    El tablero principal tiene 68 casillas.
+  */
+
+  const BOARD_SIZE = 68;
+
+  /*
+    Cada color empieza en una posición distinta.
+  */
+
+  const START_POSITIONS = {
+    pink: 0,
+    purple: 17,
+    green: 34,
+    blue: 51
+  };
+
+  /*
+    Entrada al pasillo final.
+  */
+
+  const FINAL_ENTRY = {
+    pink: 67,
+    purple: 16,
+    green: 33,
+    blue: 50
+  };
+
+  /*
+    Casillas seguras clásicas.
+  */
+
+  const SAFE_CELLS = [
+    0,
+    5,
+    12,
+    17,
+    22,
+    29,
+    34,
+    39,
+    46,
+    51,
+    56,
+    63
+  ];
+
+  /*
+    Posiciones especiales.
+  */
+
+  const BASE_POSITION = -1;
+
+  /*
+    Pasillo final:
+    68 -> 74
+  */
+
+  const FINAL_STRETCH_START = 68;
+
+  const FINAL_POSITION = 74;
 
   module.exports = {
     COLORS,
     GAME_STATUS,
+    BOARD_SIZE,
+    START_POSITIONS,
+    FINAL_ENTRY,
+    SAFE_CELLS,
     BASE_POSITION,
+    FINAL_STRETCH_START,
     FINAL_POSITION
   };
 
@@ -631,15 +702,47 @@
   } = require('../constants');
 
   function createPieces() {
+
     return [
-      { position: BASE_POSITION },
-      { position: BASE_POSITION },
-      { position: BASE_POSITION },
-      { position: BASE_POSITION }
+      {
+        position: BASE_POSITION
+      },
+      {
+        position: BASE_POSITION
+      },
+      {
+        position: BASE_POSITION
+      },
+      {
+        position: BASE_POSITION
+      }
     ];
   }
 
   module.exports = createPieces;
+
+
+
+./game/utils/getGlobalPosition.js:
+  const {
+    START_POSITIONS,
+    BOARD_SIZE
+  } = require('../constants');
+
+  /*
+    Convierte posición relativa
+    a posición global del tablero.
+  */
+
+  function getGlobalPosition(color, relativePosition) {
+
+    return (
+      START_POSITIONS[color] +
+      relativePosition
+    ) % BOARD_SIZE;
+  }
+
+  module.exports = getGlobalPosition;
 
 
 
@@ -778,7 +881,7 @@
         error: "Game has not started yet"
       };
     }
-    
+
     const player = getPlayer(game, playerId);
 
     if (!player) {
@@ -804,6 +907,10 @@
       };
     }
 
+    /*
+      Sacar ficha
+    */
+
     if (
       piece.position === BASE_POSITION &&
       game.dice !== 5
@@ -813,6 +920,10 @@
         error: "Need 5 to leave base"
       };
     }
+
+    /*
+      No puede pasar meta
+    */
 
     if (
       piece.position !== BASE_POSITION &&
@@ -912,6 +1023,16 @@
 
 
 ./game/rules/checkCapture.js:
+  const {
+    SAFE_CELLS,
+    BASE_POSITION,
+    FINAL_STRETCH_START
+  } = require('../constants');
+
+  const getGlobalPosition = require(
+    '../utils/getGlobalPosition'
+  );
+
   function checkCapture(game, currentPlayerId) {
 
     const currentPlayer = game.players.find(
@@ -924,10 +1045,33 @@
 
     for (const piece of currentPlayer.pieces) {
 
-      if (
-        piece.position === "base" ||
-        piece.position === 56
-      ) {
+      /*
+        Ignorar base
+      */
+
+      if (piece.position === BASE_POSITION) {
+        continue;
+      }
+
+      /*
+        Ignorar pasillo final
+      */
+
+      if (piece.position >= FINAL_STRETCH_START) {
+        continue;
+      }
+
+      const currentGlobal =
+        getGlobalPosition(
+          currentPlayer.color,
+          piece.position
+        );
+
+      /*
+        Casilla segura
+      */
+
+      if (SAFE_CELLS.includes(currentGlobal)) {
         continue;
       }
 
@@ -940,9 +1084,27 @@
         for (const enemyPiece of enemy.pieces) {
 
           if (
-            enemyPiece.position === piece.position
+            enemyPiece.position === BASE_POSITION
           ) {
-            enemyPiece.position = "base";
+            continue;
+          }
+
+          if (
+            enemyPiece.position >= FINAL_STRETCH_START
+          ) {
+            continue;
+          }
+
+          const enemyGlobal =
+            getGlobalPosition(
+              enemy.color,
+              enemyPiece.position
+            );
+
+          if (enemyGlobal === currentGlobal) {
+
+            enemyPiece.position =
+              BASE_POSITION;
           }
         }
       }
@@ -954,6 +1116,10 @@
 
 
 ./game/rules/checkWin.js:
+  const {
+    FINAL_POSITION
+  } = require('../constants');
+
   function checkWin(game, playerId) {
 
     const player = game.players.find(
@@ -965,7 +1131,8 @@
     }
 
     return player.pieces.every(
-      piece => piece.position === 56
+      piece =>
+        piece.position === FINAL_POSITION
     );
   }
 
@@ -979,6 +1146,8 @@
 
   const {
     BASE_POSITION,
+    FINAL_ENTRY,
+    FINAL_STRETCH_START,
     FINAL_POSITION
   } = require('../constants');
 
@@ -988,16 +1157,48 @@
 
     const piece = getPiece(player, pieceIndex);
 
+    /*
+      Sale de casa
+    */
+
     if (piece.position === BASE_POSITION) {
+
       piece.position = 0;
+
       return;
     }
 
-    piece.position += game.dice;
+    let newPosition =
+      piece.position + game.dice;
 
-    if (piece.position > FINAL_POSITION) {
-      piece.position = FINAL_POSITION;
+    /*
+      Entrar al pasillo final
+    */
+
+    if (
+      piece.position <= FINAL_ENTRY[player.color] &&
+      newPosition > FINAL_ENTRY[player.color]
+    ) {
+
+      const overflow =
+        newPosition -
+        FINAL_ENTRY[player.color] -
+        1;
+
+      newPosition =
+        FINAL_STRETCH_START +
+        overflow;
     }
+
+    /*
+      Limitar meta
+    */
+
+    if (newPosition > FINAL_POSITION) {
+      newPosition = FINAL_POSITION;
+    }
+
+    piece.position = newPosition;
   }
 
   module.exports = applyMove;
@@ -1157,6 +1358,7 @@
   const createPieces = require('./utils/createPieces');
 
   function rollDice() {
+
     return Math.floor(Math.random() * 6) + 1;
   }
 
@@ -1177,7 +1379,11 @@
     }
   }
 
-  function executeMove(game, playerId, pieceIndex) {
+  function executeMove(
+    game,
+    playerId,
+    pieceIndex
+  ) {
 
     const validation = canMovePiece(
       game,
@@ -1189,11 +1395,18 @@
       return validation;
     }
 
-    applyMove(game, playerId, pieceIndex);
+    applyMove(
+      game,
+      playerId,
+      pieceIndex
+    );
 
     checkCapture(game, playerId);
 
-    const won = checkWin(game, playerId);
+    const won = checkWin(
+      game,
+      playerId
+    );
 
     if (won) {
 
@@ -1207,7 +1420,13 @@
       };
     }
 
-    nextTurn(game);
+    /*
+      Turno extra con 6
+    */
+
+    if (game.dice !== 6) {
+      nextTurn(game);
+    }
 
     game.dice = null;
 

@@ -1,3 +1,7 @@
+const {
+  FINAL_POSITION
+} = require('../constants');
+
 function checkWin(game, playerId) {
 
   const player = game.players.find(
@@ -9,7 +13,8 @@ function checkWin(game, playerId) {
   }
 
   return player.pieces.every(
-    piece => piece.position === 56
+    piece =>
+      piece.position === FINAL_POSITION
   );
 }
 

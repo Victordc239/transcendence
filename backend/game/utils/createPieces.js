@@ -3,11 +3,20 @@ const {
 } = require('../constants');
 
 function createPieces() {
+
   return [
-    { position: BASE_POSITION },
-    { position: BASE_POSITION },
-    { position: BASE_POSITION },
-    { position: BASE_POSITION }
+    {
+      position: BASE_POSITION
+    },
+    {
+      position: BASE_POSITION
+    },
+    {
+      position: BASE_POSITION
+    },
+    {
+      position: BASE_POSITION
+    }
   ];
 }
 

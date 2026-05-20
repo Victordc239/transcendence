@@ -15,6 +15,7 @@ const checkWin = require('./rules/checkWin');
 const createPieces = require('./utils/createPieces');
 
 function rollDice() {
+
   return Math.floor(Math.random() * 6) + 1;
 }
 
@@ -35,7 +36,11 @@ function addPlayerToGame(game, userId) {
   }
 }
 
-function executeMove(game, playerId, pieceIndex) {
+function executeMove(
+  game,
+  playerId,
+  pieceIndex
+) {
 
   const validation = canMovePiece(
     game,
@@ -47,11 +52,18 @@ function executeMove(game, playerId, pieceIndex) {
     return validation;
   }
 
-  applyMove(game, playerId, pieceIndex);
+  applyMove(
+    game,
+    playerId,
+    pieceIndex
+  );
 
   checkCapture(game, playerId);
 
-  const won = checkWin(game, playerId);
+  const won = checkWin(
+    game,
+    playerId
+  );
 
   if (won) {
 
@@ -65,7 +77,13 @@ function executeMove(game, playerId, pieceIndex) {
     };
   }
 
-  nextTurn(game);
+  /*
+    Turno extra con 6
+  */
+
+  if (game.dice !== 6) {
+    nextTurn(game);
+  }
 
   game.dice = null;
 

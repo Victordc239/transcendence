@@ -6,28 +6,21 @@ const COLORS = [
 ];
 
 /* =================================
-   GAME STATUS
+  GAME STATUS
 ================================= */
 
 const GAME_STATUS = {
   WAITING: "waiting",
   PLAYING: "playing",
+  PAUSED: "paused",
   FINISHED: "finished"
 };
 
 /* =================================
-   BOARD
+  BOARD
 ================================= */
 
-/*
-  El tablero principal tiene 68 casillas.
-*/
-
 const BOARD_SIZE = 68;
-
-/*
-  Cada color empieza en una posición distinta.
-*/
 
 const START_POSITIONS = {
   pink: 0,
@@ -36,20 +29,12 @@ const START_POSITIONS = {
   blue: 51
 };
 
-/*
-  Entrada al pasillo final.
-*/
-
 const FINAL_ENTRY = {
   pink: 67,
   purple: 16,
   green: 33,
   blue: 50
 };
-
-/*
-  Casillas seguras clásicas.
-*/
 
 const SAFE_CELLS = [
   0,
@@ -66,20 +51,23 @@ const SAFE_CELLS = [
   63
 ];
 
-/*
-  Posiciones especiales.
-*/
-
 const BASE_POSITION = -1;
-
-/*
-  Pasillo final:
-  68 -> 74
-*/
 
 const FINAL_STRETCH_START = 68;
 
 const FINAL_POSITION = 74;
+
+/* =================================
+  RECONNECTION
+================================= */
+
+const DISCONNECT_TIMEOUT = 60000;
+
+/* =================================
+  TURN TIMER
+================================= */
+
+const TURN_TIMEOUT = 30000;
 
 module.exports = {
   COLORS,
@@ -90,5 +78,7 @@ module.exports = {
   SAFE_CELLS,
   BASE_POSITION,
   FINAL_STRETCH_START,
-  FINAL_POSITION
+  FINAL_POSITION,
+  DISCONNECT_TIMEOUT,
+  TURN_TIMEOUT
 };

@@ -13,6 +13,15 @@ function setPlayerConnection(
   }
 
   player.connected = connected;
+
+  if (connected) {
+
+    player.disconnectedAt = null;
+
+    return;
+  }
+
+  player.disconnectedAt = Date.now();
 }
 
 module.exports = setPlayerConnection;

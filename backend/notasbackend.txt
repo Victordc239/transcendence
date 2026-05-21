@@ -1,2320 +1,2382 @@
-./socket.js:
-  let io = null;
 
-  /* =============================
-    SET IO INSTANCE
-  ============================= */
+==============================
+FILE: ./.dockerignore
+==============================
+node_modules
+npm-debug.log
+.env
+==============================
+FILE: ./Dockerfile
+==============================
+FROM node:18
 
-  function setIO(serverIO) {
-    io = serverIO;
-  }
+WORKDIR /app
 
-  /* =============================
-    GET IO INSTANCE
-  ============================= */
+COPY package*.json ./
 
-  function getIO() {
+RUN npm install
 
-    if (!io) {
-      throw new Error("Socket.io not initialized");
+COPY . .
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
+==============================
+FILE: ./controllers/authController.js
+==============================
+const pool = require('../db');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+exports.register = async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Faltan datos' });
     }
 
-    return io;
+    if (!EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ error: 'Email inválido' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+    }
+
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE email = $1 OR username = $2',
+      [email.toLowerCase(), username]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'El usuario o email ya existe' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = await pool.query(
+      `INSERT INTO users (username, email, password)
+       VALUES ($1, $2, $3)
+       RETURNING id, username, email, avatar_url, created_at`,
+      [username, email.toLowerCase(), hashedPassword]
+    );
+
+    return res.status(201).json({
+      message: 'Usuario creado',
+      user: newUser.rows[0],
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error en el servidor' });
   }
+};
 
-  module.exports = {
-    setIO,
-    getIO
-  };
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Faltan datos' });
+    }
 
+    const result = await pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email.toLowerCase()]
+    );
 
-./server.js:
-  const express = require('express');
-  const cors = require('cors');
-  const http = require('http');
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: 'Credenciales inválidas' });
+    }
 
-  const initDB = require('./initDb');
-  const initSockets = require('./sockets');
+    const user = result.rows[0];
+    const validPassword = await bcrypt.compare(password, user.password);
 
-  const authRoutes = require('./routes/authRoutes');
-  const userRoutes = require('./routes/userRoutes');
-  const friendsRoutes = require('./routes/friendsRoutes');
-  const gameRoutes = require('./routes/gameRoutes');
+    if (!validPassword) {
+      return res.status(400).json({ error: 'Credenciales inválidas' });
+    }
 
-  const app = express();
+    const token = jwt.sign(
+      { id: user.id, email: user.email, username: user.username },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
 
-  app.use(cors({
-    origin: true,
-    credentials: true
-  }));
-  app.use(express.json());
+    return res.json({
+      message: 'Login correcto',
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatar_url: user.avatar_url,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error en el servidor' });
+  }
+};
+==============================
+FILE: ./controllers/friendsController.js
+==============================
+const pool = require('../db');
 
-  app.use('/auth', authRoutes);
-  app.use('/users', userRoutes);
-  app.use('/friends', friendsRoutes);
-  app.use('/games', gameRoutes);
+exports.sendRequest = async (req, res) => {
+  try {
+    const requesterId = req.user.id;
+    const addresseeId = parseInt(req.params.id, 10);
 
-  const httpServer = http.createServer(app);
+    if (Number.isNaN(addresseeId)) {
+      return res.status(400).json({ error: 'ID inválido' });
+    }
 
-  initSockets(httpServer);
+    if (requesterId === addresseeId) {
+      return res.status(400).json({ error: 'No puedes enviarte solicitud a ti mismo' });
+    }
 
-  const PORT = process.env.PORT || 3000;
+    const targetUser = await pool.query(
+      'SELECT id FROM users WHERE id = $1',
+      [addresseeId]
+    );
 
-  initDB()
-    .then(() => {
-      httpServer.listen(PORT, () => {
-        console.log(`Backend running on port ${PORT}`);
+    if (targetUser.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const existing = await pool.query(
+      `SELECT * FROM friendships
+       WHERE (requester_id = $1 AND addressee_id = $2)
+          OR (requester_id = $2 AND addressee_id = $1)`,
+      [requesterId, addresseeId]
+    );
+
+    if (existing.rows.length > 0) {
+      const relation = existing.rows[0];
+
+      if (relation.status === 'pending') {
+        return res.status(400).json({ error: 'Ya existe una solicitud pendiente' });
+      }
+
+      if (relation.status === 'accepted') {
+        return res.status(400).json({ error: 'Ya sois amigos' });
+      }
+    }
+
+    const result = await pool.query(
+      `INSERT INTO friendships (requester_id, addressee_id, status)
+       VALUES ($1, $2, 'pending')
+       RETURNING id, requester_id, addressee_id, status, created_at`,
+      [requesterId, addresseeId]
+    );
+
+    return res.status(201).json({
+      message: 'Solicitud enviada',
+      request: result.rows[0],
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error en el servidor' });
+  }
+};
+
+exports.acceptRequest = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const requesterId = parseInt(req.params.id, 10);
+
+    if (Number.isNaN(requesterId)) {
+      return res.status(400).json({ error: 'ID inválido' });
+    }
+
+    const request = await pool.query(
+      `SELECT * FROM friendships
+       WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'`,
+      [requesterId, userId]
+    );
+
+    if (request.rows.length === 0) {
+      return res.status(404).json({ error: 'Solicitud no encontrada' });
+    }
+
+    const updated = await pool.query(
+      `UPDATE friendships
+       SET status = 'accepted', accepted_at = CURRENT_TIMESTAMP
+       WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'
+       RETURNING id, requester_id, addressee_id, status, created_at, accepted_at`,
+      [requesterId, userId]
+    );
+
+    return res.json({
+      message: 'Solicitud aceptada',
+      friendship: updated.rows[0],
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error en el servidor' });
+  }
+};
+
+exports.deleteRelation = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const otherUserId = parseInt(req.params.id, 10);
+
+    if (Number.isNaN(otherUserId)) {
+      return res.status(400).json({ error: 'ID inválido' });
+    }
+
+    const deleted = await pool.query(
+      `DELETE FROM friendships
+       WHERE (requester_id = $1 AND addressee_id = $2)
+          OR (requester_id = $2 AND addressee_id = $1)
+       RETURNING id`,
+      [userId, otherUserId]
+    );
+
+    if (deleted.rows.length === 0) {
+      return res.status(404).json({ error: 'Relación no encontrada' });
+    }
+
+    return res.json({ message: 'Relación eliminada' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error en el servidor' });
+  }
+};
+
+exports.getFriends = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `
+      SELECT
+        u.id,
+        u.username,
+        u.email,
+        u.avatar_url,
+        f.accepted_at
+      FROM friendships f
+      JOIN users u
+        ON (u.id = CASE
+          WHEN f.requester_id = $1 THEN f.addressee_id
+          ELSE f.requester_id
+        END)
+      WHERE (f.requester_id = $1 OR f.addressee_id = $1)
+        AND f.status = 'accepted'
+      ORDER BY f.accepted_at DESC
+      `,
+      [userId]
+    );
+
+    return res.json({ friends: result.rows });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error en el servidor' });
+  }
+};
+
+exports.getPendingRequests = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `
+      SELECT
+        f.id,
+        u.id AS requester_id,
+        u.username,
+        u.email,
+        u.avatar_url,
+        f.created_at
+      FROM friendships f
+      JOIN users u ON u.id = f.requester_id
+      WHERE f.addressee_id = $1
+        AND f.status = 'pending'
+      ORDER BY f.created_at DESC
+      `,
+      [userId]
+    );
+
+    return res.json({ requests: result.rows });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error en el servidor' });
+  }
+};
+
+const {
+  isUserOnline
+} = require('../sockets/presence');
+
+exports.getOnlineFriends = async (req, res) => {
+  try {
+
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `
+      SELECT
+        u.id,
+        u.username,
+        u.avatar_url
+      FROM friendships f
+      JOIN users u
+        ON (u.id = CASE
+          WHEN f.requester_id = $1 THEN f.addressee_id
+          ELSE f.requester_id
+        END)
+      WHERE (f.requester_id = $1 OR f.addressee_id = $1)
+        AND f.status = 'accepted'
+      `,
+      [userId]
+    );
+
+    const onlineFriends = result.rows.map(friend => ({
+      ...friend,
+      online: isUserOnline(friend.id)
+    }));
+
+    return res.json({
+      friends: onlineFriends
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: 'Error en el servidor'
+    });
+  }
+};
+==============================
+FILE: ./controllers/userController.js
+==============================
+const pool = require('../db');
+
+exports.getMe = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `SELECT id, username, email, avatar_url, created_at, updated_at
+       FROM users
+       WHERE id = $1`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error en el servidor' });
+  }
+};
+
+exports.updateMe = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { username, avatar_url } = req.body;
+
+    if (!username && !avatar_url) {
+      return res.status(400).json({ error: 'No hay datos para actualizar' });
+    }
+
+    if (username) {
+      const usernameExists = await pool.query(
+        'SELECT id FROM users WHERE username = $1 AND id != $2',
+        [username, userId]
+      );
+
+      if (usernameExists.rows.length > 0) {
+        return res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
+      }
+    }
+
+    const result = await pool.query(
+      `UPDATE users
+       SET
+         username = COALESCE($1, username),
+         avatar_url = COALESCE($2, avatar_url),
+         updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3
+       RETURNING id, username, email, avatar_url, created_at, updated_at`,
+      [username || null, avatar_url || null, userId]
+    );
+
+    return res.json({
+      message: 'Perfil actualizado',
+      user: result.rows[0],
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error en el servidor' });
+  }
+};
+
+exports.getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `SELECT id, username, avatar_url, created_at
+       FROM users
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error en el servidor' });
+  }
+};
+==============================
+FILE: ./controllers/gameController.js
+==============================
+const getAvailableMoves = require('../game/rules/getAvailableMoves');
+const nextTurn = require('../game/rules/nextTurn');
+
+const {
+  createNewGame
+} = require('../game/gameState');
+
+const {
+  rollDice,
+  addPlayerToGame,
+  executeMove,
+  canJoinGame,
+  canRollDice
+} = require('../game/gameEngine');
+
+const {
+  getGame: getGameById,
+  createGame,
+  saveGame
+} = require('../game/gameManager');
+
+const {
+  getIO
+} = require('../socket');
+
+/* =============================
+   CREATE GAME
+============================= */
+
+exports.createGame = async (req, res) => {
+
+  try {
+
+    const userId = req.user.id;
+
+    const game = createNewGame(userId);
+
+    await createGame(game);
+
+    getIO().emit(
+      "game:created",
+      game
+    );
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Server error"
+    });
+  }
+};
+
+/* =============================
+   GET GAME
+============================= */
+
+exports.getGame = async (req, res) => {
+
+  try {
+
+    const game = await getGameById(
+      req.params.id
+    );
+
+    if (!game) {
+      return res.status(404).json({
+        error: "Game not found"
       });
-    })
-    .catch((err) => {
-      console.error('DB init failed:', err);
-      process.exit(1);
+    }
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Server error"
+    });
+  }
+};
+
+/* =============================
+   JOIN GAME
+============================= */
+
+exports.joinGame = async (req, res) => {
+
+  try {
+
+    const game = await getGameById(
+      req.params.id
+    );
+
+    if (!game) {
+      return res.status(404).json({
+        error: "Game not found"
+      });
+    }
+
+    const userId = req.user.id;
+
+    const validation = canJoinGame(
+      game,
+      userId
+    );
+
+    if (!validation.ok) {
+      return res.status(400).json({
+        error: validation.error
+      });
+    }
+
+    addPlayerToGame(game, userId);
+
+    await saveGame(game);
+
+    getIO()
+      .to(game.id)
+      .emit("game:update", game);
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Server error"
+    });
+  }
+};
+
+/* =============================
+   ROLL DICE
+============================= */
+
+exports.rollDice = async (req, res) => {
+
+  try {
+
+    const game = await getGameById(
+      req.params.id
+    );
+
+    if (!game) {
+      return res.status(404).json({
+        error: "Game not found"
+      });
+    }
+
+    const userId = req.user.id;
+
+    const validation = canRollDice(
+      game,
+      userId
+    );
+
+    if (!validation.ok) {
+      return res.status(400).json({
+        error: validation.error
+      });
+    }
+
+    game.dice = rollDice();
+
+    const availableMoves = getAvailableMoves(
+      game,
+      userId
+    );
+
+    if (availableMoves.length === 0) {
+
+      game.dice = null;
+
+      nextTurn(game);
+    }
+
+    await saveGame(game);
+
+    getIO()
+      .to(game.id)
+      .emit("game:update", game);
+
+    res.json({
+      dice: game.dice
     });
 
-./initDb.js:
-  const pool = require('./db');
+  } catch (error) {
 
-  async function initDB() {
-    try {
+    console.error(error);
 
-      /* =============================
-        USERS
-      ============================== */
+    res.status(500).json({
+      error: "Server error"
+    });
+  }
+};
 
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS users (
-          id SERIAL PRIMARY KEY,
-          username VARCHAR(50) UNIQUE NOT NULL,
-          email VARCHAR(255) UNIQUE NOT NULL,
-          password TEXT NOT NULL,
-          avatar_url TEXT DEFAULT '/uploads/default-avatar.png',
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
+/* =============================
+   MOVE PIECE
+============================= */
 
-      /* =============================
-        FRIENDSHIPS
-      ============================== */
+exports.movePiece = async (req, res) => {
 
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS friendships (
-          id SERIAL PRIMARY KEY,
-          requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          addressee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          status VARCHAR(20) NOT NULL DEFAULT 'pending',
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          accepted_at TIMESTAMP NULL,
-          CHECK (requester_id <> addressee_id),
-          UNIQUE (requester_id, addressee_id)
-        );
-      `);
+  try {
 
-      /* =============================
-        GAMES
-      ============================== */
+    const game = await getGameById(
+      req.params.id
+    );
 
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS games (
-          id VARCHAR(255) PRIMARY KEY,
-          host_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          state JSONB NOT NULL,
-          status VARCHAR(20) NOT NULL DEFAULT 'waiting',
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
+    if (!game) {
+      return res.status(404).json({
+        error: "Game not found"
+      });
+    }
 
-      console.log('✅ Tablas listas');
+    const userId = req.user.id;
 
-    } catch (err) {
-      console.error('❌ Error creando tablas:', err);
-      throw err;
+    const {
+      pieceIndex
+    } = req.body;
+
+    const result = executeMove(
+      game,
+      userId,
+      pieceIndex
+    );
+
+    if (!result.ok) {
+      return res.status(400).json({
+        error: result.error
+      });
+    }
+
+    await saveGame(game);
+
+    getIO()
+      .to(game.id)
+      .emit("game:update", game);
+
+    res.json(game);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Server error"
+    });
+  }
+};
+==============================
+FILE: ./db.js
+==============================
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'user',
+  password: process.env.DB_PASSWORD || 'password',
+  database: process.env.DB_NAME || 'transcendence',
+  port: Number(process.env.DB_PORT || 5432),
+});
+
+module.exports = pool;
+==============================
+FILE: ./game/utils/createPieces.js
+==============================
+const {
+  BASE_POSITION
+} = require('../constants');
+
+function createPieces() {
+
+  return [
+    {
+      position: BASE_POSITION
+    },
+    {
+      position: BASE_POSITION
+    },
+    {
+      position: BASE_POSITION
+    },
+    {
+      position: BASE_POSITION
+    }
+  ];
+}
+
+module.exports = createPieces;
+==============================
+FILE: ./game/utils/getPlayer.js
+==============================
+function getPlayer(game, playerId) {
+  return game.players.find(
+    player => player.id === playerId
+  );
+}
+
+module.exports = getPlayer;
+==============================
+FILE: ./game/utils/getPiece.js
+==============================
+function getPiece(player, pieceIndex) {
+  return player.pieces[pieceIndex];
+}
+
+module.exports = getPiece;
+==============================
+FILE: ./game/utils/getGlobalPosition.js
+==============================
+const {
+  START_POSITIONS,
+  BOARD_SIZE
+} = require('../constants');
+
+/*
+  Convierte posición relativa
+  a posición global del tablero.
+*/
+
+function getGlobalPosition(color, relativePosition) {
+
+  return (
+    START_POSITIONS[color] +
+    relativePosition
+  ) % BOARD_SIZE;
+}
+
+module.exports = getGlobalPosition;
+==============================
+FILE: ./game/validators/canJoinGame.js
+==============================
+const {
+  GAME_STATUS
+} = require('../constants');
+
+function canJoinGame(game, userId) {
+
+  if (game.status !== GAME_STATUS.WAITING) {
+    return {
+      ok: false,
+      error: "Game already started"
+    };
+  }
+
+  if (game.players.length >= 4) {
+    return {
+      ok: false,
+      error: "Game full"
+    };
+  }
+
+  const alreadyInGame = game.players.find(
+    player => player.id === userId
+  );
+
+  if (alreadyInGame) {
+    return {
+      ok: false,
+      error: "Already in game"
+    };
+  }
+
+  return {
+    ok: true
+  };
+}
+
+module.exports = canJoinGame;
+==============================
+FILE: ./game/validators/validateTurn.js
+==============================
+function validateTurn(game, userId) {
+
+  if (game.turn !== userId) {
+    return {
+      ok: false,
+      error: "Not your turn"
+    };
+  }
+
+  return {
+    ok: true
+  };
+}
+
+module.exports = validateTurn;
+==============================
+FILE: ./game/validators/canRollDice.js
+==============================
+const {
+  GAME_STATUS
+} = require('../constants');
+
+function canRollDice(game, userId) {
+
+  if (game.status !== GAME_STATUS.PLAYING) {
+    return {
+      ok: false,
+      error: "Game has not started yet"
+    };
+  }
+
+  if (game.turn !== userId) {
+    return {
+      ok: false,
+      error: "Not your turn"
+    };
+  }
+
+  if (game.dice !== null) {
+    return {
+      ok: false,
+      error: "Dice already rolled"
+    };
+  }
+
+  return {
+    ok: true
+  };
+}
+
+module.exports = canRollDice;
+==============================
+FILE: ./game/validators/canMovePiece.js
+==============================
+const getPlayer = require('../utils/getPlayer');
+const getPiece = require('../utils/getPiece');
+const getGlobalPosition = require('../utils/getGlobalPosition');
+const getBlockades = require('../rules/getBlockades');
+
+const {
+  BOARD_SIZE,
+  BASE_POSITION,
+  FINAL_POSITION,
+  FINAL_STRETCH_START,
+  GAME_STATUS
+} = require('../constants');
+
+function canMovePiece(game, playerId, pieceIndex) {
+
+  /* =============================
+    GAME STARTED
+  ============================= */
+
+  if (game.status !== GAME_STATUS.PLAYING) {
+    return {
+      ok: false,
+      error: "Game has not started yet"
+    };
+  }
+
+  /* =============================
+    TURN VALIDATION
+  ============================= */
+
+  if (game.turn !== playerId) {
+    return {
+      ok: false,
+      error: "Not your turn"
+    };
+  }
+
+  const player = getPlayer(game, playerId);
+
+  if (!player) {
+    return {
+      ok: false,
+      error: "Player not found"
+    };
+  }
+
+  const piece = getPiece(player, pieceIndex);
+
+  if (!piece) {
+    return {
+      ok: false,
+      error: "Piece not found"
+    };
+  }
+
+  /* =============================
+    DICE ROLLED
+  ============================= */
+
+  if (game.dice === null) {
+    return {
+      ok: false,
+      error: "Roll dice first"
+    };
+  }
+
+  /* =============================
+    NEED 5 TO LEAVE BASE
+  ============================= */
+
+  if (
+    piece.position === BASE_POSITION &&
+    game.dice !== 5
+  ) {
+    return {
+      ok: false,
+      error: "Need 5 to leave base"
+    };
+  }
+
+  /* =============================
+    CANNOT EXCEED GOAL
+  ============================= */
+
+  if (
+    piece.position !== BASE_POSITION &&
+    piece.position + game.dice > FINAL_POSITION
+  ) {
+    return {
+      ok: false,
+      error: "Move exceeds final position"
+    };
+  }
+
+  /* =============================
+    BLOCKADES
+  ============================= */
+
+  if (
+    piece.position !== BASE_POSITION &&
+    piece.position < FINAL_STRETCH_START
+  ) {
+
+    const blockades = getBlockades(game);
+
+    const currentGlobal =
+      getGlobalPosition(
+        player.color,
+        piece.position
+      );
+
+    for (let step = 1; step <= game.dice; step++) {
+
+      const nextGlobal =
+        (currentGlobal + step) % BOARD_SIZE;
+
+      const blocked = blockades.find(
+        blockade =>
+          blockade.position === nextGlobal
+      );
+
+      if (blocked) {
+        return {
+          ok: false,
+          error: "Blockade blocks the way"
+        };
+      }
     }
   }
 
-  module.exports = initDB;
+  return {
+    ok: true
+  };
+}
 
+module.exports = canMovePiece;
+==============================
+FILE: ./game/rules/nextTurn.js
+==============================
+function nextTurn(game) {
 
+  const currentIndex = game.players.findIndex(
+    player => player.id === game.turn
+  );
 
+  const nextIndex =
+    (currentIndex + 1) % game.players.length;
 
-./Dockerfile:
-  FROM node:18
+  game.turn = game.players[nextIndex].id;
+}
 
-  WORKDIR /app
+module.exports = nextTurn;
+==============================
+FILE: ./game/rules/checkCapture.js
+==============================
+const {
+  SAFE_CELLS,
+  BASE_POSITION,
+  FINAL_STRETCH_START
+} = require('../constants');
 
-  COPY package*.json ./
+const getGlobalPosition = require('../utils/getGlobalPosition');
+const getBlockades = require('./getBlockades');
 
-  RUN npm install
+function checkCapture(game, currentPlayerId) {
 
-  COPY . .
+  const currentPlayer = game.players.find(
+    p => p.id === currentPlayerId
+  );
 
-  EXPOSE 3000
-
-  CMD ["node", "server.js"]
-
-
-
-./db.js:
-  const { Pool } = require('pg');
-
-  const pool = new Pool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'user',
-    password: process.env.DB_PASSWORD || 'password',
-    database: process.env.DB_NAME || 'transcendence',
-    port: Number(process.env.DB_PORT || 5432),
-  });
-
-  module.exports = pool;
-
-
-./sockets/authSocket.js:
-  const jwt = require('jsonwebtoken');
-
-  function authSocket(socket, next) {
-    const token = socket.handshake.auth?.token;
-
-    if (!token)
-      return next(new Error("No token"));
-
-    try {
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET
-      );
-
-      socket.user = decoded;
-
-      next();
-    } catch (err) {
-      next(new Error("Invalid token"));
-    }
+  if (!currentPlayer) {
+    return;
   }
 
-  module.exports = authSocket;
+  /*
+    Obtener bloqueos actuales
+  */
 
+  const blockades = getBlockades(game);
 
+  for (const piece of currentPlayer.pieces) {
 
-./sockets/gameSocket.js:
-  const {
-    getGame
-  } = require('../game/gameManager');
+    /*
+      Ignorar base
+    */
 
-  const setPlayerConnection = require(
-    '../game/rules/setPlayerConnection'
-  );
+    if (piece.position === BASE_POSITION) {
+      continue;
+    }
 
-  const isGameAbandoned = require(
-    '../game/rules/isGameAbandoned'
-  );
+    /*
+      Ignorar pasillo final
+    */
 
-  const {
-    saveGame,
-    deleteGame
-  } = require('../game/gameManager');
+    if (piece.position >= FINAL_STRETCH_START) {
+      continue;
+    }
 
-  function registerGameSocket(io, socket) {
-
-    /* -----------------------------
-      JOIN GAME ROOM
-    ------------------------------ */
-    socket.on("game:join", async ({ gameId }) => {
-
-      const game = await getGame(gameId);
-
-      if (!game) {
-        return socket.emit("error", {
-          message: "Game not found"
-        });
-      }
-
-      setPlayerConnection(
-        game,
-        socket.user.id,
-        true
+    const currentGlobal =
+      getGlobalPosition(
+        currentPlayer.color,
+        piece.position
       );
 
-      await saveGame(game);
+    /*
+      Casilla segura
+    */
 
-      socket.join(gameId);
+    if (SAFE_CELLS.includes(currentGlobal)) {
+      continue;
+    }
 
-      console.log(
-        `User ${socket.user.id} joined room ${gameId}`
-      );
+    for (const enemy of game.players) {
 
-      socket.emit("game:update", game);
-    });
+      /*
+        Ignorar jugador actual
+      */
 
-    /* -----------------------------
-      GET GAME STATE
-    ------------------------------ */
-    socket.on("game:state", async ({ gameId }) => {
-
-      const game = await getGame(gameId);
-
-      if (!game) {
-        return socket.emit("error", {
-          message: "Game not found"
-        });
+      if (enemy.id === currentPlayerId) {
+        continue;
       }
 
-      socket.emit("game:update", game);
-    });
+      for (const enemyPiece of enemy.pieces) {
 
-    /* -----------------------------
-      CHAT MESSAGE
-    ------------------------------ */
-    socket.on("chat:send", async ({ gameId, message }) => {
+        /*
+          Ignorar base
+        */
 
-      const game = await getGame(gameId);
+        if (
+          enemyPiece.position === BASE_POSITION
+        ) {
+          continue;
+        }
 
-      if (!game) {
-        return socket.emit("error", {
-          message: "Game not found"
-        });
-      }
+        /*
+          Ignorar pasillo final
+        */
 
-      const player = game.players.find(
-        p => p.id === socket.user.id
-      );
+        if (
+          enemyPiece.position >= FINAL_STRETCH_START
+        ) {
+          continue;
+        }
 
-      if (!player) {
-        return socket.emit("error", {
-          message: "You are not in this game"
-        });
-      }
+        const enemyGlobal =
+          getGlobalPosition(
+            enemy.color,
+            enemyPiece.position
+          );
 
-      if (!message || typeof message !== "string") {
-        return;
-      }
+        /*
+          Misma casilla
+        */
 
-      const cleanMessage = message.trim();
+        if (enemyGlobal === currentGlobal) {
 
-      if (cleanMessage.length === 0) {
-        return;
-      }
+          /*
+            No se puede comer un bloqueo
+          */
 
-      if (cleanMessage.length > 200) {
-        return socket.emit("error", {
-          message: "Message too long"
-        });
-      }
+          const isEnemyBlockade =
+            blockades.find(
+              blockade =>
+                blockade.position === enemyGlobal
+            );
 
-      const chatMessage = {
-        userId: socket.user.id,
-        username: socket.user.username,
-        message: cleanMessage,
-        createdAt: new Date().toISOString()
-      };
-
-      io.to(gameId).emit(
-        "chat:message",
-        chatMessage
-      );
-    });
-
-    /* -----------------------------
-      PLAYER DISCONNECT
-    ------------------------------ */
-    socket.on("disconnect", async () => {
-
-      try {
-
-        const joinedGames =
-          Array.from(socket.rooms)
-            .filter(room => room !== socket.id);
-
-        for (const gameId of joinedGames) {
-
-          const game = await getGame(gameId);
-
-          if (!game) {
+          if (isEnemyBlockade) {
             continue;
           }
 
-          setPlayerConnection(
-            game,
-            socket.user.id,
-            false
-          );
+          /*
+            Comer ficha
+          */
+
+          enemyPiece.position =
+            BASE_POSITION;
+        }
+      }
+    }
+  }
+}
+
+module.exports = checkCapture;
+==============================
+FILE: ./game/rules/checkWin.js
+==============================
+const {
+  FINAL_POSITION
+} = require('../constants');
+
+function checkWin(game, playerId) {
+
+  const player = game.players.find(
+    p => p.id === playerId
+  );
+
+  if (!player) {
+    return false;
+  }
+
+  return player.pieces.every(
+    piece =>
+      piece.position === FINAL_POSITION
+  );
+}
+
+module.exports = checkWin;
+==============================
+FILE: ./game/rules/applyMove.js
+==============================
+const getPlayer = require('../utils/getPlayer');
+const getPiece = require('../utils/getPiece');
+
+const {
+  BASE_POSITION,
+  FINAL_ENTRY,
+  FINAL_STRETCH_START,
+  FINAL_POSITION
+} = require('../constants');
+
+function applyMove(game, playerId, pieceIndex) {
+
+  const player = getPlayer(game, playerId);
+
+  const piece = getPiece(player, pieceIndex);
+
+  /*
+    Sale de casa
+  */
+
+  if (piece.position === BASE_POSITION) {
+
+    piece.position = 0;
+
+    return;
+  }
+
+  let newPosition =
+    piece.position + game.dice;
+
+  /*
+    Entrar al pasillo final
+  */
+
+  if (
+    piece.position <= FINAL_ENTRY[player.color] &&
+    newPosition > FINAL_ENTRY[player.color]
+  ) {
+
+    const overflow =
+      newPosition -
+      FINAL_ENTRY[player.color] -
+      1;
+
+    newPosition =
+      FINAL_STRETCH_START +
+      overflow;
+  }
+
+  /*
+    Limitar meta
+  */
+
+  if (newPosition > FINAL_POSITION) {
+    newPosition = FINAL_POSITION;
+  }
+
+  piece.position = newPosition;
+}
+
+module.exports = applyMove;
+==============================
+FILE: ./game/rules/getAvailableMoves.js
+==============================
+const canMovePiece = require('../validators/canMovePiece');
+
+function getAvailableMoves(game, playerId) {
+
+  const availableMoves = [];
+
+  for (let i = 0; i < 4; i++) {
+
+    const validation = canMovePiece(
+      game,
+      playerId,
+      i
+    );
+
+    if (validation.ok) {
+      availableMoves.push(i);
+    }
+  }
+
+  return availableMoves;
+}
+
+module.exports = getAvailableMoves;
+==============================
+FILE: ./game/rules/isGameAbandoned.js
+==============================
+function isGameAbandoned(game) {
+
+  return game.players.every(
+    player => !player.connected
+  );
+}
+
+module.exports = isGameAbandoned;
+==============================
+FILE: ./game/rules/setPlayerConnection.js
+==============================
+function setPlayerConnection(
+  game,
+  playerId,
+  connected
+) {
+
+  const player = game.players.find(
+    p => p.id === playerId
+  );
+
+  if (!player) {
+    return;
+  }
+
+  player.connected = connected;
+
+  if (connected) {
+
+    player.disconnectedAt = null;
+
+    return;
+  }
+
+  player.disconnectedAt = Date.now();
+}
+
+module.exports = setPlayerConnection;
+==============================
+FILE: ./game/rules/isBlockade.js
+==============================
+const {
+  BASE_POSITION,
+  FINAL_STRETCH_START
+} = require('../constants');
+
+const getGlobalPosition = require(
+  '../utils/getGlobalPosition'
+);
+
+function isBlockade(game, color, globalPosition) {
+
+  const player = game.players.find(
+    p => p.color === color
+  );
+
+  if (!player) {
+    return false;
+  }
+
+  let piecesInCell = 0;
+
+  for (const piece of player.pieces) {
+
+    /*
+      Ignorar base
+    */
+
+    if (piece.position === BASE_POSITION) {
+      continue;
+    }
+
+    /*
+      Ignorar pasillo final
+    */
+
+    if (piece.position >= FINAL_STRETCH_START) {
+      continue;
+    }
+
+    const pieceGlobal =
+      getGlobalPosition(
+        player.color,
+        piece.position
+      );
+
+    if (pieceGlobal === globalPosition) {
+      piecesInCell++;
+    }
+  }
+
+  return piecesInCell >= 2;
+}
+
+module.exports = isBlockade;
+==============================
+FILE: ./game/rules/getBlockades.js
+==============================
+const {
+  BASE_POSITION,
+  FINAL_STRETCH_START
+} = require('../constants');
+
+const getGlobalPosition = require(
+  '../utils/getGlobalPosition'
+);
+
+function getBlockades(game) {
+
+  const blockades = [];
+
+  for (const player of game.players) {
+
+    const positionsCount = {};
+
+    for (const piece of player.pieces) {
+
+      if (piece.position === BASE_POSITION) {
+        continue;
+      }
+
+      if (piece.position >= FINAL_STRETCH_START) {
+        continue;
+      }
+
+      const globalPosition =
+        getGlobalPosition(
+          player.color,
+          piece.position
+        );
+
+      positionsCount[globalPosition] =
+        (positionsCount[globalPosition] || 0) + 1;
+    }
+
+    for (const position in positionsCount) {
+
+      if (positionsCount[position] >= 2) {
+
+        blockades.push({
+          color: player.color,
+          position: Number(position)
+        });
+      }
+    }
+  }
+
+  return blockades;
+}
+
+module.exports = getBlockades;
+==============================
+FILE: ./game/rules/checkPausedState.js
+==============================
+const {
+  GAME_STATUS
+} = require('../constants');
+
+function checkPausedState(game) {
+
+  const disconnectedPlayers =
+    game.players.filter(
+      player =>
+        !player.connected &&
+        !player.abandoned
+    );
+
+  if (disconnectedPlayers.length > 0) {
+
+    game.status = GAME_STATUS.PAUSED;
+
+    return;
+  }
+
+  if (game.winner) {
+    return;
+  }
+
+  game.status = GAME_STATUS.PLAYING;
+}
+
+module.exports = checkPausedState;
+==============================
+FILE: ./game/constants.js
+==============================
+const COLORS = [
+  "pink",
+  "purple",
+  "green",
+  "blue"
+];
+
+/* =================================
+  GAME STATUS
+================================= */
+
+const GAME_STATUS = {
+  WAITING: "waiting",
+  PLAYING: "playing",
+  PAUSED: "paused",
+  FINISHED: "finished"
+};
+
+/* =================================
+  BOARD
+================================= */
+
+const BOARD_SIZE = 68;
+
+const START_POSITIONS = {
+  pink: 0,
+  purple: 17,
+  green: 34,
+  blue: 51
+};
+
+const FINAL_ENTRY = {
+  pink: 67,
+  purple: 16,
+  green: 33,
+  blue: 50
+};
+
+const SAFE_CELLS = [
+  0,
+  5,
+  12,
+  17,
+  22,
+  29,
+  34,
+  39,
+  46,
+  51,
+  56,
+  63
+];
+
+const BASE_POSITION = -1;
+
+const FINAL_STRETCH_START = 68;
+
+const FINAL_POSITION = 74;
+
+/* =================================
+  RECONNECTION
+================================= */
+
+const DISCONNECT_TIMEOUT = 60000;
+
+/* =================================
+  TURN TIMER
+================================= */
+
+const TURN_TIMEOUT = 30000;
+
+module.exports = {
+  COLORS,
+  GAME_STATUS,
+  BOARD_SIZE,
+  START_POSITIONS,
+  FINAL_ENTRY,
+  SAFE_CELLS,
+  BASE_POSITION,
+  FINAL_STRETCH_START,
+  FINAL_POSITION,
+  DISCONNECT_TIMEOUT,
+  TURN_TIMEOUT
+};
+==============================
+FILE: ./game/gameEngine.js
+==============================
+const {
+  COLORS,
+  GAME_STATUS
+} = require('./constants');
+
+const canJoinGame = require('./validators/canJoinGame');
+const canRollDice = require('./validators/canRollDice');
+const canMovePiece = require('./validators/canMovePiece');
+
+const applyMove = require('./rules/applyMove');
+const nextTurn = require('./rules/nextTurn');
+const checkCapture = require('./rules/checkCapture');
+const checkWin = require('./rules/checkWin');
+
+const createPieces = require('./utils/createPieces');
+
+function rollDice() {
+
+  return Math.floor(Math.random() * 6) + 1;
+}
+
+function addPlayerToGame(game, userId) {
+
+  game.players.push({
+    id: userId,
+
+    color: COLORS[game.players.length],
+
+    connected: true,
+
+    disconnectedAt: null,
+
+    abandoned: false,
+
+    pieces: createPieces()
+  });
+
+  if (game.players.length >= 2) {
+
+    game.status = GAME_STATUS.PLAYING;
+
+    game.turn = game.players[0].id;
+  }
+}
+
+function executeMove(
+  game,
+  playerId,
+  pieceIndex
+) {
+
+  const validation = canMovePiece(
+    game,
+    playerId,
+    pieceIndex
+  );
+
+  if (!validation.ok) {
+    return validation;
+  }
+
+  applyMove(
+    game,
+    playerId,
+    pieceIndex
+  );
+
+  checkCapture(game, playerId);
+
+  const won = checkWin(
+    game,
+    playerId
+  );
+
+  if (won) {
+
+    game.status = GAME_STATUS.FINISHED;
+
+    game.winner = playerId;
+
+    return {
+      ok: true,
+      finished: true
+    };
+  }
+
+  if (game.dice !== 6) {
+    nextTurn(game);
+  }
+
+  game.dice = null;
+
+  game.updatedAt = Date.now();
+
+  return {
+    ok: true
+  };
+}
+
+module.exports = {
+  rollDice,
+  addPlayerToGame,
+  executeMove,
+  canJoinGame,
+  canRollDice
+};
+==============================
+FILE: ./game/gameManager.js
+==============================
+const pool = require('../db');
+
+/* =============================
+   GET GAME
+============================= */
+
+async function getGame(gameId) {
+
+  const result = await pool.query(
+    `
+    SELECT state
+    FROM games
+    WHERE id = $1
+    `,
+    [gameId]
+  );
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  return result.rows[0].state;
+}
+
+/* =============================
+   CREATE GAME
+============================= */
+
+async function createGame(game) {
+
+  await pool.query(
+    `
+    INSERT INTO games (
+      id,
+      host_id,
+      state,
+      status
+    )
+    VALUES ($1, $2, $3, $4)
+    `,
+    [
+      game.id,
+      game.players[0].id,
+      JSON.stringify(game),
+      game.status
+    ]
+  );
+}
+
+/* =============================
+   SAVE GAME
+============================= */
+
+async function saveGame(game) {
+
+  await pool.query(
+    `
+    UPDATE games
+    SET
+      state = $1,
+      status = $2,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $3
+    `,
+    [
+      JSON.stringify(game),
+      game.status,
+      game.id
+    ]
+  );
+}
+
+/* =============================
+  DELETE GAME
+============================= */
+
+async function deleteGame(gameId) {
+
+  await pool.query(
+    `
+    DELETE FROM games
+    WHERE id = $1
+    `,
+    [gameId]
+  );
+}
+
+module.exports = {
+  getGame,
+  createGame,
+  saveGame,
+  deleteGame
+};
+==============================
+FILE: ./game/gameState.js
+==============================
+const createPieces = require('./utils/createPieces');
+
+const {
+  GAME_STATUS
+} = require('./constants');
+
+function createNewGame(hostId) {
+
+  return {
+    id: Date.now().toString(),
+
+    players: [
+      {
+        id: hostId,
+        color: "pink",
+
+        connected: true,
+
+        disconnectedAt: null,
+
+        abandoned: false,
+
+        pieces: createPieces()
+      }
+    ],
+
+    turn: hostId,
+
+    dice: null,
+
+    winner: null,
+
+    status: GAME_STATUS.WAITING,
+
+    createdAt: Date.now(),
+
+    updatedAt: Date.now()
+  };
+}
+
+module.exports = {
+  createNewGame
+};
+==============================
+FILE: ./initDb.js
+==============================
+const pool = require('./db');
+
+async function initDB() {
+  try {
+
+    /* =============================
+       USERS
+    ============================== */
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        avatar_url TEXT DEFAULT '/uploads/default-avatar.png',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    /* =============================
+       FRIENDSHIPS
+    ============================== */
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS friendships (
+        id SERIAL PRIMARY KEY,
+        requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        addressee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        accepted_at TIMESTAMP NULL,
+        CHECK (requester_id <> addressee_id),
+        UNIQUE (requester_id, addressee_id)
+      );
+    `);
+
+    /* =============================
+       GAMES
+    ============================== */
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS games (
+        id VARCHAR(255) PRIMARY KEY,
+        host_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        state JSONB NOT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'waiting',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    console.log('✅ Tablas listas');
+
+  } catch (err) {
+    console.error('❌ Error creando tablas:', err);
+    throw err;
+  }
+}
+
+module.exports = initDB;
+==============================
+FILE: ./middleware/authMiddleware.js
+==============================
+const jwt = require('jsonwebtoken');
+
+module.exports = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  const [scheme, token] = authHeader.split(' ');
+
+  if (scheme !== 'Bearer' || !token) {
+    return res.status(401).json({ error: 'Formato de token inválido' });
+  }
+
+  const secret = process.env.JWT_SECRET;
+
+  try {
+    const decoded = jwt.verify(token, secret);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+};
+
+==============================
+FILE: ./routes/authRoutes.js
+==============================
+const express = require('express');
+const router = express.Router();
+
+const authController = require('../controllers/authController');
+
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+
+module.exports = router;
+==============================
+FILE: ./routes/friendsRoutes.js
+==============================
+const express = require('express');
+const router = express.Router();
+
+const authMiddleware = require('../middleware/authMiddleware');
+const friendsController = require('../controllers/friendsController');
+
+router.post('/request/:id', authMiddleware, friendsController.sendRequest);
+
+router.post('/accept/:id', authMiddleware, friendsController.acceptRequest);
+
+router.delete('/:id', authMiddleware, friendsController.deleteRelation);
+
+router.get('/', authMiddleware, friendsController.getFriends);
+
+router.get('/online', authMiddleware, friendsController.getOnlineFriends);
+
+router.get('/requests', authMiddleware, friendsController.getPendingRequests);
+
+module.exports = router;
+==============================
+FILE: ./routes/gameRoutes.js
+==============================
+const express = require('express');
+const router = express.Router();
+
+const authMiddleware = require('../middleware/authMiddleware');
+const gameController = require('../controllers/gameController');
+
+router.post('/', authMiddleware, gameController.createGame);
+router.get('/:id', authMiddleware, gameController.getGame);
+
+router.post('/:id/join', authMiddleware, gameController.joinGame);
+router.post('/:id/roll', authMiddleware, gameController.rollDice);
+router.post('/:id/move', authMiddleware, gameController.movePiece);
+
+module.exports = router;
+==============================
+FILE: ./routes/userRoutes.js
+==============================
+const express = require('express');
+const router = express.Router();
+
+const authMiddleware = require('../middleware/authMiddleware');
+const userController = require('../controllers/userController');
+
+router.get('/me', authMiddleware, userController.getMe);
+router.put('/me', authMiddleware, userController.updateMe);
+router.get('/:id', authMiddleware, userController.getUserById);
+
+module.exports = router;
+==============================
+FILE: ./sockets/authSocket.js
+==============================
+const jwt = require('jsonwebtoken');
+
+function authSocket(socket, next) {
+  const token = socket.handshake.auth?.token;
+
+  if (!token)
+    return next(new Error("No token"));
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+
+    socket.user = decoded;
+
+    next();
+  } catch (err) {
+    next(new Error("Invalid token"));
+  }
+}
+
+module.exports = authSocket;
+==============================
+FILE: ./sockets/presence.js
+==============================
+const onlineUsers = new Map();
+
+/*
+  Estructura:
+
+  onlineUsers = Map {
+    userId => Set(socketId)
+  }
+*/
+
+function addUserSocket(userId, socketId) {
+  if (!onlineUsers.has(userId)) {
+    onlineUsers.set(userId, new Set());
+  }
+
+  onlineUsers.get(userId).add(socketId);
+}
+
+function removeUserSocket(userId, socketId) {
+  if (!onlineUsers.has(userId)) {
+    return;
+  }
+
+  const sockets = onlineUsers.get(userId);
+
+  sockets.delete(socketId);
+
+  if (sockets.size === 0) {
+    onlineUsers.delete(userId);
+  }
+}
+
+function isUserOnline(userId) {
+  return onlineUsers.has(userId);
+}
+
+function getOnlineUsers() {
+  return Array.from(onlineUsers.keys());
+}
+
+module.exports = {
+  addUserSocket,
+  removeUserSocket,
+  isUserOnline,
+  getOnlineUsers
+};
+==============================
+FILE: ./sockets/index.js
+==============================
+const { Server } = require('socket.io');
+
+const authSocket = require('./authSocket');
+const registerGameSocket = require('./gameSocket');
+
+const {
+  addUserSocket,
+  removeUserSocket
+} = require('./presence');
+
+const {
+  setIO
+} = require('../socket');
+
+function initSockets(httpServer) {
+
+  const io = new Server(httpServer, {
+    cors: {
+      origin: true,
+      credentials: true
+    }
+  });
+
+  /* =============================
+     SAVE GLOBAL IO
+  ============================= */
+
+  setIO(io);
+
+  io.use(authSocket);
+
+  io.on("connection", (socket) => {
+
+    const userId = socket.user.id;
+
+    console.log("User connected:", userId);
+
+    /* -----------------------------
+       USER ONLINE
+    ------------------------------ */
+
+    addUserSocket(userId, socket.id);
+
+    io.emit("presence:update", {
+      userId,
+      online: true
+    });
+
+    /* -----------------------------
+       REGISTER GAME EVENTS
+    ------------------------------ */
+
+    registerGameSocket(io, socket);
+
+    /* -----------------------------
+       DISCONNECT
+    ------------------------------ */
+
+    socket.on("disconnect", () => {
+
+      console.log("User disconnected:", userId);
+
+      removeUserSocket(userId, socket.id);
+
+      io.emit("presence:update", {
+        userId,
+        online: false
+      });
+    });
+  });
+}
+
+module.exports = initSockets;
+==============================
+FILE: ./sockets/gameSocket.js
+==============================
+const {
+  getGame,
+  saveGame,
+  deleteGame
+} = require('../game/gameManager');
+
+const setPlayerConnection = require(
+  '../game/rules/setPlayerConnection'
+);
+
+const checkPausedState = require(
+  '../game/rules/checkPausedState'
+);
+
+const isGameAbandoned = require(
+  '../game/rules/isGameAbandoned'
+);
+
+const {
+  DISCONNECT_TIMEOUT
+} = require('../game/constants');
+
+function registerGameSocket(io, socket) {
+
+  /* -----------------------------
+    JOIN GAME ROOM
+  ------------------------------ */
+
+  socket.on("game:join", async ({ gameId }) => {
+
+    const game = await getGame(gameId);
+
+    if (!game) {
+      return socket.emit("error", {
+        message: "Game not found"
+      });
+    }
+
+    const player = game.players.find(
+      p => p.id === socket.user.id
+    );
+
+    if (!player) {
+      return socket.emit("error", {
+        message: "You are not part of this game"
+      });
+    }
+
+    setPlayerConnection(
+      game,
+      socket.user.id,
+      true
+    );
+
+    checkPausedState(game);
+
+    await saveGame(game);
+
+    socket.join(gameId);
+
+    socket.emit("game:update", game);
+
+    io.to(gameId).emit(
+      "game:player_reconnected",
+      {
+        userId: socket.user.id
+      }
+    );
+  });
+
+  /* -----------------------------
+    GET GAME STATE
+  ------------------------------ */
+
+  socket.on("game:state", async ({ gameId }) => {
+
+    const game = await getGame(gameId);
+
+    if (!game) {
+      return socket.emit("error", {
+        message: "Game not found"
+      });
+    }
+
+    socket.emit("game:update", game);
+  });
+
+  /* -----------------------------
+    DISCONNECT
+  ------------------------------ */
+
+  socket.on("disconnect", async () => {
+
+    try {
+
+      const joinedGames =
+        Array.from(socket.rooms)
+          .filter(room => room !== socket.id);
+
+      for (const gameId of joinedGames) {
+
+        const game = await getGame(gameId);
+
+        if (!game) {
+          continue;
+        }
+
+        setPlayerConnection(
+          game,
+          socket.user.id,
+          false
+        );
+
+        checkPausedState(game);
+
+        await saveGame(game);
+
+        io.to(gameId).emit(
+          "game:update",
+          game
+        );
+
+        io.to(gameId).emit(
+          "game:player_disconnected",
+          {
+            userId: socket.user.id
+          }
+        );
+
+        setTimeout(async () => {
+
+          const updatedGame =
+            await getGame(gameId);
+
+          if (!updatedGame) {
+            return;
+          }
+
+          const player =
+            updatedGame.players.find(
+              p => p.id === socket.user.id
+            );
+
+          if (!player) {
+            return;
+          }
+
+          /*
+            Se reconectó
+          */
+
+          if (player.connected) {
+            return;
+          }
+
+          /*
+            Abandono definitivo
+          */
+
+          player.abandoned = true;
 
           const abandoned =
-            isGameAbandoned(game);
+            isGameAbandoned(updatedGame);
 
           if (abandoned) {
 
             await deleteGame(gameId);
 
-            console.log(
-              `Game ${gameId} deleted`
-            );
-
-            continue;
+            return;
           }
 
-          await saveGame(game);
+          await saveGame(updatedGame);
+
+          io.to(gameId).emit(
+            "game:player_abandoned",
+            {
+              userId: socket.user.id
+            }
+          );
 
           io.to(gameId).emit(
             "game:update",
-            game
+            updatedGame
           );
-        }
 
-      } catch (err) {
-
-        console.error(err);
+        }, DISCONNECT_TIMEOUT);
       }
-    });
 
-  }
-
-  module.exports = registerGameSocket;
-
-
-
-./sockets/index.js:
-  const { Server } = require('socket.io');
-
-  const authSocket = require('./authSocket');
-  const registerGameSocket = require('./gameSocket');
-
-  const {
-    addUserSocket,
-    removeUserSocket
-  } = require('./presence');
-
-  const {
-    setIO
-  } = require('../socket');
-
-  function initSockets(httpServer) {
-
-    const io = new Server(httpServer, {
-      cors: {
-        origin: "*"
-      }
-    });
-
-    /* =============================
-      SAVE GLOBAL IO
-    ============================= */
-
-    setIO(io);
-
-    io.use(authSocket);
-
-    io.on("connection", (socket) => {
-
-      const userId = socket.user.id;
-
-      console.log("User connected:", userId);
-
-      /* -----------------------------
-        USER ONLINE
-      ------------------------------ */
-
-      addUserSocket(userId, socket.id);
-
-      io.emit("presence:update", {
-        userId,
-        online: true
-      });
-
-      /* -----------------------------
-        REGISTER GAME EVENTS
-      ------------------------------ */
-
-      registerGameSocket(io, socket);
-
-      /* -----------------------------
-        DISCONNECT
-      ------------------------------ */
-
-      socket.on("disconnect", () => {
-
-        console.log("User disconnected:", userId);
-
-        removeUserSocket(userId, socket.id);
-
-        io.emit("presence:update", {
-          userId,
-          online: false
-        });
-      });
-    });
-  }
-
-  module.exports = initSockets;
-
-
-
-./sockets/presence.js:
-  const onlineUsers = new Map();
-
-  /*
-    Estructura:
-
-    onlineUsers = Map {
-      userId => Set(socketId)
-    }
-  */
-
-  function addUserSocket(userId, socketId) {
-    if (!onlineUsers.has(userId)) {
-      onlineUsers.set(userId, new Set());
-    }
-
-    onlineUsers.get(userId).add(socketId);
-  }
-
-  function removeUserSocket(userId, socketId) {
-    if (!onlineUsers.has(userId)) {
-      return;
-    }
-
-    const sockets = onlineUsers.get(userId);
-
-    sockets.delete(socketId);
-
-    if (sockets.size === 0) {
-      onlineUsers.delete(userId);
-    }
-  }
-
-  function isUserOnline(userId) {
-    return onlineUsers.has(userId);
-  }
-
-  function getOnlineUsers() {
-    return Array.from(onlineUsers.keys());
-  }
-
-  module.exports = {
-    addUserSocket,
-    removeUserSocket,
-    isUserOnline,
-    getOnlineUsers
-  };
-
-
-
-
-./routes/userRoutes.js:
-  const express = require('express');
-  const router = express.Router();
-
-  const authMiddleware = require('../middleware/authMiddleware');
-  const userController = require('../controllers/userController');
-
-  router.get('/me', authMiddleware, userController.getMe);
-  router.put('/me', authMiddleware, userController.updateMe);
-  router.get('/:id', authMiddleware, userController.getUserById);
-
-  module.exports = router;
-
-
-
-./routes/gameRoutes.js:
-  const express = require('express');
-  const router = express.Router();
-
-  const authMiddleware = require('../middleware/authMiddleware');
-  const gameController = require('../controllers/gameController');
-
-  router.post('/', authMiddleware, gameController.createGame);
-  router.get('/:id', authMiddleware, gameController.getGame);
-
-  router.post('/:id/join', authMiddleware, gameController.joinGame);
-  router.post('/:id/roll', authMiddleware, gameController.rollDice);
-  router.post('/:id/move', authMiddleware, gameController.movePiece);
-
-  module.exports = router;
-
-
-
-./routes/friendsRoutes.js:
-  const express = require('express');
-  const router = express.Router();
-
-  const authMiddleware = require('../middleware/authMiddleware');
-  const friendsController = require('../controllers/friendsController');
-
-  router.post('/request/:id', authMiddleware, friendsController.sendRequest);
-
-  router.post('/accept/:id', authMiddleware, friendsController.acceptRequest);
-
-  router.delete('/:id', authMiddleware, friendsController.deleteRelation);
-
-  router.get('/', authMiddleware, friendsController.getFriends);
-
-  router.get('/online', authMiddleware, friendsController.getOnlineFriends);
-
-  router.get('/requests', authMiddleware, friendsController.getPendingRequests);
-
-  module.exports = router;
-
-
-
-./routes/authRoutes.js:
-  const express = require('express');
-  const router = express.Router();
-
-  const authController = require('../controllers/authController');
-
-  router.post('/register', authController.register);
-  router.post('/login', authController.login);
-
-  module.exports = router;
-
-
-
-./middleware/authMiddleware.js:
-  const jwt = require('jsonwebtoken');
-
-  module.exports = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const [scheme, token] = authHeader.split(' ');
-
-    if (scheme !== 'Bearer' || !token) {
-      return res.status(401).json({ error: 'Formato de token inválido' });
-    }
-
-    const secret = process.env.JWT_SECRET;
-
-    try {
-      const decoded = jwt.verify(token, secret);
-      req.user = decoded;
-      next();
     } catch (err) {
-      return res.status(401).json({ error: 'Token inválido' });
+
+      console.error(err);
     }
-  };
+  });
+}
 
+module.exports = registerGameSocket;
+==============================
+FILE: ./socket.js
+==============================
+let io = null;
 
-./game/constants.js:
-  const COLORS = [
-    "pink",
-    "purple",
-    "green",
-    "blue"
-  ];
+/* =============================
+   SET IO INSTANCE
+============================= */
 
-  /* =================================
-    GAME STATUS
-  ================================= */
+function setIO(serverIO) {
+  io = serverIO;
+}
 
-  const GAME_STATUS = {
-    WAITING: "waiting",
-    PLAYING: "playing",
-    FINISHED: "finished"
-  };
+/* =============================
+   GET IO INSTANCE
+============================= */
 
-  /* =================================
-    BOARD
-  ================================= */
+function getIO() {
 
-  /*
-    El tablero principal tiene 68 casillas.
-  */
-
-  const BOARD_SIZE = 68;
-
-  /*
-    Cada color empieza en una posición distinta.
-  */
-
-  const START_POSITIONS = {
-    pink: 0,
-    purple: 17,
-    green: 34,
-    blue: 51
-  };
-
-  /*
-    Entrada al pasillo final.
-  */
-
-  const FINAL_ENTRY = {
-    pink: 67,
-    purple: 16,
-    green: 33,
-    blue: 50
-  };
-
-  /*
-    Casillas seguras clásicas.
-  */
-
-  const SAFE_CELLS = [
-    0,
-    5,
-    12,
-    17,
-    22,
-    29,
-    34,
-    39,
-    46,
-    51,
-    56,
-    63
-  ];
-
-  /*
-    Posiciones especiales.
-  */
-
-  const BASE_POSITION = -1;
-
-  /*
-    Pasillo final:
-    68 -> 74
-  */
-
-  const FINAL_STRETCH_START = 68;
-
-  const FINAL_POSITION = 74;
-
-  module.exports = {
-    COLORS,
-    GAME_STATUS,
-    BOARD_SIZE,
-    START_POSITIONS,
-    FINAL_ENTRY,
-    SAFE_CELLS,
-    BASE_POSITION,
-    FINAL_STRETCH_START,
-    FINAL_POSITION
-  };
-
-
-
-./game/utils/createPieces.js:
-  const {
-    BASE_POSITION
-  } = require('../constants');
-
-  function createPieces() {
-
-    return [
-      {
-        position: BASE_POSITION
-      },
-      {
-        position: BASE_POSITION
-      },
-      {
-        position: BASE_POSITION
-      },
-      {
-        position: BASE_POSITION
-      }
-    ];
+  if (!io) {
+    throw new Error("Socket.io not initialized");
   }
 
-  module.exports = createPieces;
-
-
-
-./game/utils/getGlobalPosition.js:
-  const {
-    START_POSITIONS,
-    BOARD_SIZE
-  } = require('../constants');
-
-  /*
-    Convierte posición relativa
-    a posición global del tablero.
-  */
-
-  function getGlobalPosition(color, relativePosition) {
-
-    return (
-      START_POSITIONS[color] +
-      relativePosition
-    ) % BOARD_SIZE;
-  }
-
-  module.exports = getGlobalPosition;
-
-
-
-./game/utils/getPlayer.js:
-  function getPlayer(game, playerId) {
-    return game.players.find(
-      player => player.id === playerId
-    );
-  }
-
-  module.exports = getPlayer;
-
-
-
-./game/utils/getPiece.js:
-  function getPiece(player, pieceIndex) {
-    return player.pieces[pieceIndex];
-  }
-
-  module.exports = getPiece;
-
-
-
-./game/validators/canJoinGame.js:
-  const {
-    GAME_STATUS
-  } = require('../constants');
-
-  function canJoinGame(game, userId) {
-
-    if (game.status !== GAME_STATUS.WAITING) {
-      return {
-        ok: false,
-        error: "Game already started"
-      };
-    }
-
-    if (game.players.length >= 4) {
-      return {
-        ok: false,
-        error: "Game full"
-      };
-    }
-
-    const alreadyInGame = game.players.find(
-      player => player.id === userId
-    );
-
-    if (alreadyInGame) {
-      return {
-        ok: false,
-        error: "Already in game"
-      };
-    }
-
-    return {
-      ok: true
-    };
-  }
-
-  module.exports = canJoinGame;
-
-
-
-./game/validators/validateTurn.js:
-  function validateTurn(game, userId) {
-
-    if (game.turn !== userId) {
-      return {
-        ok: false,
-        error: "Not your turn"
-      };
-    }
-
-    return {
-      ok: true
-    };
-  }
-
-  module.exports = validateTurn;
-
-
-
-./game/validators/canRollDice.js:
-  const {
-    GAME_STATUS
-  } = require('../constants');
-
-  function canRollDice(game, userId) {
-
-    if (game.status !== GAME_STATUS.PLAYING) {
-      return {
-        ok: false,
-        error: "Game has not started yet"
-      };
-    }
-
-    if (game.turn !== userId) {
-      return {
-        ok: false,
-        error: "Not your turn"
-      };
-    }
-
-    if (game.dice !== null) {
-      return {
-        ok: false,
-        error: "Dice already rolled"
-      };
-    }
-
-    return {
-      ok: true
-    };
-  }
-
-  module.exports = canRollDice;
-
-
-
-./game/validators/canMovePiece.js:
-  const getPlayer = require('../utils/getPlayer');
-  const getPiece = require('../utils/getPiece');
-  const getGlobalPosition = require('../utils/getGlobalPosition');
-  const getBlockades = require('../rules/getBlockades');
-
-  const {
-    BOARD_SIZE
-  } = require('../constants');
-
-  const {
-    BASE_POSITION,
-    FINAL_POSITION,
-    GAME_STATUS
-  } = require('../constants');
-
-  function canMovePiece(game, playerId, pieceIndex) {
-
-    if (game.status !== GAME_STATUS.PLAYING) {
-      return {
-        ok: false,
-        error: "Game has not started yet"
-      };
-    }
-
-    const player = getPlayer(game, playerId);
-
-    if (!player) {
-      return {
-        ok: false,
-        error: "Player not found"
-      };
-    }
-
-    const piece = getPiece(player, pieceIndex);
-
-    if (!piece) {
-      return {
-        ok: false,
-        error: "Piece not found"
-      };
-    }
-
-    if (game.dice === null) {
-      return {
-        ok: false,
-        error: "Roll dice first"
-      };
-    }
-
-    /*
-      Sacar ficha
-    */
-
-    if (
-      piece.position === BASE_POSITION &&
-      game.dice !== 5
-    ) {
-      return {
-        ok: false,
-        error: "Need 5 to leave base"
-      };
-    }
-
-    /*
-      No puede pasar meta
-    */
-
-    if (
-      piece.position !== BASE_POSITION &&
-      piece.position + game.dice > FINAL_POSITION
-    ) {
-      return {
-        ok: false,
-        error: "Move exceeds final position"
-      };
-    }
-
-    /*
-      No puede atravesar bloqueos
-    */
-
-    if (
-      piece.position !== BASE_POSITION &&
-      piece.position < FINAL_STRETCH_START
-    ) {
-
-      const blockades = getBlockades(game);
-
-      const currentGlobal =
-        getGlobalPosition(
-          player.color,
-          piece.position
-        );
-
-      for (let step = 1; step <= game.dice; step++) {
-
-        const nextGlobal =
-          (currentGlobal + step) % BOARD_SIZE;
-
-        const blocked = blockades.find(
-          blockade =>
-            blockade.position === nextGlobal
-        );
-
-        if (blocked) {
-          return {
-            ok: false,
-            error: "Blockade blocks the way"
-          };
-        }
-      }
-    }
-
-    return {
-      ok: true
-    };
-  }
-
-  module.exports = canMovePiece;
-
-
-
-./game/rules/setPlayerConnection.js:
-  function setPlayerConnection(
-    game,
-    playerId,
-    connected
-  ) {
-
-    const player = game.players.find(
-      p => p.id === playerId
-    );
-
-    if (!player) {
-      return;
-    }
-
-    player.connected = connected;
-  }
-
-  module.exports = setPlayerConnection;
-
-
-
-./game/rules/nextTurn.js:
-  function nextTurn(game) {
-
-    const currentIndex = game.players.findIndex(
-      player => player.id === game.turn
-    );
-
-    const nextIndex =
-      (currentIndex + 1) % game.players.length;
-
-    game.turn = game.players[nextIndex].id;
-  }
-
-  module.exports = nextTurn;
-
-
-
-./game/rules/isGameAbandoned.js:
-  function isGameAbandoned(game) {
-
-    return game.players.every(
-      player => !player.connected
-    );
-  }
-
-  module.exports = isGameAbandoned;
-
-
-
-./game/rules/getBlockades.js:
-  const {
-    BASE_POSITION,
-    FINAL_STRETCH_START
-  } = require('../constants');
-
-  const getGlobalPosition = require(
-    '../utils/getGlobalPosition'
-  );
-
-  function getBlockades(game) {
-
-    const blockades = [];
-
-    for (const player of game.players) {
-
-      const positionsCount = {};
-
-      for (const piece of player.pieces) {
-
-        if (piece.position === BASE_POSITION) {
-          continue;
-        }
-
-        if (piece.position >= FINAL_STRETCH_START) {
-          continue;
-        }
-
-        const globalPosition =
-          getGlobalPosition(
-            player.color,
-            piece.position
-          );
-
-        positionsCount[globalPosition] =
-          (positionsCount[globalPosition] || 0) + 1;
-      }
-
-      for (const position in positionsCount) {
-
-        if (positionsCount[position] >= 2) {
-
-          blockades.push({
-            color: player.color,
-            position: Number(position)
-          });
-        }
-      }
-    }
-
-    return blockades;
-  }
-
-  module.exports = getBlockades;
-
-
-./game/rules/isBlockade.js:
-  const {
-    BASE_POSITION,
-    FINAL_STRETCH_START
-  } = require('../constants');
-
-  const getGlobalPosition = require(
-    '../utils/getGlobalPosition'
-  );
-
-  function isBlockade(game, color, globalPosition) {
-
-    const player = game.players.find(
-      p => p.color === color
-    );
-
-    if (!player) {
-      return false;
-    }
-
-    let piecesInCell = 0;
-
-    for (const piece of player.pieces) {
-
-      /*
-        Ignorar base
-      */
-
-      if (piece.position === BASE_POSITION) {
-        continue;
-      }
-
-      /*
-        Ignorar pasillo final
-      */
-
-      if (piece.position >= FINAL_STRETCH_START) {
-        continue;
-      }
-
-      const pieceGlobal =
-        getGlobalPosition(
-          player.color,
-          piece.position
-        );
-
-      if (pieceGlobal === globalPosition) {
-        piecesInCell++;
-      }
-    }
-
-    return piecesInCell >= 2;
-  }
-
-  module.exports = isBlockade;
-
-
-
-./game/rules/getAvailableMoves.js:
-  const canMovePiece = require('../validators/canMovePiece');
-
-  function getAvailableMoves(game, playerId) {
-
-    const availableMoves = [];
-
-    for (let i = 0; i < 4; i++) {
-
-      const validation = canMovePiece(
-        game,
-        playerId,
-        i
-      );
-
-      if (validation.ok) {
-        availableMoves.push(i);
-      }
-    }
-
-    return availableMoves;
-  }
-
-  module.exports = getAvailableMoves;
-
-
-
-./game/rules/checkCapture.js:
-  const {
-    SAFE_CELLS,
-    BASE_POSITION,
-    FINAL_STRETCH_START
-  } = require('../constants');
-
-  const getGlobalPosition = require('../utils/getGlobalPosition');
-  const getBlockades = require('./getBlockades');
-
-  function checkCapture(game, currentPlayerId) {
-
-    const currentPlayer = game.players.find(
-      p => p.id === currentPlayerId
-    );
-
-    if (!currentPlayer) {
-      return;
-    }
-
-    /*
-      Obtener bloqueos actuales
-    */
-
-    const blockades = getBlockades(game);
-
-    for (const piece of currentPlayer.pieces) {
-
-      /*
-        Ignorar base
-      */
-
-      if (piece.position === BASE_POSITION) {
-        continue;
-      }
-
-      /*
-        Ignorar pasillo final
-      */
-
-      if (piece.position >= FINAL_STRETCH_START) {
-        continue;
-      }
-
-      const currentGlobal =
-        getGlobalPosition(
-          currentPlayer.color,
-          piece.position
-        );
-
-      /*
-        Casilla segura
-      */
-
-      if (SAFE_CELLS.includes(currentGlobal)) {
-        continue;
-      }
-
-      for (const enemy of game.players) {
-
-        /*
-          Ignorar jugador actual
-        */
-
-        if (enemy.id === currentPlayerId) {
-          continue;
-        }
-
-        for (const enemyPiece of enemy.pieces) {
-
-          /*
-            Ignorar base
-          */
-
-          if (
-            enemyPiece.position === BASE_POSITION
-          ) {
-            continue;
-          }
-
-          /*
-            Ignorar pasillo final
-          */
-
-          if (
-            enemyPiece.position >= FINAL_STRETCH_START
-          ) {
-            continue;
-          }
-
-          const enemyGlobal =
-            getGlobalPosition(
-              enemy.color,
-              enemyPiece.position
-            );
-
-          /*
-            Misma casilla
-          */
-
-          if (enemyGlobal === currentGlobal) {
-
-            /*
-              No se puede comer un bloqueo
-            */
-
-            const isEnemyBlockade =
-              blockades.find(
-                blockade =>
-                  blockade.position === enemyGlobal
-              );
-
-            if (isEnemyBlockade) {
-              continue;
-            }
-
-            /*
-              Comer ficha
-            */
-
-            enemyPiece.position =
-              BASE_POSITION;
-          }
-        }
-      }
-    }
-  }
-
-  module.exports = checkCapture;
-
-
-
-./game/rules/checkWin.js:
-  const {
-    FINAL_POSITION
-  } = require('../constants');
-
-  function checkWin(game, playerId) {
-
-    const player = game.players.find(
-      p => p.id === playerId
-    );
-
-    if (!player) {
-      return false;
-    }
-
-    return player.pieces.every(
-      piece =>
-        piece.position === FINAL_POSITION
-    );
-  }
-
-  module.exports = checkWin;
-
-
-
-./game/rules/applyMove.js:
-  const getPlayer = require('../utils/getPlayer');
-  const getPiece = require('../utils/getPiece');
-
-  const {
-    BASE_POSITION,
-    FINAL_ENTRY,
-    FINAL_STRETCH_START,
-    FINAL_POSITION
-  } = require('../constants');
-
-  function applyMove(game, playerId, pieceIndex) {
-
-    const player = getPlayer(game, playerId);
-
-    const piece = getPiece(player, pieceIndex);
-
-    /*
-      Sale de casa
-    */
-
-    if (piece.position === BASE_POSITION) {
-
-      piece.position = 0;
-
-      return;
-    }
-
-    let newPosition =
-      piece.position + game.dice;
-
-    /*
-      Entrar al pasillo final
-    */
-
-    if (
-      piece.position <= FINAL_ENTRY[player.color] &&
-      newPosition > FINAL_ENTRY[player.color]
-    ) {
-
-      const overflow =
-        newPosition -
-        FINAL_ENTRY[player.color] -
-        1;
-
-      newPosition =
-        FINAL_STRETCH_START +
-        overflow;
-    }
-
-    /*
-      Limitar meta
-    */
-
-    if (newPosition > FINAL_POSITION) {
-      newPosition = FINAL_POSITION;
-    }
-
-    piece.position = newPosition;
-  }
-
-  module.exports = applyMove;
-
-
-
-
-./game/gameState.js:
-  const createPieces = require('./utils/createPieces');
-
-  const {
-    GAME_STATUS
-  } = require('./constants');
-
-  function createNewGame(hostId) {
-
-    return {
-      id: Date.now().toString(),
-
-      players: [
-        {
-          id: hostId,
-          color: "pink",
-          connected: true,
-          pieces: createPieces()
-        }
-      ],
-
-      turn: hostId,
-
-      dice: null,
-
-      winner: null,
-
-      status: GAME_STATUS.WAITING
-    };
-  }
-
-  module.exports = {
-    createNewGame
-  };
-
-
-
-./game/gameManager.js:
-  const pool = require('../db');
-
-  /* =============================
-    GET GAME
-  ============================= */
-
-  async function getGame(gameId) {
-
-    const result = await pool.query(
-      `
-      SELECT state
-      FROM games
-      WHERE id = $1
-      `,
-      [gameId]
-    );
-
-    if (result.rows.length === 0) {
-      return null;
-    }
-
-    return result.rows[0].state;
-  }
-
-  /* =============================
-    CREATE GAME
-  ============================= */
-
-  async function createGame(game) {
-
-    await pool.query(
-      `
-      INSERT INTO games (
-        id,
-        host_id,
-        state,
-        status
-      )
-      VALUES ($1, $2, $3, $4)
-      `,
-      [
-        game.id,
-        game.players[0].id,
-        JSON.stringify(game),
-        game.status
-      ]
-    );
-  }
-
-  /* =============================
-    SAVE GAME
-  ============================= */
-
-  async function saveGame(game) {
-
-    await pool.query(
-      `
-      UPDATE games
-      SET
-        state = $1,
-        status = $2,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $3
-      `,
-      [
-        JSON.stringify(game),
-        game.status,
-        game.id
-      ]
-    );
-  }
-
-  /* =============================
-    DELETE GAME
-  ============================= */
-
-  async function deleteGame(gameId) {
-
-    await pool.query(
-      `
-      DELETE FROM games
-      WHERE id = $1
-      `,
-      [gameId]
-    );
-  }
-
-  module.exports = {
-    getGame,
-    createGame,
-    saveGame,
-    deleteGame
-  };
-
-
-
-./game/gameEngine.js:
-  const {
-    COLORS,
-    GAME_STATUS
-  } = require('./constants');
-
-  const canJoinGame = require('./validators/canJoinGame');
-  const canRollDice = require('./validators/canRollDice');
-  const canMovePiece = require('./validators/canMovePiece');
-
-  const applyMove = require('./rules/applyMove');
-  const nextTurn = require('./rules/nextTurn');
-  const checkCapture = require('./rules/checkCapture');
-  const checkWin = require('./rules/checkWin');
-
-  const createPieces = require('./utils/createPieces');
-
-  function rollDice() {
-
-    return Math.floor(Math.random() * 6) + 1;
-  }
-
-  function addPlayerToGame(game, userId) {
-
-    game.players.push({
-      id: userId,
-      color: COLORS[game.players.length],
-      connected: true,
-      pieces: createPieces()
+  return io;
+}
+
+module.exports = {
+  setIO,
+  getIO
+};
+==============================
+FILE: ./server.js
+==============================
+const express = require('express');
+const cors = require('cors');
+const http = require('http');
+
+const initDB = require('./initDb');
+const initSockets = require('./sockets');
+
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const friendsRoutes = require('./routes/friendsRoutes');
+const gameRoutes = require('./routes/gameRoutes');
+
+const app = express();
+
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+app.use(express.json());
+
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/friends', friendsRoutes);
+app.use('/games', gameRoutes);
+
+const httpServer = http.createServer(app);
+
+initSockets(httpServer);
+
+const PORT = process.env.PORT || 3000;
+
+initDB()
+  .then(() => {
+    httpServer.listen(PORT, () => {
+      console.log(`Backend running on port ${PORT}`);
     });
-
-    if (game.players.length >= 2) {
-
-      game.status = GAME_STATUS.PLAYING;
-
-      game.turn = game.players[0].id;
-    }
-  }
-
-  function executeMove(
-    game,
-    playerId,
-    pieceIndex
-  ) {
-
-    const validation = canMovePiece(
-      game,
-      playerId,
-      pieceIndex
-    );
-
-    if (!validation.ok) {
-      return validation;
-    }
-
-    applyMove(
-      game,
-      playerId,
-      pieceIndex
-    );
-
-    checkCapture(game, playerId);
-
-    const won = checkWin(
-      game,
-      playerId
-    );
-
-    if (won) {
-
-      game.status = GAME_STATUS.FINISHED;
-
-      game.winner = playerId;
-
-      return {
-        ok: true,
-        finished: true
-      };
-    }
-
-    /*
-      Turno extra con 6
-    */
-
-    if (game.dice !== 6) {
-      nextTurn(game);
-    }
-
-    game.dice = null;
-
-    return {
-      ok: true
-    };
-  }
-
-  module.exports = {
-    rollDice,
-    addPlayerToGame,
-    executeMove,
-    canJoinGame,
-    canRollDice
-  };
-
-
-./controllers/authController.js:
-  const pool = require('../db');
-  const bcrypt = require('bcrypt');
-  const jwt = require('jsonwebtoken');
-
-  const JWT_SECRET = process.env.JWT_SECRET;
-  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  exports.register = async (req, res) => {
-    try {
-      const { username, email, password } = req.body;
-
-      if (!username || !email || !password) {
-        return res.status(400).json({ error: 'Faltan datos' });
-      }
-
-      if (!EMAIL_REGEX.test(email)) {
-        return res.status(400).json({ error: 'Email inválido' });
-      }
-
-      if (password.length < 8) {
-        return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
-      }
-
-      const existingUser = await pool.query(
-        'SELECT id FROM users WHERE email = $1 OR username = $2',
-        [email.toLowerCase(), username]
-      );
-
-      if (existingUser.rows.length > 0) {
-        return res.status(400).json({ error: 'El usuario o email ya existe' });
-      }
-
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      const newUser = await pool.query(
-        `INSERT INTO users (username, email, password)
-        VALUES ($1, $2, $3)
-        RETURNING id, username, email, avatar_url, created_at`,
-        [username, email.toLowerCase(), hashedPassword]
-      );
-
-      return res.status(201).json({
-        message: 'Usuario creado',
-        user: newUser.rows[0],
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error en el servidor' });
-    }
-  };
-
-  exports.login = async (req, res) => {
-    try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return res.status(400).json({ error: 'Faltan datos' });
-      }
-
-      const result = await pool.query(
-        'SELECT * FROM users WHERE email = $1',
-        [email.toLowerCase()]
-      );
-
-      if (result.rows.length === 0) {
-        return res.status(400).json({ error: 'Credenciales inválidas' });
-      }
-
-      const user = result.rows[0];
-      const validPassword = await bcrypt.compare(password, user.password);
-
-      if (!validPassword) {
-        return res.status(400).json({ error: 'Credenciales inválidas' });
-      }
-
-      const token = jwt.sign(
-        { id: user.id, email: user.email, username: user.username },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
-      return res.json({
-        message: 'Login correcto',
-        token,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          avatar_url: user.avatar_url,
-        },
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error en el servidor' });
-    }
-  };
-
-
-./controllers/friendsController.js:
-  const pool = require('../db');
-
-  exports.sendRequest = async (req, res) => {
-    try {
-      const requesterId = req.user.id;
-      const addresseeId = parseInt(req.params.id, 10);
-
-      if (Number.isNaN(addresseeId)) {
-        return res.status(400).json({ error: 'ID inválido' });
-      }
-
-      if (requesterId === addresseeId) {
-        return res.status(400).json({ error: 'No puedes enviarte solicitud a ti mismo' });
-      }
-
-      const targetUser = await pool.query(
-        'SELECT id FROM users WHERE id = $1',
-        [addresseeId]
-      );
-
-      if (targetUser.rows.length === 0) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-
-      const existing = await pool.query(
-        `SELECT * FROM friendships
-        WHERE (requester_id = $1 AND addressee_id = $2)
-            OR (requester_id = $2 AND addressee_id = $1)`,
-        [requesterId, addresseeId]
-      );
-
-      if (existing.rows.length > 0) {
-        const relation = existing.rows[0];
-
-        if (relation.status === 'pending') {
-          return res.status(400).json({ error: 'Ya existe una solicitud pendiente' });
-        }
-
-        if (relation.status === 'accepted') {
-          return res.status(400).json({ error: 'Ya sois amigos' });
-        }
-      }
-
-      const result = await pool.query(
-        `INSERT INTO friendships (requester_id, addressee_id, status)
-        VALUES ($1, $2, 'pending')
-        RETURNING id, requester_id, addressee_id, status, created_at`,
-        [requesterId, addresseeId]
-      );
-
-      return res.status(201).json({
-        message: 'Solicitud enviada',
-        request: result.rows[0],
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error en el servidor' });
-    }
-  };
-
-  exports.acceptRequest = async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const requesterId = parseInt(req.params.id, 10);
-
-      if (Number.isNaN(requesterId)) {
-        return res.status(400).json({ error: 'ID inválido' });
-      }
-
-      const request = await pool.query(
-        `SELECT * FROM friendships
-        WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'`,
-        [requesterId, userId]
-      );
-
-      if (request.rows.length === 0) {
-        return res.status(404).json({ error: 'Solicitud no encontrada' });
-      }
-
-      const updated = await pool.query(
-        `UPDATE friendships
-        SET status = 'accepted', accepted_at = CURRENT_TIMESTAMP
-        WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'
-        RETURNING id, requester_id, addressee_id, status, created_at, accepted_at`,
-        [requesterId, userId]
-      );
-
-      return res.json({
-        message: 'Solicitud aceptada',
-        friendship: updated.rows[0],
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error en el servidor' });
-    }
-  };
-
-  exports.deleteRelation = async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const otherUserId = parseInt(req.params.id, 10);
-
-      if (Number.isNaN(otherUserId)) {
-        return res.status(400).json({ error: 'ID inválido' });
-      }
-
-      const deleted = await pool.query(
-        `DELETE FROM friendships
-        WHERE (requester_id = $1 AND addressee_id = $2)
-            OR (requester_id = $2 AND addressee_id = $1)
-        RETURNING id`,
-        [userId, otherUserId]
-      );
-
-      if (deleted.rows.length === 0) {
-        return res.status(404).json({ error: 'Relación no encontrada' });
-      }
-
-      return res.json({ message: 'Relación eliminada' });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error en el servidor' });
-    }
-  };
-
-  exports.getFriends = async (req, res) => {
-    try {
-      const userId = req.user.id;
-
-      const result = await pool.query(
-        `
-        SELECT
-          u.id,
-          u.username,
-          u.email,
-          u.avatar_url,
-          f.accepted_at
-        FROM friendships f
-        JOIN users u
-          ON (u.id = CASE
-            WHEN f.requester_id = $1 THEN f.addressee_id
-            ELSE f.requester_id
-          END)
-        WHERE (f.requester_id = $1 OR f.addressee_id = $1)
-          AND f.status = 'accepted'
-        ORDER BY f.accepted_at DESC
-        `,
-        [userId]
-      );
-
-      return res.json({ friends: result.rows });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error en el servidor' });
-    }
-  };
-
-  exports.getPendingRequests = async (req, res) => {
-    try {
-      const userId = req.user.id;
-
-      const result = await pool.query(
-        `
-        SELECT
-          f.id,
-          u.id AS requester_id,
-          u.username,
-          u.email,
-          u.avatar_url,
-          f.created_at
-        FROM friendships f
-        JOIN users u ON u.id = f.requester_id
-        WHERE f.addressee_id = $1
-          AND f.status = 'pending'
-        ORDER BY f.created_at DESC
-        `,
-        [userId]
-      );
-
-      return res.json({ requests: result.rows });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error en el servidor' });
-    }
-  };
-
-  const {
-    isUserOnline
-  } = require('../sockets/presence');
-
-  exports.getOnlineFriends = async (req, res) => {
-    try {
-
-      const userId = req.user.id;
-
-      const result = await pool.query(
-        `
-        SELECT
-          u.id,
-          u.username,
-          u.avatar_url
-        FROM friendships f
-        JOIN users u
-          ON (u.id = CASE
-            WHEN f.requester_id = $1 THEN f.addressee_id
-            ELSE f.requester_id
-          END)
-        WHERE (f.requester_id = $1 OR f.addressee_id = $1)
-          AND f.status = 'accepted'
-        `,
-        [userId]
-      );
-
-      const onlineFriends = result.rows.map(friend => ({
-        ...friend,
-        online: isUserOnline(friend.id)
-      }));
-
-      return res.json({
-        friends: onlineFriends
-      });
-
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({
-        error: 'Error en el servidor'
-      });
-    }
-  };
-
-
-
-./controllers/gameController.js:
-  const getAvailableMoves = require('../game/rules/getAvailableMoves');
-  const nextTurn = require('../game/rules/nextTurn');
-
-  const {
-    createNewGame
-  } = require('../game/gameState');
-
-  const {
-    rollDice,
-    addPlayerToGame,
-    executeMove,
-    canJoinGame,
-    canRollDice
-  } = require('../game/gameEngine');
-
-  const {
-    getGame: getGameById,
-    createGame,
-    saveGame
-  } = require('../game/gameManager');
-
-  const {
-    getIO
-  } = require('../socket');
-
-  /* =============================
-    CREATE GAME
-  ============================= */
-
-  exports.createGame = async (req, res) => {
-
-    try {
-
-      const userId = req.user.id;
-
-      const game = createNewGame(userId);
-
-      await createGame(game);
-
-      getIO().emit(
-        "game:created",
-        game
-      );
-
-      res.json(game);
-
-    } catch (error) {
-
-      console.error(error);
-
-      res.status(500).json({
-        error: "Server error"
-      });
-    }
-  };
-
-  /* =============================
-    GET GAME
-  ============================= */
-
-  exports.getGame = async (req, res) => {
-
-    try {
-
-      const game = await getGameById(
-        req.params.id
-      );
-
-      if (!game) {
-        return res.status(404).json({
-          error: "Game not found"
-        });
-      }
-
-      res.json(game);
-
-    } catch (error) {
-
-      console.error(error);
-
-      res.status(500).json({
-        error: "Server error"
-      });
-    }
-  };
-
-  /* =============================
-    JOIN GAME
-  ============================= */
-
-  exports.joinGame = async (req, res) => {
-
-    try {
-
-      const game = await getGameById(
-        req.params.id
-      );
-
-      if (!game) {
-        return res.status(404).json({
-          error: "Game not found"
-        });
-      }
-
-      const userId = req.user.id;
-
-      const validation = canJoinGame(
-        game,
-        userId
-      );
-
-      if (!validation.ok) {
-        return res.status(400).json({
-          error: validation.error
-        });
-      }
-
-      addPlayerToGame(game, userId);
-
-      await saveGame(game);
-
-      getIO()
-        .to(game.id)
-        .emit("game:update", game);
-
-      res.json(game);
-
-    } catch (error) {
-
-      console.error(error);
-
-      res.status(500).json({
-        error: "Server error"
-      });
-    }
-  };
-
-  /* =============================
-    ROLL DICE
-  ============================= */
-
-  exports.rollDice = async (req, res) => {
-
-    try {
-
-      const game = await getGameById(
-        req.params.id
-      );
-
-      if (!game) {
-        return res.status(404).json({
-          error: "Game not found"
-        });
-      }
-
-      const userId = req.user.id;
-
-      const validation = canRollDice(
-        game,
-        userId
-      );
-
-      if (!validation.ok) {
-        return res.status(400).json({
-          error: validation.error
-        });
-      }
-
-      game.dice = rollDice();
-
-      const availableMoves = getAvailableMoves(
-        game,
-        userId
-      );
-
-      if (availableMoves.length === 0) {
-
-        game.dice = null;
-
-        nextTurn(game);
-      }
-
-      await saveGame(game);
-
-      getIO()
-        .to(game.id)
-        .emit("game:update", game);
-
-      res.json({
-        dice: game.dice
-      });
-
-    } catch (error) {
-
-      console.error(error);
-
-      res.status(500).json({
-        error: "Server error"
-      });
-    }
-  };
-
-  /* =============================
-    MOVE PIECE
-  ============================= */
-
-  exports.movePiece = async (req, res) => {
-
-    try {
-
-      const game = await getGameById(
-        req.params.id
-      );
-
-      if (!game) {
-        return res.status(404).json({
-          error: "Game not found"
-        });
-      }
-
-      const userId = req.user.id;
-
-      const {
-        pieceIndex
-      } = req.body;
-
-      const result = executeMove(
-        game,
-        userId,
-        pieceIndex
-      );
-
-      if (!result.ok) {
-        return res.status(400).json({
-          error: result.error
-        });
-      }
-
-      await saveGame(game);
-
-      getIO()
-        .to(game.id)
-        .emit("game:update", game);
-
-      res.json(game);
-
-    } catch (error) {
-
-      console.error(error);
-
-      res.status(500).json({
-        error: "Server error"
-      });
-    }
-  };
-
-
-
-./controllers/userController.js:
-  const pool = require('../db');
-
-  exports.getMe = async (req, res) => {
-    try {
-      const userId = req.user.id;
-
-      const result = await pool.query(
-        `SELECT id, username, email, avatar_url, created_at, updated_at
-        FROM users
-        WHERE id = $1`,
-        [userId]
-      );
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-
-      return res.json(result.rows[0]);
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error en el servidor' });
-    }
-  };
-
-  exports.updateMe = async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const { username, avatar_url } = req.body;
-
-      if (!username && !avatar_url) {
-        return res.status(400).json({ error: 'No hay datos para actualizar' });
-      }
-
-      if (username) {
-        const usernameExists = await pool.query(
-          'SELECT id FROM users WHERE username = $1 AND id != $2',
-          [username, userId]
-        );
-
-        if (usernameExists.rows.length > 0) {
-          return res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
-        }
-      }
-
-      const result = await pool.query(
-        `UPDATE users
-        SET
-          username = COALESCE($1, username),
-          avatar_url = COALESCE($2, avatar_url),
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $3
-        RETURNING id, username, email, avatar_url, created_at, updated_at`,
-        [username || null, avatar_url || null, userId]
-      );
-
-      return res.json({
-        message: 'Perfil actualizado',
-        user: result.rows[0],
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error en el servidor' });
-    }
-  };
-
-  exports.getUserById = async (req, res) => {
-    try {
-      const { id } = req.params;
-
-      const result = await pool.query(
-        `SELECT id, username, avatar_url, created_at
-        FROM users
-        WHERE id = $1`,
-        [id]
-      );
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-
-      return res.json(result.rows[0]);
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error en el servidor' });
-    }
-  };
+  })
+  .catch((err) => {
+    console.error('DB init failed:', err);
+    process.exit(1);
+  });

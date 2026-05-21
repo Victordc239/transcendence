@@ -4,21 +4,34 @@ const getGlobalPosition = require('../utils/getGlobalPosition');
 const getBlockades = require('../rules/getBlockades');
 
 const {
-  BOARD_SIZE
-} = require('../constants');
-
-const {
+  BOARD_SIZE,
   BASE_POSITION,
   FINAL_POSITION,
+  FINAL_STRETCH_START,
   GAME_STATUS
 } = require('../constants');
 
 function canMovePiece(game, playerId, pieceIndex) {
 
+  /* =============================
+    GAME STARTED
+  ============================= */
+
   if (game.status !== GAME_STATUS.PLAYING) {
     return {
       ok: false,
       error: "Game has not started yet"
+    };
+  }
+
+  /* =============================
+    TURN VALIDATION
+  ============================= */
+
+  if (game.turn !== playerId) {
+    return {
+      ok: false,
+      error: "Not your turn"
     };
   }
 
@@ -40,6 +53,10 @@ function canMovePiece(game, playerId, pieceIndex) {
     };
   }
 
+  /* =============================
+    DICE ROLLED
+  ============================= */
+
   if (game.dice === null) {
     return {
       ok: false,
@@ -47,9 +64,9 @@ function canMovePiece(game, playerId, pieceIndex) {
     };
   }
 
-  /*
-    Sacar ficha
-  */
+  /* =============================
+    NEED 5 TO LEAVE BASE
+  ============================= */
 
   if (
     piece.position === BASE_POSITION &&
@@ -61,9 +78,9 @@ function canMovePiece(game, playerId, pieceIndex) {
     };
   }
 
-  /*
-    No puede pasar meta
-  */
+  /* =============================
+    CANNOT EXCEED GOAL
+  ============================= */
 
   if (
     piece.position !== BASE_POSITION &&
@@ -75,9 +92,9 @@ function canMovePiece(game, playerId, pieceIndex) {
     };
   }
 
-  /*
-    No puede atravesar bloqueos
-  */
+  /* =============================
+    BLOCKADES
+  ============================= */
 
   if (
     piece.position !== BASE_POSITION &&

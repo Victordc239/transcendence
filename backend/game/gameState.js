@@ -13,7 +13,13 @@ function createNewGame(hostId) {
       {
         id: hostId,
         color: "pink",
+
         connected: true,
+
+        disconnectedAt: null,
+
+        abandoned: false,
+
         pieces: createPieces()
       }
     ],
@@ -24,7 +30,11 @@ function createNewGame(hostId) {
 
     winner: null,
 
-    status: GAME_STATUS.WAITING
+    status: GAME_STATUS.WAITING,
+
+    createdAt: Date.now(),
+
+    updatedAt: Date.now()
   };
 }
 

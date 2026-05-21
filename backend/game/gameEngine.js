@@ -23,8 +23,15 @@ function addPlayerToGame(game, userId) {
 
   game.players.push({
     id: userId,
+
     color: COLORS[game.players.length],
+
     connected: true,
+
+    disconnectedAt: null,
+
+    abandoned: false,
+
     pieces: createPieces()
   });
 
@@ -77,15 +84,13 @@ function executeMove(
     };
   }
 
-  /*
-    Turno extra con 6
-  */
-
   if (game.dice !== 6) {
     nextTurn(game);
   }
 
   game.dice = null;
+
+  game.updatedAt = Date.now();
 
   return {
     ok: true

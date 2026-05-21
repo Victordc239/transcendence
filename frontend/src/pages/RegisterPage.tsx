@@ -32,7 +32,7 @@ function RegisterPage() {
   return (
     <AuthLayout>
       <div className="flex flex-col gap-4">
-        <h1 className="text-3xl font-bold text-center text-pinkPrimary">
+        <h1 className="text-3xl font-bold text-center text-pink-Primary">
           Crear cuenta
         </h1>
 
@@ -64,7 +64,7 @@ function RegisterPage() {
           ¿Ya tienes cuenta?{" "}
           <span
             onClick={() => navigate("/")}
-            className="cursor-pointer text-pinkPrimary"
+            className="cursor-pointer text-pink-Primary"
           >
             Inicia sesión
           </span>

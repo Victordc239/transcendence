@@ -14,7 +14,7 @@ export default function GameHUD({ game, onRoll }: any) {
   );
 }*/
 
-import PlayersPanel from "./PlayersPanel";
+/*import PlayersPanel from "./PlayersPanel";
 import ChatPanel from "./ChatPanel";
 import DicePanel from "./DicePanel";
 
@@ -23,6 +23,36 @@ export default function GameHUD({ game }: any) {
     <div className="absolute top-0 right-[-320px] w-[300px] h-[600px] flex flex-col gap-3">
       <PlayersPanel game={game} />
       <DicePanel game={game} />
+      <ChatPanel game={game} />
+    </div>
+  );
+}*/
+
+import PlayersPanel from "./PlayersPanel";
+import ChatPanel from "./ChatPanel";
+import DicePanel from "./DicePanel";
+
+export default function GameHUD({ game }: any) {
+  return (
+    <div className="
+      fixed
+      right-[20px]
+      top-1/2
+      -translate-y-1/2
+
+      w-[290px]
+      h-[62vh]
+
+      flex
+      flex-col
+      gap-4
+
+      z-50
+    ">
+      <PlayersPanel game={game} />
+
+      <DicePanel game={game} />
+
       <ChatPanel game={game} />
     </div>
   );

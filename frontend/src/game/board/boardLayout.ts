@@ -2,6 +2,33 @@ export type Point = { x: number; y: number };
 
 export const BOARD_SIZE = 600;
 
+/*export const TRACK = [
+  { x: 120, y: 420 },
+  { x: 160, y: 420 },
+  { x: 200, y: 420 },
+]
+
+export const TRACK_COORDS = [
+  grid(6,1),
+  grid(6,2),
+  grid(6,3),
+]
+
+export const HOME_PATHS = {
+  pink: [],
+  blue: [],
+  green: [],
+  purple: [],
+}
+
+export const SAFE_CELLS = [0, 8, 13]
+
+const PIECE_STACK_OFFSETS = [
+  { x: 0, y: 0 },
+  { x: 10, y: -10 },
+  { x: -10, y: 10 },
+]*/
+
 /* =========================
    GRID BASE (15x15 PARCHE REAL)
 ========================= */

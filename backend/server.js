@@ -13,8 +13,8 @@ const gameRoutes = require('./routes/gameRoutes');
 const app = express();
 
 app.use(cors({
-  origin: true,
-  credentials: true
+	origin: true,
+	credentials: true
 }));
 app.use(express.json());
 
@@ -30,12 +30,12 @@ initSockets(httpServer);
 const PORT = process.env.PORT || 3000;
 
 initDB()
-  .then(() => {
-    httpServer.listen(PORT, () => {
-      console.log(`Backend running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('DB init failed:', err);
-    process.exit(1);
-  });
+	.then(() => {
+	httpServer.listen(PORT, () => {
+		console.log(`Backend running on port ${PORT}`);
+	});
+	})
+	.catch((err) => {
+		console.error('DB init failed:', err);
+		process.exit(1);
+	});

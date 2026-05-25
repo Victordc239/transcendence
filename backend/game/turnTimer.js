@@ -47,83 +47,55 @@ function clearTurnTimer(gameId) {
    START TURN TIMER
 ============================= */
 
-function startTurnTimer(gameId) {
+function startTurnTimer(gameId)
+{
+	clearTurnTimer(gameId);
 
-  clearTurnTimer(gameId);
+	const timeout = setTimeout( async () => {
+		try {
+			const game = await getGame(gameId);
 
-  const timeout = setTimeout(
-    async () => {
+			if (!game)
+			{
+				clearTurnTimer(gameId);
+				return;
+			}
 
-      try {
+			// Solo partidas activas 
+			if (game.status !== GAME_STATUS.PLAYING)
+			{
+				return;
+			}
 
-        const game =
-          await getGame(gameId);
+			// Si el jugador ya tiró dado, cancelar dado actual
+			game.dice = null;
 
-        if (!game) {
-          clearTurnTimer(gameId);
-          return;
-        }
+			// Siguiente turno
+			nextTurn(game);
+			game.updatedAt = Date.now();
+			await saveGame(game);
 
-        /*
-          Solo partidas activas
-        */
+			//Reiniciar timer
+			startTurnTimer(game.id);
 
-        if (
-          game.status !== GAME_STATUS.PLAYING
-        ) {
-          return;
-        }
+			//Emitir update
+			getIO()
+				.to(game.id)
+				.emit("game:turn_timeout", { nextTurn: game.turn});
 
-        /*
-          Si el jugador ya tiró dado,
-          cancelar dado actual
-        */
+			getIO()
+				.to(game.id)
+				.emit("game:update", game);
 
-        game.dice = null;
+		}
+		catch (err)
+		{
+			console.error(err);
+		}
 
-        /*
-          Siguiente turno
-        */
+	}, TURN_TIMEOUT );
 
-        nextTurn(game);
-
-        game.updatedAt = Date.now();
-
-        await saveGame(game);
-
-        /*
-          Reiniciar timer
-        */
-
-        startTurnTimer(game.id);
-
-        /*
-          Emitir update
-        */
-
-        getIO()
-          .to(game.id)
-          .emit("game:turn_timeout", {
-            nextTurn: game.turn
-          });
-
-        getIO()
-          .to(game.id)
-          .emit("game:update", game);
-
-      } catch (err) {
-
-        console.error(err);
-      }
-
-    },
-    TURN_TIMEOUT
-  );
-
-  turnTimers.set(
-    gameId,
-    timeout
-  );
+	turnTimers.set( gameId, timeout);
 }
 
 module.exports = {

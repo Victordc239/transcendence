@@ -3,134 +3,114 @@ const getPiece = require('../utils/getPiece');
 const getGlobalPosition = require('../utils/getGlobalPosition');
 const getBlockades = require('../rules/getBlockades');
 
-const {
-  BOARD_SIZE,
-  BASE_POSITION,
-  FINAL_POSITION,
-  FINAL_STRETCH_START,
-  GAME_STATUS
-} = require('../constants');
+const { BOARD_SIZE, BASE_POSITION, FINAL_POSITION, FINAL_STRETCH_START, GAME_STATUS} = require('../constants');
 
-function canMovePiece(game, playerId, pieceIndex) {
+function canMovePiece(game, playerId, pieceIndex)
+{
 
-  /* =============================
-    GAME STARTED
-  ============================= */
+	/* =============================
+	GAME STARTED
+	============================= */
+	if (game.status !== GAME_STATUS.PLAYING)
+	{
+		return {
+			ok: false,
+			error: "Game has not started yet"
+		};
+	}
 
-  if (game.status !== GAME_STATUS.PLAYING) {
-    return {
-      ok: false,
-      error: "Game has not started yet"
-    };
-  }
+	/* =============================
+	TURN VALIDATION
+	============================= */
+	if (game.turn !== playerId)
+	{
+		return {
+			ok: false,
+			error: "Not your turn"
+		};
+	}
 
-  /* =============================
-    TURN VALIDATION
-  ============================= */
+	const player = getPlayer(game, playerId);
+	if (!player)
+	{
+		return {
+			ok: false,
+			error: "Player not found"
+		};
+	}
 
-  if (game.turn !== playerId) {
-    return {
-      ok: false,
-      error: "Not your turn"
-    };
-  }
+	const piece = getPiece(player, pieceIndex);
+	if (!piece)
+	{
+		return {
+			ok: false,
+			error: "Piece not found"
+		};
+	}
 
-  const player = getPlayer(game, playerId);
+	/* =============================
+	DICE ROLLED
+	============================= */
+	if (game.dice === null)
+	{
+		return {
+			ok: false,
+			error: "Roll dice first"
+		};
+	}
 
-  if (!player) {
-    return {
-      ok: false,
-      error: "Player not found"
-    };
-  }
+	/* =============================
+	NEED 5 TO LEAVE BASE
+	============================= */
+	if (piece.position === BASE_POSITION && game.dice !== 5)
+	{
+		return {
+			ok: false,
+			error: "Need 5 to leave base"
+		};
+	}
 
-  const piece = getPiece(player, pieceIndex);
+	/* =============================
+	CANNOT EXCEED GOAL
+	============================= */
+	if (piece.position !== BASE_POSITION && piece.position + game.dice > FINAL_POSITION)
+	{
+		return {
+			ok: false,
+			error: "Move exceeds final position"
+		};
+	}
 
-  if (!piece) {
-    return {
-      ok: false,
-      error: "Piece not found"
-    };
-  }
+	/* =============================
+	BLOCKADES
+	============================= */
+	if (piece.position !== BASE_POSITION && piece.position < FINAL_STRETCH_START)
+	{
+		const blockades = getBlockades(game);
 
-  /* =============================
-    DICE ROLLED
-  ============================= */
+		const currentGlobal = getGlobalPosition(player.color, piece.position);
 
-  if (game.dice === null) {
-    return {
-      ok: false,
-      error: "Roll dice first"
-    };
-  }
+		for (let step = 1; step <= game.dice; step++)
+		{
+			const nextGlobal = (currentGlobal + step) % BOARD_SIZE;
 
-  /* =============================
-    NEED 5 TO LEAVE BASE
-  ============================= */
+			const blocked = blockades.find(
+				blockade =>
+				blockade.position === nextGlobal);
 
-  if (
-    piece.position === BASE_POSITION &&
-    game.dice !== 5
-  ) {
-    return {
-      ok: false,
-      error: "Need 5 to leave base"
-    };
-  }
+			if (blocked)
+			{
+				return {
+					ok: false,
+					error: "Blockade blocks the way"
+				};
+			}
+		}
+	}
 
-  /* =============================
-    CANNOT EXCEED GOAL
-  ============================= */
-
-  if (
-    piece.position !== BASE_POSITION &&
-    piece.position + game.dice > FINAL_POSITION
-  ) {
-    return {
-      ok: false,
-      error: "Move exceeds final position"
-    };
-  }
-
-  /* =============================
-    BLOCKADES
-  ============================= */
-
-  if (
-    piece.position !== BASE_POSITION &&
-    piece.position < FINAL_STRETCH_START
-  ) {
-
-    const blockades = getBlockades(game);
-
-    const currentGlobal =
-      getGlobalPosition(
-        player.color,
-        piece.position
-      );
-
-    for (let step = 1; step <= game.dice; step++) {
-
-      const nextGlobal =
-        (currentGlobal + step) % BOARD_SIZE;
-
-      const blocked = blockades.find(
-        blockade =>
-          blockade.position === nextGlobal
-      );
-
-      if (blocked) {
-        return {
-          ok: false,
-          error: "Blockade blocks the way"
-        };
-      }
-    }
-  }
-
-  return {
-    ok: true
-  };
+	return {
+		ok: true
+	};
 }
 
 module.exports = canMovePiece;

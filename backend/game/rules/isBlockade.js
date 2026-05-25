@@ -1,54 +1,39 @@
-const {
-  BASE_POSITION,
-  FINAL_STRETCH_START
-} = require('../constants');
+const { BASE_POSITION, FINAL_STRETCH_START} = require('../constants');
+const getGlobalPosition = require('../utils/getGlobalPosition');
 
-const getGlobalPosition = require(
-  '../utils/getGlobalPosition'
-);
+function isBlockade(game, color, globalPosition)
+{
+	const player = game.players.find(p => p.color === color);
 
-function isBlockade(game, color, globalPosition) {
+	if (!player)
+	{
+		return false;
+	}
 
-  const player = game.players.find(
-    p => p.color === color
-  );
+	let piecesInCell = 0;
 
-  if (!player) {
-    return false;
-  }
+	for (const piece of player.pieces)
+	{
+		// Ignorar base
+		if (piece.position === BASE_POSITION)
+		{
+			continue;
+		}
 
-  let piecesInCell = 0;
+		// Ignorar pasillo final
+		if (piece.position >= FINAL_STRETCH_START)
+		{
+			continue;
+		}
 
-  for (const piece of player.pieces) {
+		const pieceGlobal = getGlobalPosition(player.color, piece.position);
+		if (pieceGlobal === globalPosition)
+		{
+			piecesInCell++;
+		}
+	}
 
-    /*
-      Ignorar base
-    */
-
-    if (piece.position === BASE_POSITION) {
-      continue;
-    }
-
-    /*
-      Ignorar pasillo final
-    */
-
-    if (piece.position >= FINAL_STRETCH_START) {
-      continue;
-    }
-
-    const pieceGlobal =
-      getGlobalPosition(
-        player.color,
-        piece.position
-      );
-
-    if (pieceGlobal === globalPosition) {
-      piecesInCell++;
-    }
-  }
-
-  return piecesInCell >= 2;
+	return piecesInCell >= 2;
 }
 
 module.exports = isBlockade;

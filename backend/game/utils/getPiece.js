@@ -1,5 +1,6 @@
-function getPiece(player, pieceIndex) {
-  return player.pieces[pieceIndex];
+function getPiece(player, pieceIndex)
+{
+	return player.pieces[pieceIndex];
 }
 
 module.exports = getPiece;

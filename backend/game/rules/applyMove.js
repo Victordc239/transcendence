@@ -1,61 +1,36 @@
 const getPlayer = require('../utils/getPlayer');
 const getPiece = require('../utils/getPiece');
 
-const {
-  BASE_POSITION,
-  FINAL_ENTRY,
-  FINAL_STRETCH_START,
-  FINAL_POSITION
-} = require('../constants');
+const {BASE_POSITION, FINAL_ENTRY, FINAL_STRETCH_START, FINAL_POSITION} = require('../constants');
 
-function applyMove(game, playerId, pieceIndex) {
+function applyMove(game, playerId, pieceIndex)
+{
+	const player = getPlayer(game, playerId);
+	const piece = getPiece(player, pieceIndex);
 
-  const player = getPlayer(game, playerId);
+	//Sale de casa
+	if (piece.position === BASE_POSITION)
+	{
+		piece.position = 0;
+		return;
+	}
 
-  const piece = getPiece(player, pieceIndex);
+	let newPosition = piece.position + game.dice;
 
-  /*
-    Sale de casa
-  */
+	// Entrar al pasillo final
+	if (piece.position <= FINAL_ENTRY[player.color] && newPosition > FINAL_ENTRY[player.color])
+	{
+		const overflow = newPosition - FINAL_ENTRY[player.color] - 1;
+		newPosition = FINAL_STRETCH_START + overflow;
+	}
 
-  if (piece.position === BASE_POSITION) {
+	// Limitar meta
+	if (newPosition > FINAL_POSITION)
+	{
+		newPosition = FINAL_POSITION;
+	}
 
-    piece.position = 0;
-
-    return;
-  }
-
-  let newPosition =
-    piece.position + game.dice;
-
-  /*
-    Entrar al pasillo final
-  */
-
-  if (
-    piece.position <= FINAL_ENTRY[player.color] &&
-    newPosition > FINAL_ENTRY[player.color]
-  ) {
-
-    const overflow =
-      newPosition -
-      FINAL_ENTRY[player.color] -
-      1;
-
-    newPosition =
-      FINAL_STRETCH_START +
-      overflow;
-  }
-
-  /*
-    Limitar meta
-  */
-
-  if (newPosition > FINAL_POSITION) {
-    newPosition = FINAL_POSITION;
-  }
-
-  piece.position = newPosition;
+	piece.position = newPosition;
 }
 
 module.exports = applyMove;

@@ -1,27 +1,21 @@
-function setPlayerConnection(
-  game,
-  playerId,
-  connected
-) {
+function setPlayerConnection(game, playerId, connected)
+{
+	const player = game.players.find(p => p.id === playerId);
 
-  const player = game.players.find(
-    p => p.id === playerId
-  );
+	if (!player)
+	{
+		return;
+	}
 
-  if (!player) {
-    return;
-  }
+	player.connected = connected;
 
-  player.connected = connected;
+	if (connected)
+	{
+		player.disconnectedAt = null;
+		return;
+	}
 
-  if (connected) {
-
-    player.disconnectedAt = null;
-
-    return;
-  }
-
-  player.disconnectedAt = Date.now();
+	player.disconnectedAt = Date.now();
 }
 
 module.exports = setPlayerConnection;

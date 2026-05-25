@@ -20,18 +20,19 @@ export default function GameScene({ game }: any) {
   );
 }*/
 
-import ParchisBoard from "../../components/game/ParchisBoard";
-//import GameBoard from "../board/GameBoard";
+//import ParchisBoard from "../../components/game/ParchisBoard";
+import GameBoard from "../board/GameBoard";
 import GamePieces from "../pieces/GamePieces";
 import GameHUD from "../hud/GameHUD";
 import BoardEffects from "../board/BoardEffects";
 
 export default function GameScene({ game }: any) {
   return (
-      <div className="game-scene">
+      //<div className="game-scene">
+      <div className="relative w-full h-full min-h-screen overflow-hidden">
 
-              <div className="absolute inset-0">
-          <ParchisBoard />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <GameBoard />
         </div>
 
       <div className="

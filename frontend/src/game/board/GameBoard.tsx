@@ -1,22 +1,4 @@
 /*export default function GameBoard() {
-  const size = useBoardSize();
-
-  return (
-    <div className="game-container">
-      <svg width={size} height={size} viewBox="0 0 1 1">
-        <BoardBackground />
-        <BoardGrid />
-        <SafeZones />
-        <GoalZone />
-        <GamePieces />
-      </svg>
-
-      <GameHUD />
-    </div>
-  );
-}*/
-
-/*export default function GameBoard() {
   return (
     <div className="relative w-full h-full">
 
@@ -68,3 +50,38 @@
     </div>
   );
 }*/
+
+export default function GameBoard() {
+  return (
+    //<div className="relative aspect-square w-full max-w-[950px]">
+    //<div className="relative aspect-square w-[90vmin] max-w-[900px]">
+    <div className="relative aspect-square w-[90vmin] max-w-[900px] z-0">
+
+      <img
+        src="/board/board-base.svg"
+        className="absolute inset-0 w-full h-full"
+      />
+
+      <img
+        src="/board/board-glow.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          opacity-70
+          mix-blend-screen
+          pointer-events-none
+        "
+      />
+
+      <img
+        src="/board/board-overlay.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          pointer-events-none
+        "
+      />
+
+    </div>
+  );
+}

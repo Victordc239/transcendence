@@ -75,7 +75,8 @@ import { bases, mainTrack, CENTER } from "../board/boardLayout";
 
 export default function GamePieces({ game }: any) {
   return (
-    <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
+    // <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
+    <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none">
       {game.players?.map((player: any) =>
         player.pieces?.map((piece: any, i: number) => {
           

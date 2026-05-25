@@ -1,4 +1,4 @@
-export type Point = {
+/*export type Point = {
   x: number;
   y: number;
 };
@@ -11,10 +11,6 @@ export const CENTER = { x: 300, y: 300 };
 // radio del círculo principal
 const RADIUS = 240;
 
-/**
- * 52 posiciones del circuito principal
- * (vamos a empezar simple: círculo perfecto, luego refinamos a parchís real)
- */
 export const mainTrack: Point[] = Array.from({ length: 52 }).map((_, i) => {
   const angle = (i / 52) * 2 * Math.PI - Math.PI / 2;
 
@@ -24,9 +20,6 @@ export const mainTrack: Point[] = Array.from({ length: 52 }).map((_, i) => {
   };
 });
 
-/**
- * Bases de jugadores (4 esquinas)
- */
 export const bases: Record<string, Point[]> = {
   pink: [
     { x: 80, y: 80 },
@@ -53,3 +46,4 @@ export const bases: Record<string, Point[]> = {
     { x: 520, y: 520 },
   ],
 };
+*/

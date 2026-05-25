@@ -1,4 +1,4 @@
-export default function Piece({ x, y, color }: any) {
+/*export default function Piece({ x, y, color }: any) {
   return (
     <g>
       <circle
@@ -18,9 +18,9 @@ export default function Piece({ x, y, color }: any) {
       />
     </g>
   );
-}
+}*/
 
-/*import { motion } from "framer-motion";
+import { motion } from "framer-motion";
 
 const glowClass: Record<string, string> = {
   pink: "neon-pink",
@@ -60,4 +60,4 @@ export default function Piece({
       }}
     />
   );
-}*/
+}

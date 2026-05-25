@@ -1,4 +1,4 @@
-import { mainTrack, CENTER } from "../../game/boardPositions";
+/*import { mainTrack, CENTER } from "../../game/boardPositions";
 
 export default function ParchisBoard() {
   return (
@@ -8,7 +8,6 @@ export default function ParchisBoard() {
       viewBox="0 0 600 600"
       className="rounded-3xl shadow-2xl bg-white/5 backdrop-blur-xl"
     >
-      {/* fondo tablero */}
       <circle
         cx={CENTER.x}
         cy={CENTER.y}
@@ -16,7 +15,6 @@ export default function ParchisBoard() {
         fill="rgba(255,255,255,0.04)"
       />
 
-      {/* track */}
       {mainTrack.map((p, i) => (
         <circle
           key={i}
@@ -27,7 +25,6 @@ export default function ParchisBoard() {
         />
       ))}
 
-      {/* centro */}
       <circle
         cx={CENTER.x}
         cy={CENTER.y}
@@ -36,4 +33,4 @@ export default function ParchisBoard() {
       />
     </svg>
   );
-}
+}*/

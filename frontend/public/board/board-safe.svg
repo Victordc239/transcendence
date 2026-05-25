@@ -1,0 +1,63 @@
+<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <defs>
+
+    <filter id="safeGlow">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+  </defs>
+
+  <!-- TOP SAFE -->
+  <rect
+    x="278"
+    y="78"
+    width="44"
+    height="44"
+    rx="10"
+    fill="#37ff99"
+    opacity="0.9"
+    filter="url(#safeGlow)"
+  />
+
+  <!-- RIGHT SAFE -->
+  <rect
+    x="478"
+    y="278"
+    width="44"
+    height="44"
+    rx="10"
+    fill="#bb6cff"
+    opacity="0.9"
+    filter="url(#safeGlow)"
+  />
+
+  <!-- BOTTOM SAFE -->
+  <rect
+    x="278"
+    y="478"
+    width="44"
+    height="44"
+    rx="10"
+    fill="#37b8ff"
+    opacity="0.9"
+    filter="url(#safeGlow)"
+  />
+
+  <!-- LEFT SAFE -->
+  <rect
+    x="78"
+    y="278"
+    width="44"
+    height="44"
+    rx="10"
+    fill="#ff4fd8"
+    opacity="0.9"
+    filter="url(#safeGlow)"
+  />
+
+</svg>

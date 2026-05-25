@@ -1,10 +1,3 @@
-
-==============================
-FILE: ./.dockerignore
-==============================
-node_modules
-npm-debug.log
-.env
 ==============================
 FILE: ./Dockerfile
 ==============================
@@ -32,326 +25,330 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 exports.register = async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
+	try
+	{
+		const { username, email, password } = req.body;
 
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: 'Faltan datos' });
-    }
+		if (!username || !email || !password)
+		{
+			return res.status(400).json({ error: 'Faltan datos' });
+		}
 
-    if (!EMAIL_REGEX.test(email)) {
-      return res.status(400).json({ error: 'Email inválido' });
-    }
+		if (!EMAIL_REGEX.test(email))
+		{
+			return res.status(400).json({ error: 'Email inválido' });
+		}
 
-    if (password.length < 8) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
-    }
+		if (password.length < 8)
+		{
+			return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+		}
 
-    const existingUser = await pool.query(
-      'SELECT id FROM users WHERE email = $1 OR username = $2',
-      [email.toLowerCase(), username]
-    );
+		const existingUser = await pool.query('SELECT id FROM users WHERE email = $1 OR username = $2', [email.toLowerCase(), username]);
 
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({ error: 'El usuario o email ya existe' });
-    }
+		if (existingUser.rows.length > 0)
+		{
+			return res.status(400).json({ error: 'El usuario o email ya existe' });
+		}
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(password, salt);
+		const newUser = await pool.query(
+			`INSERT INTO users (username, email, password)
+			VALUES ($1, $2, $3)
+			RETURNING id, username, email, avatar_url, created_at`,
+			[username, email.toLowerCase(), hashedPassword]);
 
-    const newUser = await pool.query(
-      `INSERT INTO users (username, email, password)
-       VALUES ($1, $2, $3)
-       RETURNING id, username, email, avatar_url, created_at`,
-      [username, email.toLowerCase(), hashedPassword]
-    );
-
-    return res.status(201).json({
-      message: 'Usuario creado',
-      user: newUser.rows[0],
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Error en el servidor' });
-  }
+		return res.status(201).json({message: 'Usuario creado', user: newUser.rows[0]});
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
 };
 
 exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+	try
+	{
+		const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Faltan datos' });
-    }
+		if (!email || !password)
+		{
+			return res.status(400).json({ error: 'Faltan datos' });
+		}
 
-    const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
-      [email.toLowerCase()]
-    );
+		const result = await pool.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase()]);
 
-    if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Credenciales inválidas' });
-    }
+		if (result.rows.length === 0)
+		{
+			return res.status(400).json({ error: 'Credenciales inválidas' });
+		}
 
-    const user = result.rows[0];
-    const validPassword = await bcrypt.compare(password, user.password);
+		const user = result.rows[0];
+		const validPassword = await bcrypt.compare(password, user.password);
 
-    if (!validPassword) {
-      return res.status(400).json({ error: 'Credenciales inválidas' });
-    }
+		if (!validPassword)
+		{
+			return res.status(400).json({ error: 'Credenciales inválidas' });
+		}
 
-    const token = jwt.sign(
-      { id: user.id, email: user.email, username: user.username },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+		const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
 
-    return res.json({
-      message: 'Login correcto',
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        avatar_url: user.avatar_url,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Error en el servidor' });
-  }
+		return res.json({
+			message: 'Login correcto',
+			token,
+			user:
+			{
+				id: user.id,
+				username: user.username,
+				email: user.email,
+				avatar_url: user.avatar_url,
+			},
+		});
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
 };
 ==============================
 FILE: ./controllers/friendsController.js
 ==============================
 const pool = require('../db');
 
+const { isUserOnline } = require('../sockets/presence');
+
 exports.sendRequest = async (req, res) => {
-  try {
-    const requesterId = req.user.id;
-    const addresseeId = parseInt(req.params.id, 10);
+	try
+	{
+		const requesterId = req.user.id;
+		const addresseeId = parseInt(req.params.id, 10);
 
-    if (Number.isNaN(addresseeId)) {
-      return res.status(400).json({ error: 'ID inválido' });
-    }
+		if (Number.isNaN(addresseeId))
+		{
+			return res.status(400).json({ error: 'ID inválido' });
+		}
 
-    if (requesterId === addresseeId) {
-      return res.status(400).json({ error: 'No puedes enviarte solicitud a ti mismo' });
-    }
+		if (requesterId === addresseeId)
+		{
+			return res.status(400).json({ error: 'No puedes enviarte solicitud a ti mismo' });
+		}
 
-    const targetUser = await pool.query(
-      'SELECT id FROM users WHERE id = $1',
-      [addresseeId]
-    );
+		const targetUser = await pool.query('SELECT id FROM users WHERE id = $1', [addresseeId]);
 
-    if (targetUser.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
+		if (targetUser.rows.length === 0) 
+		{
+			return res.status(404).json({ error: 'Usuario no encontrado' });
+		}
 
-    const existing = await pool.query(
-      `SELECT * FROM friendships
-       WHERE (requester_id = $1 AND addressee_id = $2)
-          OR (requester_id = $2 AND addressee_id = $1)`,
-      [requesterId, addresseeId]
-    );
+		const existing = await pool.query(
+			`SELECT * FROM friendships
+			WHERE (requester_id = $1 AND addressee_id = $2)
+			OR (requester_id = $2 AND addressee_id = $1)`,
+			[requesterId, addresseeId]);
 
-    if (existing.rows.length > 0) {
-      const relation = existing.rows[0];
+		if (existing.rows.length > 0)
+		{
+			const relation = existing.rows[0];
 
-      if (relation.status === 'pending') {
-        return res.status(400).json({ error: 'Ya existe una solicitud pendiente' });
-      }
+			if (relation.status === 'pending')
+			{
+				return res.status(400).json({ error: 'Ya existe una solicitud pendiente' });
+			}
 
-      if (relation.status === 'accepted') {
-        return res.status(400).json({ error: 'Ya sois amigos' });
-      }
-    }
+			if (relation.status === 'accepted')
+			{
+				return res.status(400).json({ error: 'Ya sois amigos' });
+			}
+		}
 
-    const result = await pool.query(
-      `INSERT INTO friendships (requester_id, addressee_id, status)
-       VALUES ($1, $2, 'pending')
-       RETURNING id, requester_id, addressee_id, status, created_at`,
-      [requesterId, addresseeId]
-    );
+		const result = await pool.query(
+			`INSERT INTO friendships (requester_id, addressee_id, status)
+			VALUES ($1, $2, 'pending')
+			RETURNING id, requester_id, addressee_id, status, created_at`,
+			[requesterId, addresseeId]);
 
-    return res.status(201).json({
-      message: 'Solicitud enviada',
-      request: result.rows[0],
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Error en el servidor' });
-  }
+		return res.status(201).json({ message: 'Solicitud enviada', request: result.rows[0],});
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
 };
 
 exports.acceptRequest = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const requesterId = parseInt(req.params.id, 10);
+	try
+	{
+		const userId = req.user.id;
+		const requesterId = parseInt(req.params.id, 10);
 
-    if (Number.isNaN(requesterId)) {
-      return res.status(400).json({ error: 'ID inválido' });
-    }
+		if (Number.isNaN(requesterId)) {
+			return res.status(400).json({ error: 'ID inválido' });
+		}
 
-    const request = await pool.query(
-      `SELECT * FROM friendships
-       WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'`,
-      [requesterId, userId]
-    );
+		const request = await pool.query(
+			`SELECT * FROM friendships
+			WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'`,
+			[requesterId, userId]
+		);
 
-    if (request.rows.length === 0) {
-      return res.status(404).json({ error: 'Solicitud no encontrada' });
-    }
+		if (request.rows.length === 0) {
+			return res.status(404).json({ error: 'Solicitud no encontrada' });
+		}
 
-    const updated = await pool.query(
-      `UPDATE friendships
-       SET status = 'accepted', accepted_at = CURRENT_TIMESTAMP
-       WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'
-       RETURNING id, requester_id, addressee_id, status, created_at, accepted_at`,
-      [requesterId, userId]
-    );
+		const updated = await pool.query(
+			`UPDATE friendships
+			SET status = 'accepted', accepted_at = CURRENT_TIMESTAMP
+			WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'
+			RETURNING id, requester_id, addressee_id, status, created_at, accepted_at`,
+			[requesterId, userId]
+		);
 
-    return res.json({
-      message: 'Solicitud aceptada',
-      friendship: updated.rows[0],
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Error en el servidor' });
-  }
+		return res.json({
+			message: 'Solicitud aceptada',
+			friendship: updated.rows[0],
+		});
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
 };
 
 exports.deleteRelation = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const otherUserId = parseInt(req.params.id, 10);
+	try
+	{
+		const userId = req.user.id;
+		const otherUserId = parseInt(req.params.id, 10);
 
-    if (Number.isNaN(otherUserId)) {
-      return res.status(400).json({ error: 'ID inválido' });
-    }
+		if (Number.isNaN(otherUserId))
+		{
+			return res.status(400).json({ error: 'ID inválido' });
+		}
 
-    const deleted = await pool.query(
-      `DELETE FROM friendships
-       WHERE (requester_id = $1 AND addressee_id = $2)
-          OR (requester_id = $2 AND addressee_id = $1)
-       RETURNING id`,
-      [userId, otherUserId]
-    );
+		const deleted = await pool.query(
+			`DELETE FROM friendships
+			WHERE (requester_id = $1 AND addressee_id = $2)
+			OR (requester_id = $2 AND addressee_id = $1)
+			RETURNING id`,
+			[userId, otherUserId]);
 
-    if (deleted.rows.length === 0) {
-      return res.status(404).json({ error: 'Relación no encontrada' });
-    }
+		if (deleted.rows.length === 0)
+		{
+			return res.status(404).json({ error: 'Relación no encontrada' });
+		}
 
-    return res.json({ message: 'Relación eliminada' });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Error en el servidor' });
-  }
+		return res.json({ message: 'Relación eliminada' });
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
 };
 
 exports.getFriends = async (req, res) => {
-  try {
-    const userId = req.user.id;
+	try
+	{
+		const userId = req.user.id;
 
-    const result = await pool.query(
-      `
-      SELECT
-        u.id,
-        u.username,
-        u.email,
-        u.avatar_url,
-        f.accepted_at
-      FROM friendships f
-      JOIN users u
-        ON (u.id = CASE
-          WHEN f.requester_id = $1 THEN f.addressee_id
-          ELSE f.requester_id
-        END)
-      WHERE (f.requester_id = $1 OR f.addressee_id = $1)
-        AND f.status = 'accepted'
-      ORDER BY f.accepted_at DESC
-      `,
-      [userId]
-    );
+		const result = await pool.query(
+			`
+			SELECT
+			u.id,
+			u.username,
+			u.email,
+			u.avatar_url,
+			f.accepted_at
+			FROM friendships f
+			JOIN users u
+			ON (u.id = CASE
+			WHEN f.requester_id = $1 THEN f.addressee_id
+			ELSE f.requester_id
+			END)
+			WHERE (f.requester_id = $1 OR f.addressee_id = $1)
+			AND f.status = 'accepted'
+			ORDER BY f.accepted_at DESC
+			`,
+			[userId]);
 
-    return res.json({ friends: result.rows });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Error en el servidor' });
-  }
+		return res.json({ friends: result.rows });
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
 };
 
 exports.getPendingRequests = async (req, res) => {
-  try {
-    const userId = req.user.id;
+	try {
+	const userId = req.user.id;
 
-    const result = await pool.query(
-      `
-      SELECT
-        f.id,
-        u.id AS requester_id,
-        u.username,
-        u.email,
-        u.avatar_url,
-        f.created_at
-      FROM friendships f
-      JOIN users u ON u.id = f.requester_id
-      WHERE f.addressee_id = $1
-        AND f.status = 'pending'
-      ORDER BY f.created_at DESC
-      `,
-      [userId]
-    );
+	const result = await pool.query(
+		`
+		SELECT
+		f.id,
+		u.id AS requester_id,
+		u.username,
+		u.email,
+		u.avatar_url,
+		f.created_at
+		FROM friendships f
+		JOIN users u ON u.id = f.requester_id
+		WHERE f.addressee_id = $1
+		AND f.status = 'pending'
+		ORDER BY f.created_at DESC
+		`,
+		[userId]
+	);
 
-    return res.json({ requests: result.rows });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Error en el servidor' });
-  }
+	return res.json({ requests: result.rows });
+	} catch (error) {
+	console.error(error);
+	return res.status(500).json({ error: 'Error en el servidor' });
+	}
 };
 
-const {
-  isUserOnline
-} = require('../sockets/presence');
-
 exports.getOnlineFriends = async (req, res) => {
-  try {
+	try
+	{
 
-    const userId = req.user.id;
+		const userId = req.user.id;
 
-    const result = await pool.query(
-      `
-      SELECT
-        u.id,
-        u.username,
-        u.avatar_url
-      FROM friendships f
-      JOIN users u
-        ON (u.id = CASE
-          WHEN f.requester_id = $1 THEN f.addressee_id
-          ELSE f.requester_id
-        END)
-      WHERE (f.requester_id = $1 OR f.addressee_id = $1)
-        AND f.status = 'accepted'
-      `,
-      [userId]
-    );
+		const result = await pool.query(
+			`
+			SELECT
+			u.id,
+			u.username,
+			u.avatar_url
+			FROM friendships f
+			JOIN users u
+			ON (u.id = CASE
+			WHEN f.requester_id = $1 THEN f.addressee_id
+			ELSE f.requester_id
+			END)
+			WHERE (f.requester_id = $1 OR f.addressee_id = $1)
+			AND f.status = 'accepted'
+			`,
+			[userId]);
 
-    const onlineFriends = result.rows.map(friend => ({
-      ...friend,
-      online: isUserOnline(friend.id)
-    }));
+		const onlineFriends = result.rows.map(friend => ({
+			...friend,
+			online: isUserOnline(friend.id)}));
 
-    return res.json({
-      friends: onlineFriends
-    });
+		return res.json({friends: onlineFriends});
 
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      error: 'Error en el servidor'
-    });
-  }
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
 };
 ==============================
 FILE: ./controllers/userController.js
@@ -359,88 +356,90 @@ FILE: ./controllers/userController.js
 const pool = require('../db');
 
 exports.getMe = async (req, res) => {
-  try {
-    const userId = req.user.id;
+	try
+	{
+		const userId = req.user.id;
+		const result = await pool.query(
+			`SELECT id, username, email, avatar_url, created_at, updated_at
+			FROM users
+			WHERE id = $1`,
+			[userId]
+		);
 
-    const result = await pool.query(
-      `SELECT id, username, email, avatar_url, created_at, updated_at
-       FROM users
-       WHERE id = $1`,
-      [userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    return res.json(result.rows[0]);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Error en el servidor' });
-  }
+		if (result.rows.length === 0)
+		{
+			return res.status(404).json({ error: 'Usuario no encontrado' });
+		}
+		return res.json(result.rows[0]);
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
 };
 
 exports.updateMe = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { username, avatar_url } = req.body;
+	try
+	{
+		const userId = req.user.id;
+		const { username, avatar_url } = req.body;
 
-    if (!username && !avatar_url) {
-      return res.status(400).json({ error: 'No hay datos para actualizar' });
-    }
+		if (!username && !avatar_url)
+		{
+			return res.status(400).json({ error: 'No hay datos para actualizar' });
+		}
 
-    if (username) {
-      const usernameExists = await pool.query(
-        'SELECT id FROM users WHERE username = $1 AND id != $2',
-        [username, userId]
-      );
+		if (username)
+		{
+			const usernameExists = await pool.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, userId]);
+			if (usernameExists.rows.length > 0)
+			{
+				return res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
+			}
+		}
 
-      if (usernameExists.rows.length > 0) {
-        return res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
-      }
-    }
+		const result = await pool.query(
+			`UPDATE users
+			SET
+			username = COALESCE($1, username),
+			avatar_url = COALESCE($2, avatar_url),
+			updated_at = CURRENT_TIMESTAMP
+			WHERE id = $3
+			RETURNING id, username, email, avatar_url, created_at, updated_at`,
+			[username || null, avatar_url || null, userId]);
 
-    const result = await pool.query(
-      `UPDATE users
-       SET
-         username = COALESCE($1, username),
-         avatar_url = COALESCE($2, avatar_url),
-         updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3
-       RETURNING id, username, email, avatar_url, created_at, updated_at`,
-      [username || null, avatar_url || null, userId]
-    );
-
-    return res.json({
-      message: 'Perfil actualizado',
-      user: result.rows[0],
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Error en el servidor' });
-  }
+		return res.json({message: 'Perfil actualizado', user: result.rows[0]});
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
 };
 
 exports.getUserById = async (req, res) => {
-  try {
-    const { id } = req.params;
+	try
+	{
+		const { id } = req.params;
 
-    const result = await pool.query(
-      `SELECT id, username, avatar_url, created_at
-       FROM users
-       WHERE id = $1`,
-      [id]
-    );
+		const result = await pool.query(
+			`SELECT id, username, avatar_url, created_at
+			FROM users
+			WHERE id = $1`,
+			[id]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    return res.json(result.rows[0]);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Error en el servidor' });
-  }
+		if (result.rows.length === 0)
+		{
+			return res.status(404).json({ error: 'Usuario no encontrado' });
+		}
+		return res.json(result.rows[0]);
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
 };
 ==============================
 FILE: ./controllers/gameController.js
@@ -448,257 +447,177 @@ FILE: ./controllers/gameController.js
 const getAvailableMoves = require('../game/rules/getAvailableMoves');
 const nextTurn = require('../game/rules/nextTurn');
 
-const {
-  createNewGame
-} = require('../game/gameState');
-
-const {
-  rollDice,
-  addPlayerToGame,
-  executeMove,
-  canJoinGame,
-  canRollDice
-} = require('../game/gameEngine');
-
-const {
-  getGame: getGameById,
-  createGame,
-  saveGame
-} = require('../game/gameManager');
-
-const {
-  getIO
-} = require('../socket');
+const { createNewGame } = require('../game/gameState');
+const { rollDice, addPlayerToGame, executeMove, canJoinGame, canRollDice} = require('../game/gameEngine');
+const { getGame: getGameById, createGame, saveGame} = require('../game/gameManager');
+const { getIO } = require('../socket');
 
 /* =============================
    CREATE GAME
 ============================= */
 
 exports.createGame = async (req, res) => {
+	try
+	{
+		const userId = req.user.id;
 
-  try {
+		const game = createNewGame(userId);
 
-    const userId = req.user.id;
+		await createGame(game);
 
-    const game = createNewGame(userId);
+		getIO().emit("game:created", game);
 
-    await createGame(game);
+		res.json(game);
 
-    getIO().emit(
-      "game:created",
-      game
-    );
-
-    res.json(game);
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-      error: "Server error"
-    });
-  }
+	}
+	catch (error)
+	{
+		console.error(error);
+		res.status(500).json({ error: "Server error" });
+	}
 };
 
 /* =============================
-   GET GAME
+GET GAME
 ============================= */
 
 exports.getGame = async (req, res) => {
+	try
+	{
+		const game = await getGameById(req.params.id);
 
-  try {
+		if (!game)
+		{
+			return res.status(404).json({ error: "Game not found" });
+		}
+		res.json(game);
 
-    const game = await getGameById(
-      req.params.id
-    );
+	}
+	catch (error)
+	{
+		console.error(error);
 
-    if (!game) {
-      return res.status(404).json({
-        error: "Game not found"
-      });
-    }
-
-    res.json(game);
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-      error: "Server error"
-    });
-  }
+		res.status(500).json({ error: "Server error" });
+	}
 };
 
 /* =============================
-   JOIN GAME
+JOIN GAME
 ============================= */
 
 exports.joinGame = async (req, res) => {
+	try {
+		const game = await getGameById(req.params.id);
 
-  try {
+		if (!game)
+		{
+			return res.status(404).json({ error: "Game not found" });
+		}
 
-    const game = await getGameById(
-      req.params.id
-    );
+		const userId = req.user.id;
+		const validation = canJoinGame(game, userId);
 
-    if (!game) {
-      return res.status(404).json({
-        error: "Game not found"
-      });
-    }
+		if (!validation.ok)
+		{
+			return res.status(400).json({ error: validation.error });
+		}
 
-    const userId = req.user.id;
+		addPlayerToGame(game, userId);
+		await saveGame(game);
 
-    const validation = canJoinGame(
-      game,
-      userId
-    );
+		getIO()
+			.to(game.id)
+			.emit("game:update", game);
 
-    if (!validation.ok) {
-      return res.status(400).json({
-        error: validation.error
-      });
-    }
-
-    addPlayerToGame(game, userId);
-
-    await saveGame(game);
-
-    getIO()
-      .to(game.id)
-      .emit("game:update", game);
-
-    res.json(game);
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-      error: "Server error"
-    });
-  }
+		res.json(game);
+	}
+	catch (error)
+	{
+		console.error(error);
+		res.status(500).json({ error: "Server error" });
+	}
 };
 
 /* =============================
-   ROLL DICE
+ROLL DICE
 ============================= */
 
 exports.rollDice = async (req, res) => {
+	try
+	{
+		const game = await getGameById(req.params.id);
 
-  try {
+		if (!game)
+		{
+			return res.status(404).json({ error: "Game not found" });
+		}
 
-    const game = await getGameById(
-      req.params.id
-    );
+		const userId = req.user.id;
+		const validation = canRollDice(game, userId);
 
-    if (!game) {
-      return res.status(404).json({
-        error: "Game not found"
-      });
-    }
+		if (!validation.ok)
+		{
+			return res.status(400).json({ error: validation.error });
+		}
 
-    const userId = req.user.id;
+		game.dice = rollDice();
+		const availableMoves = getAvailableMoves(game, userId);
 
-    const validation = canRollDice(
-      game,
-      userId
-    );
+		if (availableMoves.length === 0)
+		{
+			game.dice = null;
+			nextTurn(game);
+		}
+		await saveGame(game);
+		getIO()
+			.to(game.id)
+			.emit("game:update", game);
 
-    if (!validation.ok) {
-      return res.status(400).json({
-        error: validation.error
-      });
-    }
-
-    game.dice = rollDice();
-
-    const availableMoves = getAvailableMoves(
-      game,
-      userId
-    );
-
-    if (availableMoves.length === 0) {
-
-      game.dice = null;
-
-      nextTurn(game);
-    }
-
-    await saveGame(game);
-
-    getIO()
-      .to(game.id)
-      .emit("game:update", game);
-
-    res.json({
-      dice: game.dice
-    });
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-      error: "Server error"
-    });
-  }
+		res.json({ dice: game.dice });
+	}
+	catch (error)
+	{
+		console.error(error);
+		res.status(500).json({ error: "Server error" });
+	}
 };
 
 /* =============================
-   MOVE PIECE
+MOVE PIECE
 ============================= */
 
 exports.movePiece = async (req, res) => {
+	try
+	{
+		const game = await getGameById(req.params.id);
 
-  try {
+		if (!game)
+		{
+			return res.status(404).json({ error: "Game not found" });
+		}
 
-    const game = await getGameById(
-      req.params.id
-    );
+		const userId = req.user.id;
+		const {pieceIndex} = req.body;
+		const result = executeMove(game, userId, pieceIndex);
 
-    if (!game) {
-      return res.status(404).json({
-        error: "Game not found"
-      });
-    }
+		if (!result.ok)
+		{
+			return res.status(400).json({ error: result.error });
+		}
 
-    const userId = req.user.id;
+		await saveGame(game);
 
-    const {
-      pieceIndex
-    } = req.body;
+		getIO()
+			.to(game.id)
+			.emit("game:update", game);
 
-    const result = executeMove(
-      game,
-      userId,
-      pieceIndex
-    );
-
-    if (!result.ok) {
-      return res.status(400).json({
-        error: result.error
-      });
-    }
-
-    await saveGame(game);
-
-    getIO()
-      .to(game.id)
-      .emit("game:update", game);
-
-    res.json(game);
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-      error: "Server error"
-    });
-  }
+		res.json(game);
+	}
+	catch (error)
+	{
+		console.error(error);
+		res.status(500).json({ error: "Server error" });
+	}
 };
 ==============================
 FILE: ./db.js
@@ -706,171 +625,163 @@ FILE: ./db.js
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'user',
-  password: process.env.DB_PASSWORD || 'password',
-  database: process.env.DB_NAME || 'transcendence',
-  port: Number(process.env.DB_PORT || 5432),
+	host: process.env.DB_HOST || 'localhost',
+	user: process.env.DB_USER || 'user',
+	password: process.env.DB_PASSWORD || 'password',
+	database: process.env.DB_NAME || 'transcendence',
+	port: Number(process.env.DB_PORT || 5432),
 });
 
 module.exports = pool;
 ==============================
 FILE: ./game/utils/createPieces.js
 ==============================
-const {
-  BASE_POSITION
-} = require('../constants');
+const { BASE_POSITION } = require('../constants');
 
-function createPieces() {
-
-  return [
-    {
-      position: BASE_POSITION
-    },
-    {
-      position: BASE_POSITION
-    },
-    {
-      position: BASE_POSITION
-    },
-    {
-      position: BASE_POSITION
-    }
-  ];
+function createPieces()
+{
+	return[
+		{
+			position: BASE_POSITION
+		},
+		{
+			position: BASE_POSITION
+		},
+		{
+			position: BASE_POSITION
+		},
+		{
+			position: BASE_POSITION
+		}
+	];
 }
 
 module.exports = createPieces;
 ==============================
 FILE: ./game/utils/getPlayer.js
 ==============================
-function getPlayer(game, playerId) {
-  return game.players.find(
-    player => player.id === playerId
-  );
+function getPlayer(game, playerId)
+{
+	return game.players.find( player => player.id === playerId);
 }
 
 module.exports = getPlayer;
 ==============================
 FILE: ./game/utils/getPiece.js
 ==============================
-function getPiece(player, pieceIndex) {
-  return player.pieces[pieceIndex];
+function getPiece(player, pieceIndex)
+{
+	return player.pieces[pieceIndex];
 }
 
 module.exports = getPiece;
 ==============================
 FILE: ./game/utils/getGlobalPosition.js
 ==============================
-const {
-  START_POSITIONS,
-  BOARD_SIZE
-} = require('../constants');
+const { START_POSITIONS, BOARD_SIZE} = require('../constants');
 
-/*
-  Convierte posición relativa
-  a posición global del tablero.
-*/
+//Convierte posición relativa a posición global del tablero.
 
-function getGlobalPosition(color, relativePosition) {
+function getGlobalPosition(color, relativePosition)
+{
 
-  return (
-    START_POSITIONS[color] +
-    relativePosition
-  ) % BOARD_SIZE;
+	return (START_POSITIONS[color] + relativePosition) % BOARD_SIZE;
 }
 
 module.exports = getGlobalPosition;
 ==============================
 FILE: ./game/validators/canJoinGame.js
 ==============================
-const {
-  GAME_STATUS
-} = require('../constants');
+const { GAME_STATUS } = require('../constants');
 
-function canJoinGame(game, userId) {
+function canJoinGame(game, userId)
+{
+	if (game.status !== GAME_STATUS.WAITING)
+	{
+		return {
+			ok: false,
+			error: "Game already started"
+		};
+	}
 
-  if (game.status !== GAME_STATUS.WAITING) {
-    return {
-      ok: false,
-      error: "Game already started"
-    };
-  }
+	if (game.players.length >= 4)
+	{
+		return {
+			ok: false,
+			error: "Game full"
+		};
+	}
 
-  if (game.players.length >= 4) {
-    return {
-      ok: false,
-      error: "Game full"
-    };
-  }
+	const alreadyInGame = game.players.find(
+		player => player.id === userId);
 
-  const alreadyInGame = game.players.find(
-    player => player.id === userId
-  );
+	if (alreadyInGame)
+	{
+		return {
+			ok: false,
+			error: "Already in game"
+		};
+	}
 
-  if (alreadyInGame) {
-    return {
-      ok: false,
-      error: "Already in game"
-    };
-  }
-
-  return {
-    ok: true
-  };
+	return{
+		ok: true
+	};
 }
 
 module.exports = canJoinGame;
 ==============================
 FILE: ./game/validators/validateTurn.js
 ==============================
-function validateTurn(game, userId) {
+function validateTurn(game, userId)
+{
+	if (game.turn !== userId)
+	{
+		return{
+			ok: false,
+			error: "Not your turn"
+		};
+	}
 
-  if (game.turn !== userId) {
-    return {
-      ok: false,
-      error: "Not your turn"
-    };
-  }
-
-  return {
-    ok: true
-  };
+	return {
+		ok: true
+	};
 }
 
 module.exports = validateTurn;
 ==============================
 FILE: ./game/validators/canRollDice.js
 ==============================
-const {
-  GAME_STATUS
-} = require('../constants');
+const { GAME_STATUS } = require('../constants');
 
-function canRollDice(game, userId) {
+function canRollDice(game, userId)
+{
+	if (game.status !== GAME_STATUS.PLAYING)
+	{
+		return {
+			ok: false,
+			error: "Game has not started yet"
+		};
+	}
 
-  if (game.status !== GAME_STATUS.PLAYING) {
-    return {
-      ok: false,
-      error: "Game has not started yet"
-    };
-  }
+	if (game.turn !== userId)
+	{
+		return {
+			ok: false,
+			error: "Not your turn"
+		};
+	}
 
-  if (game.turn !== userId) {
-    return {
-      ok: false,
-      error: "Not your turn"
-    };
-  }
+	if (game.dice !== null)
+	{
+		return {
+			ok: false,
+			error: "Dice already rolled"
+		};
+	}
 
-  if (game.dice !== null) {
-    return {
-      ok: false,
-      error: "Dice already rolled"
-    };
-  }
-
-  return {
-    ok: true
-  };
+	return {
+		ok: true
+	};
 }
 
 module.exports = canRollDice;
@@ -882,305 +793,229 @@ const getPiece = require('../utils/getPiece');
 const getGlobalPosition = require('../utils/getGlobalPosition');
 const getBlockades = require('../rules/getBlockades');
 
-const {
-  BOARD_SIZE,
-  BASE_POSITION,
-  FINAL_POSITION,
-  FINAL_STRETCH_START,
-  GAME_STATUS
-} = require('../constants');
+const { BOARD_SIZE, BASE_POSITION, FINAL_POSITION, FINAL_STRETCH_START, GAME_STATUS} = require('../constants');
 
-function canMovePiece(game, playerId, pieceIndex) {
+function canMovePiece(game, playerId, pieceIndex)
+{
 
-  /* =============================
-    GAME STARTED
-  ============================= */
+	/* =============================
+	GAME STARTED
+	============================= */
+	if (game.status !== GAME_STATUS.PLAYING)
+	{
+		return {
+			ok: false,
+			error: "Game has not started yet"
+		};
+	}
 
-  if (game.status !== GAME_STATUS.PLAYING) {
-    return {
-      ok: false,
-      error: "Game has not started yet"
-    };
-  }
+	/* =============================
+	TURN VALIDATION
+	============================= */
+	if (game.turn !== playerId)
+	{
+		return {
+			ok: false,
+			error: "Not your turn"
+		};
+	}
 
-  /* =============================
-    TURN VALIDATION
-  ============================= */
+	const player = getPlayer(game, playerId);
+	if (!player)
+	{
+		return {
+			ok: false,
+			error: "Player not found"
+		};
+	}
 
-  if (game.turn !== playerId) {
-    return {
-      ok: false,
-      error: "Not your turn"
-    };
-  }
+	const piece = getPiece(player, pieceIndex);
+	if (!piece)
+	{
+		return {
+			ok: false,
+			error: "Piece not found"
+		};
+	}
 
-  const player = getPlayer(game, playerId);
+	/* =============================
+	DICE ROLLED
+	============================= */
+	if (game.dice === null)
+	{
+		return {
+			ok: false,
+			error: "Roll dice first"
+		};
+	}
 
-  if (!player) {
-    return {
-      ok: false,
-      error: "Player not found"
-    };
-  }
+	/* =============================
+	NEED 5 TO LEAVE BASE
+	============================= */
+	if (piece.position === BASE_POSITION && game.dice !== 5)
+	{
+		return {
+			ok: false,
+			error: "Need 5 to leave base"
+		};
+	}
 
-  const piece = getPiece(player, pieceIndex);
+	/* =============================
+	CANNOT EXCEED GOAL
+	============================= */
+	if (piece.position !== BASE_POSITION && piece.position + game.dice > FINAL_POSITION)
+	{
+		return {
+			ok: false,
+			error: "Move exceeds final position"
+		};
+	}
 
-  if (!piece) {
-    return {
-      ok: false,
-      error: "Piece not found"
-    };
-  }
+	/* =============================
+	BLOCKADES
+	============================= */
+	if (piece.position !== BASE_POSITION && piece.position < FINAL_STRETCH_START)
+	{
+		const blockades = getBlockades(game);
 
-  /* =============================
-    DICE ROLLED
-  ============================= */
+		const currentGlobal = getGlobalPosition(player.color, piece.position);
 
-  if (game.dice === null) {
-    return {
-      ok: false,
-      error: "Roll dice first"
-    };
-  }
+		for (let step = 1; step <= game.dice; step++)
+		{
+			const nextGlobal = (currentGlobal + step) % BOARD_SIZE;
 
-  /* =============================
-    NEED 5 TO LEAVE BASE
-  ============================= */
+			const blocked = blockades.find(
+				blockade =>
+				blockade.position === nextGlobal);
 
-  if (
-    piece.position === BASE_POSITION &&
-    game.dice !== 5
-  ) {
-    return {
-      ok: false,
-      error: "Need 5 to leave base"
-    };
-  }
+			if (blocked)
+			{
+				return {
+					ok: false,
+					error: "Blockade blocks the way"
+				};
+			}
+		}
+	}
 
-  /* =============================
-    CANNOT EXCEED GOAL
-  ============================= */
-
-  if (
-    piece.position !== BASE_POSITION &&
-    piece.position + game.dice > FINAL_POSITION
-  ) {
-    return {
-      ok: false,
-      error: "Move exceeds final position"
-    };
-  }
-
-  /* =============================
-    BLOCKADES
-  ============================= */
-
-  if (
-    piece.position !== BASE_POSITION &&
-    piece.position < FINAL_STRETCH_START
-  ) {
-
-    const blockades = getBlockades(game);
-
-    const currentGlobal =
-      getGlobalPosition(
-        player.color,
-        piece.position
-      );
-
-    for (let step = 1; step <= game.dice; step++) {
-
-      const nextGlobal =
-        (currentGlobal + step) % BOARD_SIZE;
-
-      const blocked = blockades.find(
-        blockade =>
-          blockade.position === nextGlobal
-      );
-
-      if (blocked) {
-        return {
-          ok: false,
-          error: "Blockade blocks the way"
-        };
-      }
-    }
-  }
-
-  return {
-    ok: true
-  };
+	return {
+		ok: true
+	};
 }
 
 module.exports = canMovePiece;
 ==============================
 FILE: ./game/rules/nextTurn.js
 ==============================
-function nextTurn(game) {
+function nextTurn(game)
+{
+	const currentIndex = game.players.findIndex(player => player.id === game.turn);
 
-  const currentIndex = game.players.findIndex(
-    player => player.id === game.turn
-  );
+	const nextIndex = (currentIndex + 1) % game.players.length;
 
-  const nextIndex =
-    (currentIndex + 1) % game.players.length;
-
-  game.turn = game.players[nextIndex].id;
+	game.turn = game.players[nextIndex].id;
 }
 
 module.exports = nextTurn;
 ==============================
 FILE: ./game/rules/checkCapture.js
 ==============================
-const {
-  SAFE_CELLS,
-  BASE_POSITION,
-  FINAL_STRETCH_START
-} = require('../constants');
+const {SAFE_CELLS, BASE_POSITION, FINAL_STRETCH_START} = require('../constants');
 
 const getGlobalPosition = require('../utils/getGlobalPosition');
 const getBlockades = require('./getBlockades');
 
-function checkCapture(game, currentPlayerId) {
+function checkCapture(game, currentPlayerId)
+{
+	const currentPlayer = game.players.find(p => p.id === currentPlayerId);
+	if (!currentPlayer)
+	{
+		return;
+	}
 
-  const currentPlayer = game.players.find(
-    p => p.id === currentPlayerId
-  );
+	// Obtener bloqueos actuales
+	const blockades = getBlockades(game);
 
-  if (!currentPlayer) {
-    return;
-  }
+	for (const piece of currentPlayer.pieces)
+	{
+		//Ignorar base
+		if (piece.position === BASE_POSITION)
+		{
+			continue;
+		}
 
-  /*
-    Obtener bloqueos actuales
-  */
+		// Ignorar pasillo final
+		if (piece.position >= FINAL_STRETCH_START)
+		{
+			continue;
+		}
 
-  const blockades = getBlockades(game);
+		const currentGlobal = getGlobalPosition(currentPlayer.color, piece.position);
 
-  for (const piece of currentPlayer.pieces) {
+		// Casilla segura
+		if (SAFE_CELLS.includes(currentGlobal))
+		{
+			continue;
+		}
 
-    /*
-      Ignorar base
-    */
+		for (const enemy of game.players)
+		{
+			// Ignorar jugador actual
+			if (enemy.id === currentPlayerId)
+			{
+				continue;
+			}
 
-    if (piece.position === BASE_POSITION) {
-      continue;
-    }
+			for (const enemyPiece of enemy.pieces)
+			{
+				// Ignorar base
+				if (enemyPiece.position === BASE_POSITION)
+				{
+					continue;
+				}
 
-    /*
-      Ignorar pasillo final
-    */
+				// Ignorar pasillo final
+				if(enemyPiece.position >= FINAL_STRETCH_START)
+				{
+					continue;
+				}
 
-    if (piece.position >= FINAL_STRETCH_START) {
-      continue;
-    }
+				const enemyGlobal = getGlobalPosition(enemy.color, enemyPiece.position);
 
-    const currentGlobal =
-      getGlobalPosition(
-        currentPlayer.color,
-        piece.position
-      );
+				// Misma casilla
+				if (enemyGlobal === currentGlobal)
+				{
+					// No se puede comer un bloqueo
+					const isEnemyBlockade = blockades.find(blockade => blockade.position === enemyGlobal);
+					if (isEnemyBlockade)
+					{
+						continue;
+					}
 
-    /*
-      Casilla segura
-    */
-
-    if (SAFE_CELLS.includes(currentGlobal)) {
-      continue;
-    }
-
-    for (const enemy of game.players) {
-
-      /*
-        Ignorar jugador actual
-      */
-
-      if (enemy.id === currentPlayerId) {
-        continue;
-      }
-
-      for (const enemyPiece of enemy.pieces) {
-
-        /*
-          Ignorar base
-        */
-
-        if (
-          enemyPiece.position === BASE_POSITION
-        ) {
-          continue;
-        }
-
-        /*
-          Ignorar pasillo final
-        */
-
-        if (
-          enemyPiece.position >= FINAL_STRETCH_START
-        ) {
-          continue;
-        }
-
-        const enemyGlobal =
-          getGlobalPosition(
-            enemy.color,
-            enemyPiece.position
-          );
-
-        /*
-          Misma casilla
-        */
-
-        if (enemyGlobal === currentGlobal) {
-
-          /*
-            No se puede comer un bloqueo
-          */
-
-          const isEnemyBlockade =
-            blockades.find(
-              blockade =>
-                blockade.position === enemyGlobal
-            );
-
-          if (isEnemyBlockade) {
-            continue;
-          }
-
-          /*
-            Comer ficha
-          */
-
-          enemyPiece.position =
-            BASE_POSITION;
-        }
-      }
-    }
-  }
+					// Comer ficha
+					enemyPiece.position = BASE_POSITION;
+				}
+			}
+		}
+	}
 }
 
 module.exports = checkCapture;
 ==============================
 FILE: ./game/rules/checkWin.js
 ==============================
-const {
-  FINAL_POSITION
-} = require('../constants');
+const { FINAL_POSITION } = require('../constants');
 
-function checkWin(game, playerId) {
+function checkWin(game, playerId)
+{
+	const player = game.players.find(p => p.id === playerId);
 
-  const player = game.players.find(
-    p => p.id === playerId
-  );
+	if (!player)
+	{
+		return false;
+	}
 
-  if (!player) {
-    return false;
-  }
-
-  return player.pieces.every(
-    piece =>
-      piece.position === FINAL_POSITION
-  );
+	return player.pieces.every(piece => piece.position === FINAL_POSITION);
 }
 
 module.exports = checkWin;
@@ -1190,61 +1025,36 @@ FILE: ./game/rules/applyMove.js
 const getPlayer = require('../utils/getPlayer');
 const getPiece = require('../utils/getPiece');
 
-const {
-  BASE_POSITION,
-  FINAL_ENTRY,
-  FINAL_STRETCH_START,
-  FINAL_POSITION
-} = require('../constants');
+const {BASE_POSITION, FINAL_ENTRY, FINAL_STRETCH_START, FINAL_POSITION} = require('../constants');
 
-function applyMove(game, playerId, pieceIndex) {
+function applyMove(game, playerId, pieceIndex)
+{
+	const player = getPlayer(game, playerId);
+	const piece = getPiece(player, pieceIndex);
 
-  const player = getPlayer(game, playerId);
+	//Sale de casa
+	if (piece.position === BASE_POSITION)
+	{
+		piece.position = 0;
+		return;
+	}
 
-  const piece = getPiece(player, pieceIndex);
+	let newPosition = piece.position + game.dice;
 
-  /*
-    Sale de casa
-  */
+	// Entrar al pasillo final
+	if (piece.position <= FINAL_ENTRY[player.color] && newPosition > FINAL_ENTRY[player.color])
+	{
+		const overflow = newPosition - FINAL_ENTRY[player.color] - 1;
+		newPosition = FINAL_STRETCH_START + overflow;
+	}
 
-  if (piece.position === BASE_POSITION) {
+	// Limitar meta
+	if (newPosition > FINAL_POSITION)
+	{
+		newPosition = FINAL_POSITION;
+	}
 
-    piece.position = 0;
-
-    return;
-  }
-
-  let newPosition =
-    piece.position + game.dice;
-
-  /*
-    Entrar al pasillo final
-  */
-
-  if (
-    piece.position <= FINAL_ENTRY[player.color] &&
-    newPosition > FINAL_ENTRY[player.color]
-  ) {
-
-    const overflow =
-      newPosition -
-      FINAL_ENTRY[player.color] -
-      1;
-
-    newPosition =
-      FINAL_STRETCH_START +
-      overflow;
-  }
-
-  /*
-    Limitar meta
-  */
-
-  if (newPosition > FINAL_POSITION) {
-    newPosition = FINAL_POSITION;
-  }
-
-  piece.position = newPosition;
+	piece.position = newPosition;
 }
 
 module.exports = applyMove;
@@ -1253,306 +1063,252 @@ FILE: ./game/rules/getAvailableMoves.js
 ==============================
 const canMovePiece = require('../validators/canMovePiece');
 
-function getAvailableMoves(game, playerId) {
+function getAvailableMoves(game, playerId)
+{
+	const availableMoves = [];
 
-  const availableMoves = [];
+	for (let i = 0; i < 4; i++)
+	{
+		const validation = canMovePiece(game, playerId, i);
 
-  for (let i = 0; i < 4; i++) {
+		if (validation.ok)
+		{
+			availableMoves.push(i);
+		}
+	}
 
-    const validation = canMovePiece(
-      game,
-      playerId,
-      i
-    );
-
-    if (validation.ok) {
-      availableMoves.push(i);
-    }
-  }
-
-  return availableMoves;
+	return availableMoves;
 }
 
 module.exports = getAvailableMoves;
 ==============================
 FILE: ./game/rules/isGameAbandoned.js
 ==============================
-function isGameAbandoned(game) {
-
-  return game.players.every(
-    player => !player.connected
-  );
+function isGameAbandoned(game)
+{
+	return game.players.every(player => !player.connected);
 }
 
 module.exports = isGameAbandoned;
 ==============================
 FILE: ./game/rules/setPlayerConnection.js
 ==============================
-function setPlayerConnection(
-  game,
-  playerId,
-  connected
-) {
+function setPlayerConnection(game, playerId, connected)
+{
+	const player = game.players.find(p => p.id === playerId);
 
-  const player = game.players.find(
-    p => p.id === playerId
-  );
+	if (!player)
+	{
+		return;
+	}
 
-  if (!player) {
-    return;
-  }
+	player.connected = connected;
 
-  player.connected = connected;
+	if (connected)
+	{
+		player.disconnectedAt = null;
+		return;
+	}
 
-  if (connected) {
-
-    player.disconnectedAt = null;
-
-    return;
-  }
-
-  player.disconnectedAt = Date.now();
+	player.disconnectedAt = Date.now();
 }
 
 module.exports = setPlayerConnection;
 ==============================
 FILE: ./game/rules/isBlockade.js
 ==============================
-const {
-  BASE_POSITION,
-  FINAL_STRETCH_START
-} = require('../constants');
+const { BASE_POSITION, FINAL_STRETCH_START} = require('../constants');
+const getGlobalPosition = require('../utils/getGlobalPosition');
 
-const getGlobalPosition = require(
-  '../utils/getGlobalPosition'
-);
+function isBlockade(game, color, globalPosition)
+{
+	const player = game.players.find(p => p.color === color);
 
-function isBlockade(game, color, globalPosition) {
+	if (!player)
+	{
+		return false;
+	}
 
-  const player = game.players.find(
-    p => p.color === color
-  );
+	let piecesInCell = 0;
 
-  if (!player) {
-    return false;
-  }
+	for (const piece of player.pieces)
+	{
+		// Ignorar base
+		if (piece.position === BASE_POSITION)
+		{
+			continue;
+		}
 
-  let piecesInCell = 0;
+		// Ignorar pasillo final
+		if (piece.position >= FINAL_STRETCH_START)
+		{
+			continue;
+		}
 
-  for (const piece of player.pieces) {
+		const pieceGlobal = getGlobalPosition(player.color, piece.position);
+		if (pieceGlobal === globalPosition)
+		{
+			piecesInCell++;
+		}
+	}
 
-    /*
-      Ignorar base
-    */
-
-    if (piece.position === BASE_POSITION) {
-      continue;
-    }
-
-    /*
-      Ignorar pasillo final
-    */
-
-    if (piece.position >= FINAL_STRETCH_START) {
-      continue;
-    }
-
-    const pieceGlobal =
-      getGlobalPosition(
-        player.color,
-        piece.position
-      );
-
-    if (pieceGlobal === globalPosition) {
-      piecesInCell++;
-    }
-  }
-
-  return piecesInCell >= 2;
+	return piecesInCell >= 2;
 }
 
 module.exports = isBlockade;
 ==============================
 FILE: ./game/rules/getBlockades.js
 ==============================
-const {
-  BASE_POSITION,
-  FINAL_STRETCH_START
-} = require('../constants');
+const { BASE_POSITION, FINAL_STRETCH_START } = require('../constants');
+const getGlobalPosition = require('../utils/getGlobalPosition');
 
-const getGlobalPosition = require(
-  '../utils/getGlobalPosition'
-);
+function getBlockades(game)
+{
 
-function getBlockades(game) {
+	const blockades = [];
 
-  const blockades = [];
+	for (const player of game.players)
+	{
+		const positionsCount = {};
 
-  for (const player of game.players) {
+		for (const piece of player.pieces)
+		{
+			if (piece.position === BASE_POSITION)
+			{
+				continue;
+			}
 
-    const positionsCount = {};
+			if (piece.position >= FINAL_STRETCH_START)
+			{
+				continue;
+			}
 
-    for (const piece of player.pieces) {
+			const globalPosition = getGlobalPosition(player.color, piece.position);
+			positionsCount[globalPosition] = (positionsCount[globalPosition] || 0) + 1;
+		}
 
-      if (piece.position === BASE_POSITION) {
-        continue;
-      }
-
-      if (piece.position >= FINAL_STRETCH_START) {
-        continue;
-      }
-
-      const globalPosition =
-        getGlobalPosition(
-          player.color,
-          piece.position
-        );
-
-      positionsCount[globalPosition] =
-        (positionsCount[globalPosition] || 0) + 1;
-    }
-
-    for (const position in positionsCount) {
-
-      if (positionsCount[position] >= 2) {
-
-        blockades.push({
-          color: player.color,
-          position: Number(position)
-        });
-      }
-    }
-  }
-
-  return blockades;
+		for (const position in positionsCount)
+		{
+			if (positionsCount[position] >= 2)
+			{
+				blockades.push({ color: player.color, position: Number(position)});
+			}
+		}
+	}
+	return blockades;
 }
 
 module.exports = getBlockades;
 ==============================
 FILE: ./game/rules/checkPausedState.js
 ==============================
-const {
-  GAME_STATUS
-} = require('../constants');
+const { GAME_STATUS } = require('../constants');
+const { startTurnTimer, clearTurnTimer } = require('../turnTimer');
 
-function checkPausedState(game) {
+function checkPausedState(game)
+{
+	const disconnectedPlayers = game.players.filter(player => !player.connected && !player.abandoned);
 
-  const disconnectedPlayers =
-    game.players.filter(
-      player =>
-        !player.connected &&
-        !player.abandoned
-    );
+	// Pausar partida
+	if (disconnectedPlayers.length > 0)
+	{
+		game.status = GAME_STATUS.PAUSED;
+		clearTurnTimer(game.id);
+		return;
+	}
 
-  if (disconnectedPlayers.length > 0) {
+	// Ya terminó
+	if (game.winner)
+	{
+		clearTurnTimer(game.id);
+		return;
+	}
 
-    game.status = GAME_STATUS.PAUSED;
-
-    return;
-  }
-
-  if (game.winner) {
-    return;
-  }
-
-  game.status = GAME_STATUS.PLAYING;
+	// Reanudar partida
+	game.status = GAME_STATUS.PLAYING;
+	startTurnTimer(game.id);
 }
 
 module.exports = checkPausedState;
 ==============================
 FILE: ./game/constants.js
 ==============================
-const COLORS = [
-  "pink",
-  "purple",
-  "green",
-  "blue"
-];
+const COLORS = ["pink", "purple", "green", "blue"];
 
 /* =================================
   GAME STATUS
 ================================= */
-
 const GAME_STATUS = {
-  WAITING: "waiting",
-  PLAYING: "playing",
-  PAUSED: "paused",
-  FINISHED: "finished"
+	WAITING: "waiting",
+	PLAYING: "playing",
+	PAUSED: "paused",
+	FINISHED: "finished"
 };
 
 /* =================================
   BOARD
 ================================= */
-
 const BOARD_SIZE = 68;
-
 const START_POSITIONS = {
-  pink: 0,
-  purple: 17,
-  green: 34,
-  blue: 51
+	pink: 0,
+	purple: 17,
+	green: 34,
+	blue: 51
 };
 
 const FINAL_ENTRY = {
-  pink: 67,
-  purple: 16,
-  green: 33,
-  blue: 50
+	pink: 67,
+	purple: 16,
+	green: 33,
+	blue: 50
 };
 
 const SAFE_CELLS = [
-  0,
-  5,
-  12,
-  17,
-  22,
-  29,
-  34,
-  39,
-  46,
-  51,
-  56,
-  63
+	0,
+	5,
+	12,
+	17,
+	22,
+	29,
+	34,
+	39,
+	46,
+	51,
+	56,
+	63
 ];
 
 const BASE_POSITION = -1;
-
 const FINAL_STRETCH_START = 68;
-
 const FINAL_POSITION = 74;
 
 /* =================================
   RECONNECTION
 ================================= */
-
 const DISCONNECT_TIMEOUT = 60000;
 
 /* =================================
   TURN TIMER
 ================================= */
-
 const TURN_TIMEOUT = 30000;
 
 module.exports = {
-  COLORS,
-  GAME_STATUS,
-  BOARD_SIZE,
-  START_POSITIONS,
-  FINAL_ENTRY,
-  SAFE_CELLS,
-  BASE_POSITION,
-  FINAL_STRETCH_START,
-  FINAL_POSITION,
-  DISCONNECT_TIMEOUT,
-  TURN_TIMEOUT
+	COLORS,
+	GAME_STATUS,
+	BOARD_SIZE,
+	START_POSITIONS,
+	FINAL_ENTRY,
+	SAFE_CELLS,
+	BASE_POSITION,
+	FINAL_STRETCH_START,
+	FINAL_POSITION,
+	DISCONNECT_TIMEOUT,
+	TURN_TIMEOUT
 };
 ==============================
 FILE: ./game/gameEngine.js
 ==============================
-const {
-  COLORS,
-  GAME_STATUS
-} = require('./constants');
+const { COLORS, GAME_STATUS} = require('./constants');
 
 const canJoinGame = require('./validators/canJoinGame');
 const canRollDice = require('./validators/canRollDice');
@@ -1565,87 +1321,67 @@ const checkWin = require('./rules/checkWin');
 
 const createPieces = require('./utils/createPieces');
 
-function rollDice() {
+const {startTurnTimer} = require('./turnTimer');
 
-  return Math.floor(Math.random() * 6) + 1;
+function rollDice()
+{
+	return Math.floor(Math.random() * 6) + 1;
 }
 
-function addPlayerToGame(game, userId) {
+function addPlayerToGame(game, userId)
+{
+	game.players.push({
+		id: userId,
+		color: COLORS[game.players.length],
+		connected: true,
+		disconnectedAt: null,
+		abandoned: false,
+		pieces: createPieces()});
 
-  game.players.push({
-    id: userId,
-
-    color: COLORS[game.players.length],
-
-    connected: true,
-
-    disconnectedAt: null,
-
-    abandoned: false,
-
-    pieces: createPieces()
-  });
-
-  if (game.players.length >= 2) {
-
-    game.status = GAME_STATUS.PLAYING;
-
-    game.turn = game.players[0].id;
-  }
+	if (game.players.length >= 2)
+	{
+		game.status = GAME_STATUS.PLAYING;
+		game.turn = game.players[0].id;
+		startTurnTimer(game.id);
+	}
 }
 
-function executeMove(
-  game,
-  playerId,
-  pieceIndex
-) {
+function executeMove(game, playerId, pieceIndex)
+{
+	const validation = canMovePiece(game, playerId, pieceIndex);
 
-  const validation = canMovePiece(
-    game,
-    playerId,
-    pieceIndex
-  );
+	if (!validation.ok)
+	{
+		return validation;
+	}
 
-  if (!validation.ok) {
-    return validation;
-  }
+	applyMove(game, playerId, pieceIndex);
+	checkCapture(game, playerId);
+	const won = checkWin(game, playerId);
 
-  applyMove(
-    game,
-    playerId,
-    pieceIndex
-  );
+	if (won)
+	{
+		const { clearTurnTimer } = require('./turnTimer');
+		clearTurnTimer(game.id);
+		game.status = GAME_STATUS.FINISHED;
+		game.winner = playerId;
+		return{
+			ok: true,
+			finished: true
+		};
+	}
 
-  checkCapture(game, playerId);
-
-  const won = checkWin(
-    game,
-    playerId
-  );
-
-  if (won) {
-
-    game.status = GAME_STATUS.FINISHED;
-
-    game.winner = playerId;
-
-    return {
-      ok: true,
-      finished: true
-    };
-  }
-
-  if (game.dice !== 6) {
-    nextTurn(game);
-  }
-
-  game.dice = null;
-
-  game.updatedAt = Date.now();
-
-  return {
-    ok: true
-  };
+	if (game.dice !== 6)
+	{
+		nextTurn(game);
+	}
+	startTurnTimer(game.id);
+	game.dice = null;
+	game.updatedAt = Date.now();
+	
+	return {
+	ok: true
+	};
 }
 
 module.exports = {
@@ -1663,202 +1399,286 @@ const pool = require('../db');
 /* =============================
    GET GAME
 ============================= */
+async function getGame(gameId)
+{
+	const result = await pool.query(
+		`
+		SELECT state
+		FROM games
+		WHERE id = $1
+		`,
+		[gameId]);
 
-async function getGame(gameId) {
-
-  const result = await pool.query(
-    `
-    SELECT state
-    FROM games
-    WHERE id = $1
-    `,
-    [gameId]
-  );
-
-  if (result.rows.length === 0) {
-    return null;
-  }
-
-  return result.rows[0].state;
+	if (result.rows.length === 0)
+	{
+		return null;
+	}
+	return result.rows[0].state;
 }
 
 /* =============================
    CREATE GAME
 ============================= */
-
-async function createGame(game) {
-
-  await pool.query(
-    `
-    INSERT INTO games (
-      id,
-      host_id,
-      state,
-      status
-    )
-    VALUES ($1, $2, $3, $4)
-    `,
-    [
-      game.id,
-      game.players[0].id,
-      JSON.stringify(game),
-      game.status
-    ]
-  );
+async function createGame(game)
+{
+	await pool.query(
+	`
+	INSERT INTO games (
+		id,
+		host_id,
+		state,
+		status
+	)
+	VALUES ($1, $2, $3, $4)
+	`,
+	[
+		game.id,
+		game.players[0].id,
+		JSON.stringify(game),
+		game.status
+	]
+	);
 }
 
 /* =============================
    SAVE GAME
 ============================= */
-
-async function saveGame(game) {
-
-  await pool.query(
-    `
-    UPDATE games
-    SET
-      state = $1,
-      status = $2,
-      updated_at = CURRENT_TIMESTAMP
-    WHERE id = $3
-    `,
-    [
-      JSON.stringify(game),
-      game.status,
-      game.id
-    ]
-  );
+async function saveGame(game)
+{
+	await pool.query(
+	`
+	UPDATE games
+	SET
+		state = $1,
+		status = $2,
+		updated_at = CURRENT_TIMESTAMP
+	WHERE id = $3
+	`,
+	[
+		JSON.stringify(game),
+		game.status,
+		game.id
+	]
+	);
 }
 
 /* =============================
   DELETE GAME
 ============================= */
-
-async function deleteGame(gameId) {
-
-  await pool.query(
-    `
-    DELETE FROM games
-    WHERE id = $1
-    `,
-    [gameId]
-  );
+async function deleteGame(gameId)
+{
+	await pool.query(
+		`
+		DELETE FROM games
+		WHERE id = $1
+		`,
+		[gameId]);
 }
 
 module.exports = {
-  getGame,
-  createGame,
-  saveGame,
-  deleteGame
+	getGame,
+	createGame,
+	saveGame,
+	deleteGame
 };
 ==============================
 FILE: ./game/gameState.js
 ==============================
 const createPieces = require('./utils/createPieces');
 
+const { GAME_STATUS } = require('./constants');
+
+function createNewGame(hostId)
+{
+	return{
+		id: Date.now().toString(),
+
+		players: [
+			{id: hostId,
+			color: "pink",
+			connected: true,
+			disconnectedAt: null,
+			abandoned: false,
+			pieces: createPieces()}
+		],
+
+		turn: hostId,
+		dice: null,
+		winner: null,
+		status: GAME_STATUS.WAITING,
+		createdAt: Date.now(),
+		updatedAt: Date.now()
+	};
+}
+
+module.exports = { createNewGame };
+==============================
+FILE: ./game/turnTimer.js
+==============================
 const {
+  TURN_TIMEOUT,
   GAME_STATUS
 } = require('./constants');
 
-function createNewGame(hostId) {
+const nextTurn = require('./rules/nextTurn');
 
-  return {
-    id: Date.now().toString(),
+const {
+  getGame,
+  saveGame
+} = require('./gameManager');
 
-    players: [
-      {
-        id: hostId,
-        color: "pink",
+const {
+  getIO
+} = require('../socket');
 
-        connected: true,
+/* =============================
+   ACTIVE TIMERS
+============================= */
 
-        disconnectedAt: null,
+const turnTimers = new Map();
 
-        abandoned: false,
+/*
+  turnTimers = Map {
+    gameId => timeout
+  }
+*/
 
-        pieces: createPieces()
-      }
-    ],
+/* =============================
+   CLEAR TURN TIMER
+============================= */
 
-    turn: hostId,
+function clearTurnTimer(gameId) {
 
-    dice: null,
+  const existingTimer =
+    turnTimers.get(gameId);
 
-    winner: null,
+  if (existingTimer) {
 
-    status: GAME_STATUS.WAITING,
+    clearTimeout(existingTimer);
 
-    createdAt: Date.now(),
+    turnTimers.delete(gameId);
+  }
+}
 
-    updatedAt: Date.now()
-  };
+/* =============================
+   START TURN TIMER
+============================= */
+
+function startTurnTimer(gameId)
+{
+	clearTurnTimer(gameId);
+
+	const timeout = setTimeout( async () => {
+		try {
+			const game = await getGame(gameId);
+
+			if (!game)
+			{
+				clearTurnTimer(gameId);
+				return;
+			}
+
+			// Solo partidas activas 
+			if (game.status !== GAME_STATUS.PLAYING)
+			{
+				return;
+			}
+
+			// Si el jugador ya tiró dado, cancelar dado actual
+			game.dice = null;
+
+			// Siguiente turno
+			nextTurn(game);
+			game.updatedAt = Date.now();
+			await saveGame(game);
+
+			//Reiniciar timer
+			startTurnTimer(game.id);
+
+			//Emitir update
+			getIO()
+				.to(game.id)
+				.emit("game:turn_timeout", { nextTurn: game.turn});
+
+			getIO()
+				.to(game.id)
+				.emit("game:update", game);
+
+		}
+		catch (err)
+		{
+			console.error(err);
+		}
+
+	}, TURN_TIMEOUT );
+
+	turnTimers.set( gameId, timeout);
 }
 
 module.exports = {
-  createNewGame
+  startTurnTimer,
+  clearTurnTimer
 };
 ==============================
 FILE: ./initDb.js
 ==============================
 const pool = require('./db');
 
-async function initDB() {
-  try {
+async function initDB()
+{
+	try
+	{
+		/* =============================
+			USERS
+		============================== */
+		await pool.query(`
+			CREATE TABLE IF NOT EXISTS users (
+			id SERIAL PRIMARY KEY,
+			username VARCHAR(50) UNIQUE NOT NULL,
+			email VARCHAR(255) UNIQUE NOT NULL,
+			password TEXT NOT NULL,
+			avatar_url TEXT DEFAULT '/uploads/default-avatar.png',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			);
+		`);
 
-    /* =============================
-       USERS
-    ============================== */
+		/* =============================
+			FRIENDSHIPS
+		============================== */
+		await pool.query(`
+			CREATE TABLE IF NOT EXISTS friendships (
+			id SERIAL PRIMARY KEY,
+			requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			addressee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			status VARCHAR(20) NOT NULL DEFAULT 'pending',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			accepted_at TIMESTAMP NULL,
+			CHECK (requester_id <> addressee_id),
+			UNIQUE (requester_id, addressee_id)
+			);
+		`);
 
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(50) UNIQUE NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        avatar_url TEXT DEFAULT '/uploads/default-avatar.png',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    /* =============================
-       FRIENDSHIPS
-    ============================== */
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS friendships (
-        id SERIAL PRIMARY KEY,
-        requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        addressee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        status VARCHAR(20) NOT NULL DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        accepted_at TIMESTAMP NULL,
-        CHECK (requester_id <> addressee_id),
-        UNIQUE (requester_id, addressee_id)
-      );
-    `);
-
-    /* =============================
-       GAMES
-    ============================== */
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS games (
-        id VARCHAR(255) PRIMARY KEY,
-        host_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        state JSONB NOT NULL,
-        status VARCHAR(20) NOT NULL DEFAULT 'waiting',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    console.log('✅ Tablas listas');
-
-  } catch (err) {
-    console.error('❌ Error creando tablas:', err);
-    throw err;
-  }
+		/* =============================
+			GAMES
+		============================== */
+		await pool.query(`
+			CREATE TABLE IF NOT EXISTS games (
+			id VARCHAR(255) PRIMARY KEY,
+			host_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			state JSONB NOT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'waiting',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			);
+		`);
+		console.log('✅ Tablas listas');
+	}
+	catch (err)
+	{
+		console.error('❌ Error creando tablas:', err);
+		throw err;
+	}
 }
 
 module.exports = initDB;
@@ -1868,29 +1688,33 @@ FILE: ./middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+	const authHeader = req.headers.authorization;
 
-  if (!authHeader) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
+	if (!authHeader)
+	{
+		return res.status(401).json({ error: 'No token provided' });
+	}
 
-  const [scheme, token] = authHeader.split(' ');
+	const [scheme, token] = authHeader.split(' ');
 
-  if (scheme !== 'Bearer' || !token) {
-    return res.status(401).json({ error: 'Formato de token inválido' });
-  }
+	if (scheme !== 'Bearer' || !token)
+	{
+		return res.status(401).json({ error: 'Formato de token inválido' });
+	}
 
-  const secret = process.env.JWT_SECRET;
+	const secret = process.env.JWT_SECRET;
 
-  try {
-    const decoded = jwt.verify(token, secret);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Token inválido' });
-  }
+	try
+	{
+		const decoded = jwt.verify(token, secret);
+		req.user = decoded;
+		next();
+	}
+	catch (err)
+	{
+		return res.status(401).json({ error: 'Token inválido' });
+	}
 };
-
 ==============================
 FILE: ./routes/authRoutes.js
 ==============================
@@ -1961,24 +1785,23 @@ FILE: ./sockets/authSocket.js
 ==============================
 const jwt = require('jsonwebtoken');
 
-function authSocket(socket, next) {
-  const token = socket.handshake.auth?.token;
+function authSocket(socket, next)
+{
+	const token = socket.handshake.auth?.token;
 
-  if (!token)
-    return next(new Error("No token"));
+	if (!token)
+		return next(new Error("No token"));
 
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
-
-    socket.user = decoded;
-
-    next();
-  } catch (err) {
-    next(new Error("Invalid token"));
-  }
+	try
+	{
+		const decoded = jwt.verify( token, process.env.JWT_SECRET);
+		socket.user = decoded;
+		next();
+	}
+	catch (err)
+	{
+		next(new Error("Invalid token"));
+	}
 }
 
 module.exports = authSocket;
@@ -1987,42 +1810,39 @@ FILE: ./sockets/presence.js
 ==============================
 const onlineUsers = new Map();
 
-/*
-  Estructura:
-
-  onlineUsers = Map {
-    userId => Set(socketId)
-  }
-*/
-
-function addUserSocket(userId, socketId) {
-  if (!onlineUsers.has(userId)) {
-    onlineUsers.set(userId, new Set());
-  }
-
-  onlineUsers.get(userId).add(socketId);
+function addUserSocket(userId, socketId)
+{
+	if (!onlineUsers.has(userId))
+	{
+		onlineUsers.set(userId, new Set());
+	}
+	onlineUsers.get(userId).add(socketId);
 }
 
-function removeUserSocket(userId, socketId) {
-  if (!onlineUsers.has(userId)) {
-    return;
-  }
+function removeUserSocket(userId, socketId)
+{
+	if (!onlineUsers.has(userId))
+	{
+		return;
+	}
 
-  const sockets = onlineUsers.get(userId);
+	const sockets = onlineUsers.get(userId);
+	sockets.delete(socketId);
 
-  sockets.delete(socketId);
-
-  if (sockets.size === 0) {
-    onlineUsers.delete(userId);
-  }
+	if (sockets.size === 0)
+	{
+		onlineUsers.delete(userId);
+	}
 }
 
-function isUserOnline(userId) {
-  return onlineUsers.has(userId);
+function isUserOnline(userId)
+{
+	return onlineUsers.has(userId);
 }
 
-function getOnlineUsers() {
-  return Array.from(onlineUsers.keys());
+function getOnlineUsers()
+{
+	return Array.from(onlineUsers.keys());
 }
 
 module.exports = {
@@ -2039,270 +1859,178 @@ const { Server } = require('socket.io');
 const authSocket = require('./authSocket');
 const registerGameSocket = require('./gameSocket');
 
-const {
-  addUserSocket,
-  removeUserSocket
-} = require('./presence');
+const { addUserSocket, removeUserSocket} = require('./presence');
 
-const {
-  setIO
-} = require('../socket');
+const { setIO } = require('../socket');
 
-function initSockets(httpServer) {
+function initSockets(httpServer)
+{
+	const io = new Server(httpServer, {
+		cors: {
+			origin: true,
+			credentials: true
+		}
+	});
 
-  const io = new Server(httpServer, {
-    cors: {
-      origin: true,
-      credentials: true
-    }
-  });
+	/* =============================
+	SAVE GLOBAL IO
+	============================= */
+	setIO(io);
+	io.use(authSocket);
+	io.on("connection", (socket) => {
+		const userId = socket.user.id;
+		console.log("User connected:", userId);
 
-  /* =============================
-     SAVE GLOBAL IO
-  ============================= */
+		/* -----------------------------
+			USER ONLINE
+		------------------------------ */
+		addUserSocket(userId, socket.id);
+		io.emit("presence:update", {
+			userId,
+			online: true
+		});
 
-  setIO(io);
+		/* -----------------------------
+			REGISTER GAME EVENTS
+		------------------------------ */
+		registerGameSocket(io, socket);
 
-  io.use(authSocket);
+		/* -----------------------------
+			DISCONNECT
+		------------------------------ */
+		socket.on("disconnect", () => {
 
-  io.on("connection", (socket) => {
-
-    const userId = socket.user.id;
-
-    console.log("User connected:", userId);
-
-    /* -----------------------------
-       USER ONLINE
-    ------------------------------ */
-
-    addUserSocket(userId, socket.id);
-
-    io.emit("presence:update", {
-      userId,
-      online: true
-    });
-
-    /* -----------------------------
-       REGISTER GAME EVENTS
-    ------------------------------ */
-
-    registerGameSocket(io, socket);
-
-    /* -----------------------------
-       DISCONNECT
-    ------------------------------ */
-
-    socket.on("disconnect", () => {
-
-      console.log("User disconnected:", userId);
-
-      removeUserSocket(userId, socket.id);
-
-      io.emit("presence:update", {
-        userId,
-        online: false
-      });
-    });
-  });
+			console.log("User disconnected:", userId);
+			removeUserSocket(userId, socket.id);
+			io.emit("presence:update", {
+				userId,
+				online: false});
+			});
+	});
 }
 
 module.exports = initSockets;
 ==============================
 FILE: ./sockets/gameSocket.js
 ==============================
-const {
-  getGame,
-  saveGame,
-  deleteGame
-} = require('../game/gameManager');
+const { getGame, saveGame, deleteGame } = require('../game/gameManager');
+const setPlayerConnection = require('../game/rules/setPlayerConnection');
+const checkPausedState = require('../game/rules/checkPausedState');
+const isGameAbandoned = require('../game/rules/isGameAbandoned');
 
-const setPlayerConnection = require(
-  '../game/rules/setPlayerConnection'
-);
+const { DISCONNECT_TIMEOUT } = require('../game/constants');
 
-const checkPausedState = require(
-  '../game/rules/checkPausedState'
-);
+function registerGameSocket(io, socket)
+{
+	/* -----------------------------
+	JOIN GAME ROOM
+	------------------------------ */
+	socket.on("game:join", async ({ gameId }) => {
+		const game = await getGame(gameId);
+		if (!game)
+		{
+			return socket.emit("error", { message: "Game not found" });
+		}
 
-const isGameAbandoned = require(
-  '../game/rules/isGameAbandoned'
-);
+		const player = game.players.find( p => p.id === socket.user.id );
 
-const {
-  DISCONNECT_TIMEOUT
-} = require('../game/constants');
+		if (!player)
+		{
+			return socket.emit("error", { message: "You are not part of this game" });
+		}
 
-function registerGameSocket(io, socket) {
+		setPlayerConnection(game, socket.user.id, true);
+		checkPausedState(game);
+		await saveGame(game);
+		socket.join(gameId);
+		socket.emit("game:update", game);
+		io.to(gameId).emit( "game:player_reconnected",{ userId: socket.user.id });
+	});
 
-  /* -----------------------------
-    JOIN GAME ROOM
-  ------------------------------ */
+	/* -----------------------------
+	GET GAME STATE
+	------------------------------ */
+	socket.on("game:state", async ({ gameId }) => {
+		const game = await getGame(gameId);
 
-  socket.on("game:join", async ({ gameId }) => {
+		if (!game)
+		{
+			return socket.emit("error", { message: "Game not found" });
+		}
+		socket.emit("game:update", game);
+	});
 
-    const game = await getGame(gameId);
+	/* -----------------------------
+	DISCONNECT
+	------------------------------ */
+	socket.on("disconnect", async () => {
+		try
+		{
+			const joinedGames =
+			Array.from(socket.rooms)
+			.filter(room => room !== socket.id);
 
-    if (!game) {
-      return socket.emit("error", {
-        message: "Game not found"
-      });
-    }
+			for (const gameId of joinedGames)
+			{
+				const game = await getGame(gameId);
+				if (!game)
+				{
+					continue;
+				}
 
-    const player = game.players.find(
-      p => p.id === socket.user.id
-    );
+				setPlayerConnection(game, socket.user.id, false);
+				checkPausedState(game);
+				await saveGame(game);
 
-    if (!player) {
-      return socket.emit("error", {
-        message: "You are not part of this game"
-      });
-    }
+				io.to(gameId).emit( "game:update", game);
+				io.to(gameId).emit( "game:player_disconnected", { userId: socket.user.id });
 
-    setPlayerConnection(
-      game,
-      socket.user.id,
-      true
-    );
+				setTimeout(async () => {
+					const updatedGame = await getGame(gameId);
 
-    checkPausedState(game);
+					if (!updatedGame)
+					{
+						return;
+					}
 
-    await saveGame(game);
+					const player =
+						updatedGame.players.find(
+						p => p.id === socket.user.id
+						);
 
-    socket.join(gameId);
+					if (!player)
+					{
+						return;
+					}
 
-    socket.emit("game:update", game);
+					/* Se reconectó*/
+					if (player.connected)
+					{
+						return;
+					}
 
-    io.to(gameId).emit(
-      "game:player_reconnected",
-      {
-        userId: socket.user.id
-      }
-    );
-  });
+					/* Abandono definitivo */
+					player.abandoned = true;
+					const abandoned = isGameAbandoned(updatedGame);
 
-  /* -----------------------------
-    GET GAME STATE
-  ------------------------------ */
+					if (abandoned)
+					{
+						await deleteGame(gameId);
+						return;
+					}
 
-  socket.on("game:state", async ({ gameId }) => {
+					await saveGame(updatedGame);
 
-    const game = await getGame(gameId);
-
-    if (!game) {
-      return socket.emit("error", {
-        message: "Game not found"
-      });
-    }
-
-    socket.emit("game:update", game);
-  });
-
-  /* -----------------------------
-    DISCONNECT
-  ------------------------------ */
-
-  socket.on("disconnect", async () => {
-
-    try {
-
-      const joinedGames =
-        Array.from(socket.rooms)
-          .filter(room => room !== socket.id);
-
-      for (const gameId of joinedGames) {
-
-        const game = await getGame(gameId);
-
-        if (!game) {
-          continue;
-        }
-
-        setPlayerConnection(
-          game,
-          socket.user.id,
-          false
-        );
-
-        checkPausedState(game);
-
-        await saveGame(game);
-
-        io.to(gameId).emit(
-          "game:update",
-          game
-        );
-
-        io.to(gameId).emit(
-          "game:player_disconnected",
-          {
-            userId: socket.user.id
-          }
-        );
-
-        setTimeout(async () => {
-
-          const updatedGame =
-            await getGame(gameId);
-
-          if (!updatedGame) {
-            return;
-          }
-
-          const player =
-            updatedGame.players.find(
-              p => p.id === socket.user.id
-            );
-
-          if (!player) {
-            return;
-          }
-
-          /*
-            Se reconectó
-          */
-
-          if (player.connected) {
-            return;
-          }
-
-          /*
-            Abandono definitivo
-          */
-
-          player.abandoned = true;
-
-          const abandoned =
-            isGameAbandoned(updatedGame);
-
-          if (abandoned) {
-
-            await deleteGame(gameId);
-
-            return;
-          }
-
-          await saveGame(updatedGame);
-
-          io.to(gameId).emit(
-            "game:player_abandoned",
-            {
-              userId: socket.user.id
-            }
-          );
-
-          io.to(gameId).emit(
-            "game:update",
-            updatedGame
-          );
-
-        }, DISCONNECT_TIMEOUT);
-      }
-
-    } catch (err) {
-
-      console.error(err);
-    }
-  });
+					io.to(gameId).emit( "game:player_abandoned", { userId: socket.user.id });
+					io.to(gameId).emit( "game:update", updatedGame );
+				}, DISCONNECT_TIMEOUT);
+			}
+		}
+		catch (err)
+		{
+			console.error(err);
+		}
+	});
 }
 
 module.exports = registerGameSocket;
@@ -2312,29 +2040,30 @@ FILE: ./socket.js
 let io = null;
 
 /* =============================
-   SET IO INSTANCE
+SET IO INSTANCE
 ============================= */
 
-function setIO(serverIO) {
-  io = serverIO;
+function setIO(serverIO)
+{
+	io = serverIO;
 }
 
 /* =============================
-   GET IO INSTANCE
+GET IO INSTANCE
 ============================= */
 
-function getIO() {
-
-  if (!io) {
-    throw new Error("Socket.io not initialized");
-  }
-
-  return io;
+function getIO()
+{
+	if (!io)
+	{
+		throw new Error("Socket.io not initialized");
+	}
+	return io;
 }
 
 module.exports = {
-  setIO,
-  getIO
+setIO,
+getIO
 };
 ==============================
 FILE: ./server.js
@@ -2354,8 +2083,8 @@ const gameRoutes = require('./routes/gameRoutes');
 const app = express();
 
 app.use(cors({
-  origin: true,
-  credentials: true
+	origin: true,
+	credentials: true
 }));
 app.use(express.json());
 
@@ -2371,12 +2100,12 @@ initSockets(httpServer);
 const PORT = process.env.PORT || 3000;
 
 initDB()
-  .then(() => {
-    httpServer.listen(PORT, () => {
-      console.log(`Backend running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('DB init failed:', err);
-    process.exit(1);
-  });
+	.then(() => {
+	httpServer.listen(PORT, () => {
+		console.log(`Backend running on port ${PORT}`);
+	});
+	})
+	.catch((err) => {
+		console.error('DB init failed:', err);
+		process.exit(1);
+	});

@@ -14,6 +14,8 @@ const checkWin = require('./rules/checkWin');
 
 const createPieces = require('./utils/createPieces');
 
+const {startTurnTimer} = require('./turnTimer');
+
 function rollDice() {
 
   return Math.floor(Math.random() * 6) + 1;
@@ -35,19 +37,18 @@ function addPlayerToGame(game, userId) {
     pieces: createPieces()
   });
 
-  if (game.players.length >= 2) {
-
+  if (game.players.length >= 2)
+  {
     game.status = GAME_STATUS.PLAYING;
 
     game.turn = game.players[0].id;
+
+    startTurnTimer(game.id);
   }
 }
 
-function executeMove(
-  game,
-  playerId,
-  pieceIndex
-) {
+function executeMove(game, playerId, pieceIndex)
+{
 
   const validation = canMovePiece(
     game,
@@ -72,7 +73,13 @@ function executeMove(
     playerId
   );
 
-  if (won) {
+  if (won)
+  {
+    const {
+      clearTurnTimer
+    } = require('./turnTimer');
+
+    clearTurnTimer(game.id);
 
     game.status = GAME_STATUS.FINISHED;
 
@@ -84,10 +91,11 @@ function executeMove(
     };
   }
 
-  if (game.dice !== 6) {
+  if (game.dice !== 6)
+  {
     nextTurn(game);
   }
-
+  startTurnTimer(game.id);
   game.dice = null;
 
   game.updatedAt = Date.now();

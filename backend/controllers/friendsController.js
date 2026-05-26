@@ -170,39 +170,39 @@ exports.getFriends = async (req, res) => {
 
 exports.getPendingRequests = async (req, res) => {
 	try {
-	const userId = req.user.id;
+		const userId = req.user.id;
 
-	const result = await pool.query(
-		`
-		SELECT
-		f.id,
-		u.id AS requester_id,
-		u.username,
-		u.email,
-		u.avatar_url,
-		f.created_at
-		FROM friendships f
-		JOIN users u ON u.id = f.requester_id
-		WHERE f.addressee_id = $1
-		AND f.status = 'pending'
-		ORDER BY f.created_at DESC
-		`,
-		[userId]
-	);
+		const result = await pool.query(
+			`
+			SELECT
+			f.id,
+			u.id AS requester_id,
+			u.username,
+			u.email,
+			u.avatar_url,
+			f.created_at
+			FROM friendships f
+			JOIN users u ON u.id = f.requester_id
+			WHERE f.addressee_id = $1
+			AND f.status = 'pending'
+			ORDER BY f.created_at DESC
+			`,
+			[userId]
+		);
 
-	return res.json({ requests: result.rows });
-	} catch (error) {
-	console.error(error);
-	return res.status(500).json({ error: 'Error en el servidor' });
+		return res.json({ requests: result.rows });
+	}
+	catch (error) 
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
 	}
 };
 
 exports.getOnlineFriends = async (req, res) => {
 	try
 	{
-
 		const userId = req.user.id;
-
 		const result = await pool.query(
 			`
 			SELECT

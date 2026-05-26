@@ -1,104 +1,82 @@
-const {
-  TURN_TIMEOUT,
-  GAME_STATUS
-} = require('./constants');
-
+const {TURN_TIMEOUT, GAME_STATUS} = require('./constants');
 const nextTurn = require('./rules/nextTurn');
-
-const {
-  getGame,
-  saveGame
-} = require('./gameManager');
-
-const {
-  getIO
-} = require('../socket');
+const withGameLock = require('./withGameLock');
+const { getIO } = require('../socket');
 
 /* =============================
    ACTIVE TIMERS
 ============================= */
-
 const turnTimers = new Map();
-
-/*
-  turnTimers = Map {
-    gameId => timeout
-  }
-*/
 
 /* =============================
    CLEAR TURN TIMER
 ============================= */
-
-function clearTurnTimer(gameId) {
-
-  const existingTimer =
-    turnTimers.get(gameId);
-
-  if (existingTimer) {
-
-    clearTimeout(existingTimer);
-
-    turnTimers.delete(gameId);
-  }
+function clearTurnTimer(gameId)
+{
+	const existingTimer = turnTimers.get(gameId);
+	if (existingTimer)
+	{
+		clearTimeout(existingTimer);
+		turnTimers.delete(gameId);
+	}
 }
 
 /* =============================
    START TURN TIMER
 ============================= */
-
 function startTurnTimer(gameId)
 {
 	clearTurnTimer(gameId);
+	const timeout = setTimeout(async () => {
+		try
+		{
+			const locked = await withGameLock(
+				gameId,
+				async (game) => {
 
-	const timeout = setTimeout( async () => {
-		try {
-			const game = await getGame(gameId);
+					if (game.status !== GAME_STATUS.PLAYING)
+					{
+						return { skip: true };
+					}
+					game.dice = null;
+					nextTurn(game);
+					game.updatedAt = Date.now();
+					return { ok: true };
+				}
+			);
 
-			if (!game)
+			if (!locked)
 			{
 				clearTurnTimer(gameId);
 				return;
 			}
 
-			// Solo partidas activas 
-			if (game.status !== GAME_STATUS.PLAYING)
+			if (locked.result.skip)
 			{
 				return;
 			}
 
-			// Si el jugador ya tiró dado, cancelar dado actual
-			game.dice = null;
-
-			// Siguiente turno
-			nextTurn(game);
-			game.updatedAt = Date.now();
-			await saveGame(game);
-
-			//Reiniciar timer
-			startTurnTimer(game.id);
-
-			//Emitir update
-			getIO()
-				.to(game.id)
-				.emit("game:turn_timeout", { nextTurn: game.turn});
+			startTurnTimer(gameId);
 
 			getIO()
-				.to(game.id)
-				.emit("game:update", game);
+				.to(gameId)
+				.emit("game:turn_timeout",{ nextTurn: locked.game.turn });
 
+			getIO()
+				.to(gameId)
+				.emit( "game:update", locked.game );
 		}
 		catch (err)
 		{
 			console.error(err);
 		}
 
-	}, TURN_TIMEOUT );
+	}, TURN_TIMEOUT);
 
-	turnTimers.set( gameId, timeout);
+	turnTimers.set(gameId, timeout);
 }
 
 module.exports = {
-  startTurnTimer,
-  clearTurnTimer
+	startTurnTimer,
+	clearTurnTimer
 };

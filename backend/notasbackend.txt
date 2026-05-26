@@ -28,42 +28,52 @@ exports.register = async (req, res) => {
 	try
 	{
 		const { username, email, password } = req.body;
-
 		if (!username || !email || !password)
 		{
 			return res.status(400).json({ error: 'Faltan datos' });
 		}
-
 		if (!EMAIL_REGEX.test(email))
 		{
 			return res.status(400).json({ error: 'Email inválido' });
 		}
-
 		if (password.length < 8)
 		{
 			return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
 		}
-
-		const existingUser = await pool.query('SELECT id FROM users WHERE email = $1 OR username = $2', [email.toLowerCase(), username]);
-
-		if (existingUser.rows.length > 0)
-		{
-			return res.status(400).json({ error: 'El usuario o email ya existe' });
-		}
-
 		const salt = await bcrypt.genSalt(10);
 		const hashedPassword = await bcrypt.hash(password, salt);
 		const newUser = await pool.query(
-			`INSERT INTO users (username, email, password)
+			`
+			INSERT INTO users (
+				username,
+				email,
+				password
+			)
 			VALUES ($1, $2, $3)
-			RETURNING id, username, email, avatar_url, created_at`,
-			[username, email.toLowerCase(), hashedPassword]);
+			RETURNING
+				id,
+				username,
+				email,
+				avatar_url,
+				created_at
+			`,
+			[
+				username,
+				email.toLowerCase(),
+				hashedPassword
+			]
+		);
 
-		return res.status(201).json({message: 'Usuario creado', user: newUser.rows[0]});
+		return res.status(201).json({ message: 'Usuario creado', user: newUser.rows[0] });
 	}
 	catch (error)
 	{
 		console.error(error);
+
+		if (error.code === '23505')
+		{
+			return res.status(400).json({ error: 'El usuario o email ya existe' });
+		}
 		return res.status(500).json({ error: 'Error en el servidor' });
 	}
 };
@@ -77,8 +87,14 @@ exports.login = async (req, res) => {
 		{
 			return res.status(400).json({ error: 'Faltan datos' });
 		}
-
-		const result = await pool.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase()]);
+		const result = await pool.query(
+			`
+			SELECT *
+			FROM users
+			WHERE email = $1
+			`,
+			[email.toLowerCase()]
+		);
 
 		if (result.rows.length === 0)
 		{
@@ -86,25 +102,34 @@ exports.login = async (req, res) => {
 		}
 
 		const user = result.rows[0];
-		const validPassword = await bcrypt.compare(password, user.password);
+		const validPassword = await bcrypt.compare( password, user.password);
 
 		if (!validPassword)
 		{
 			return res.status(400).json({ error: 'Credenciales inválidas' });
 		}
 
-		const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
+		const token = jwt.sign(
+			{
+				id: user.id,
+				email: user.email,
+				username: user.username
+			},
+			JWT_SECRET,
+			{
+				expiresIn: '24h'
+			});
 
 		return res.json({
 			message: 'Login correcto',
 			token,
-			user:
-			{
+			user: {
 				id: user.id,
 				username: user.username,
 				email: user.email,
-				avatar_url: user.avatar_url,
-			},
+				avatar_url:
+					user.avatar_url
+			}
 		});
 	}
 	catch (error)
@@ -120,62 +145,64 @@ const pool = require('../db');
 
 const { isUserOnline } = require('../sockets/presence');
 
+function normalizeIds(a, b)
+{
+	return a < b
+		? [a, b]
+		: [b, a];
+}
+
 exports.sendRequest = async (req, res) => {
 	try
 	{
 		const requesterId = req.user.id;
 		const addresseeId = parseInt(req.params.id, 10);
-
 		if (Number.isNaN(addresseeId))
 		{
 			return res.status(400).json({ error: 'ID inválido' });
 		}
-
 		if (requesterId === addresseeId)
 		{
 			return res.status(400).json({ error: 'No puedes enviarte solicitud a ti mismo' });
 		}
 
-		const targetUser = await pool.query('SELECT id FROM users WHERE id = $1', [addresseeId]);
+		const targetUser =
+			await pool.query(
+				`
+				SELECT id
+				FROM users
+				WHERE id = $1
+				`,
+				[addresseeId]);
 
-		if (targetUser.rows.length === 0) 
+		if (targetUser.rows.length === 0)
 		{
 			return res.status(404).json({ error: 'Usuario no encontrado' });
 		}
 
-		const existing = await pool.query(
-			`SELECT * FROM friendships
-			WHERE (requester_id = $1 AND addressee_id = $2)
-			OR (requester_id = $2 AND addressee_id = $1)`,
-			[requesterId, addresseeId]);
-
-		if (existing.rows.length > 0)
-		{
-			const relation = existing.rows[0];
-
-			if (relation.status === 'pending')
-			{
-				return res.status(400).json({ error: 'Ya existe una solicitud pendiente' });
-			}
-
-			if (relation.status === 'accepted')
-			{
-				return res.status(400).json({ error: 'Ya sois amigos' });
-			}
-		}
-
+		const [ userA, userB ] = normalizeIds( requesterId, addresseeId);
 		const result = await pool.query(
-			`INSERT INTO friendships (requester_id, addressee_id, status)
+			`
+			INSERT INTO friendships (
+				requester_id,
+				addressee_id,
+				status
+			)
 			VALUES ($1, $2, 'pending')
-			RETURNING id, requester_id, addressee_id, status, created_at`,
-			[requesterId, addresseeId]);
+			RETURNING *
+			`,
+			[userA, userB]);
 
-		return res.status(201).json({ message: 'Solicitud enviada', request: result.rows[0],});
+		return res.status(201).json({ message: 'Solicitud enviada', request: result.rows[0] });
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		if (error.code === '23505')
+		{
+			return res.status(400).json({ error: 'La relación ya existe' });
+		}
+		return res.status(500).json({ error: 'Error en el servidor'});
 	}
 };
 
@@ -185,7 +212,8 @@ exports.acceptRequest = async (req, res) => {
 		const userId = req.user.id;
 		const requesterId = parseInt(req.params.id, 10);
 
-		if (Number.isNaN(requesterId)) {
+		if (Number.isNaN(requesterId))
+		{
 			return res.status(400).json({ error: 'ID inválido' });
 		}
 
@@ -195,7 +223,8 @@ exports.acceptRequest = async (req, res) => {
 			[requesterId, userId]
 		);
 
-		if (request.rows.length === 0) {
+		if (request.rows.length === 0)
+		{
 			return res.status(404).json({ error: 'Solicitud no encontrada' });
 		}
 
@@ -207,10 +236,7 @@ exports.acceptRequest = async (req, res) => {
 			[requesterId, userId]
 		);
 
-		return res.json({
-			message: 'Solicitud aceptada',
-			friendship: updated.rows[0],
-		});
+		return res.json({ message: 'Solicitud aceptada', friendship: updated.rows[0] });
 	}
 	catch (error)
 	{
@@ -446,29 +472,23 @@ FILE: ./controllers/gameController.js
 ==============================
 const getAvailableMoves = require('../game/rules/getAvailableMoves');
 const nextTurn = require('../game/rules/nextTurn');
-
 const { createNewGame } = require('../game/gameState');
-const { rollDice, addPlayerToGame, executeMove, canJoinGame, canRollDice} = require('../game/gameEngine');
-const { getGame: getGameById, createGame, saveGame} = require('../game/gameManager');
+const { rollDice, addPlayerToGame, executeMove, canJoinGame, canRollDice } = require('../game/gameEngine');
+const { getGame: getGameById, createGame } = require('../game/gameManager');
+const withGameLock = require('../game/withGameLock');
 const { getIO } = require('../socket');
 
 /* =============================
    CREATE GAME
 ============================= */
-
 exports.createGame = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
-
 		const game = createNewGame(userId);
-
 		await createGame(game);
-
 		getIO().emit("game:created", game);
-
 		res.json(game);
-
 	}
 	catch (error)
 	{
@@ -478,9 +498,8 @@ exports.createGame = async (req, res) => {
 };
 
 /* =============================
-GET GAME
+   GET GAME
 ============================= */
-
 exports.getGame = async (req, res) => {
 	try
 	{
@@ -491,45 +510,48 @@ exports.getGame = async (req, res) => {
 			return res.status(404).json({ error: "Game not found" });
 		}
 		res.json(game);
-
 	}
 	catch (error)
 	{
 		console.error(error);
-
 		res.status(500).json({ error: "Server error" });
 	}
 };
 
 /* =============================
-JOIN GAME
+   JOIN GAME
 ============================= */
-
 exports.joinGame = async (req, res) => {
-	try {
-		const game = await getGameById(req.params.id);
+	try
+	{
+		const userId = req.user.id;
+		const gameId = req.params.id;
 
-		if (!game)
+		const locked = await withGameLock(gameId, async (game) => {
+			const validation = canJoinGame(game, userId);
+			if (!validation.ok)
+			{
+				return { error: validation.error };
+			}
+			addPlayerToGame(game, userId);
+			return { ok: true };
+		});
+
+		if (!locked)
 		{
 			return res.status(404).json({ error: "Game not found" });
 		}
 
-		const userId = req.user.id;
-		const validation = canJoinGame(game, userId);
-
-		if (!validation.ok)
+		if (locked.result.error)
 		{
-			return res.status(400).json({ error: validation.error });
+			return res.status(400).json({ error: locked.result.error });
 		}
 
-		addPlayerToGame(game, userId);
-		await saveGame(game);
-
 		getIO()
-			.to(game.id)
-			.emit("game:update", game);
+			.to(gameId)
+			.emit("game:update", locked.game);
 
-		res.json(game);
+		res.json(locked.game);
 	}
 	catch (error)
 	{
@@ -539,41 +561,47 @@ exports.joinGame = async (req, res) => {
 };
 
 /* =============================
-ROLL DICE
+   ROLL DICE
 ============================= */
-
 exports.rollDice = async (req, res) => {
 	try
 	{
-		const game = await getGameById(req.params.id);
+		const userId = req.user.id;
+		const gameId = req.params.id;
 
-		if (!game)
+		const locked = await withGameLock(gameId, async (game) => {
+			const validation = canRollDice(game, userId);
+
+			if (!validation.ok)
+			{
+				return { error: validation.error };
+			}
+
+			game.dice = rollDice();
+			const availableMoves = getAvailableMoves(game, userId);
+
+			if (availableMoves.length === 0)
+			{
+				game.dice = null;
+				nextTurn(game);
+			}
+			game.updatedAt = Date.now();
+			return { ok: true, dice: game.dice };
+		});
+		if (!locked)
 		{
 			return res.status(404).json({ error: "Game not found" });
 		}
-
-		const userId = req.user.id;
-		const validation = canRollDice(game, userId);
-
-		if (!validation.ok)
+		if (locked.result.error)
 		{
-			return res.status(400).json({ error: validation.error });
+			return res.status(400).json({ error: locked.result.error });
 		}
 
-		game.dice = rollDice();
-		const availableMoves = getAvailableMoves(game, userId);
-
-		if (availableMoves.length === 0)
-		{
-			game.dice = null;
-			nextTurn(game);
-		}
-		await saveGame(game);
 		getIO()
-			.to(game.id)
-			.emit("game:update", game);
+			.to(gameId)
+			.emit("game:update", locked.game);
 
-		res.json({ dice: game.dice });
+		res.json({ dice: locked.result.dice });
 	}
 	catch (error)
 	{
@@ -583,39 +611,45 @@ exports.rollDice = async (req, res) => {
 };
 
 /* =============================
-MOVE PIECE
+   MOVE PIECE
 ============================= */
-
 exports.movePiece = async (req, res) => {
 	try
 	{
-		const game = await getGameById(req.params.id);
+		const userId = req.user.id;
+		const gameId = req.params.id;
 
-		if (!game)
+		const { pieceIndex } = req.body;
+
+		const locked = await withGameLock(gameId, async (game) => {
+			const result = executeMove(game, userId, pieceIndex);
+			if (!result.ok)
+			{
+				return result;
+			}
+			game.updatedAt = Date.now();
+			return result;
+		});
+
+		if (!locked)
 		{
 			return res.status(404).json({ error: "Game not found" });
 		}
-
-		const userId = req.user.id;
-		const {pieceIndex} = req.body;
-		const result = executeMove(game, userId, pieceIndex);
-
-		if (!result.ok)
+		if (!locked.result.ok)
 		{
-			return res.status(400).json({ error: result.error });
+			return res.status(400).json({ error: locked.result.error });
 		}
 
-		await saveGame(game);
-
 		getIO()
-			.to(game.id)
-			.emit("game:update", game);
+			.to(gameId)
+			.emit("game:update", locked.game);
 
-		res.json(game);
+		res.json(locked.game);
 	}
 	catch (error)
 	{
 		console.error(error);
+
 		res.status(500).json({ error: "Server error" });
 	}
 };
@@ -1515,110 +1549,150 @@ module.exports = { createNewGame };
 ==============================
 FILE: ./game/turnTimer.js
 ==============================
-const {
-  TURN_TIMEOUT,
-  GAME_STATUS
-} = require('./constants');
-
+const {TURN_TIMEOUT, GAME_STATUS} = require('./constants');
 const nextTurn = require('./rules/nextTurn');
-
-const {
-  getGame,
-  saveGame
-} = require('./gameManager');
-
-const {
-  getIO
-} = require('../socket');
+const withGameLock = require('./withGameLock');
+const { getIO } = require('../socket');
 
 /* =============================
    ACTIVE TIMERS
 ============================= */
-
 const turnTimers = new Map();
-
-/*
-  turnTimers = Map {
-    gameId => timeout
-  }
-*/
 
 /* =============================
    CLEAR TURN TIMER
 ============================= */
-
-function clearTurnTimer(gameId) {
-
-  const existingTimer =
-    turnTimers.get(gameId);
-
-  if (existingTimer) {
-
-    clearTimeout(existingTimer);
-
-    turnTimers.delete(gameId);
-  }
+function clearTurnTimer(gameId)
+{
+	const existingTimer = turnTimers.get(gameId);
+	if (existingTimer)
+	{
+		clearTimeout(existingTimer);
+		turnTimers.delete(gameId);
+	}
 }
 
 /* =============================
    START TURN TIMER
 ============================= */
-
 function startTurnTimer(gameId)
 {
 	clearTurnTimer(gameId);
+	const timeout = setTimeout(async () => {
+		try
+		{
+			const locked = await withGameLock(
+				gameId,
+				async (game) => {
 
-	const timeout = setTimeout( async () => {
-		try {
-			const game = await getGame(gameId);
+					if (game.status !== GAME_STATUS.PLAYING)
+					{
+						return { skip: true };
+					}
+					game.dice = null;
+					nextTurn(game);
+					game.updatedAt = Date.now();
+					return { ok: true };
+				}
+			);
 
-			if (!game)
+			if (!locked)
 			{
 				clearTurnTimer(gameId);
 				return;
 			}
 
-			// Solo partidas activas 
-			if (game.status !== GAME_STATUS.PLAYING)
+			if (locked.result.skip)
 			{
 				return;
 			}
 
-			// Si el jugador ya tiró dado, cancelar dado actual
-			game.dice = null;
-
-			// Siguiente turno
-			nextTurn(game);
-			game.updatedAt = Date.now();
-			await saveGame(game);
-
-			//Reiniciar timer
-			startTurnTimer(game.id);
-
-			//Emitir update
-			getIO()
-				.to(game.id)
-				.emit("game:turn_timeout", { nextTurn: game.turn});
+			startTurnTimer(gameId);
 
 			getIO()
-				.to(game.id)
-				.emit("game:update", game);
+				.to(gameId)
+				.emit("game:turn_timeout",{ nextTurn: locked.game.turn });
 
+			getIO()
+				.to(gameId)
+				.emit( "game:update", locked.game );
 		}
 		catch (err)
 		{
 			console.error(err);
 		}
 
-	}, TURN_TIMEOUT );
+	}, TURN_TIMEOUT);
 
-	turnTimers.set( gameId, timeout);
+	turnTimers.set(gameId, timeout);
 }
 
 module.exports = {
-  startTurnTimer,
-  clearTurnTimer
+	startTurnTimer,
+	clearTurnTimer
 };
+==============================
+FILE: ./game/withGameLock.js
+==============================
+const pool = require('../db');
+
+async function withGameLock(gameId, callback)
+{
+	const client = await pool.connect();
+
+	try
+	{
+		await client.query('BEGIN');
+
+		const result = await client.query(
+			`
+			SELECT state
+			FROM games
+			WHERE id = $1
+			FOR UPDATE
+			`,
+			[gameId]);
+
+		if (result.rows.length === 0)
+		{
+			await client.query('ROLLBACK');
+			return null;
+		}
+
+		const game = result.rows[0].state;
+
+		const callbackResult = await callback(game, client);
+
+		await client.query(
+			`
+			UPDATE games
+			SET
+				state = $1,
+				status = $2,
+				updated_at = CURRENT_TIMESTAMP
+			WHERE id = $3
+			`,
+			[
+				JSON.stringify(game),
+				game.status,
+				game.id
+			]
+		);
+		await client.query('COMMIT');
+		return { game, result: callbackResult };
+	}
+	catch (error)
+	{
+		await client.query('ROLLBACK');
+		throw error;
+	}
+	finally
+	{
+		client.release();
+	}
+}
+
+module.exports = withGameLock;
 ==============================
 FILE: ./initDb.js
 ==============================
@@ -1648,14 +1722,21 @@ async function initDB()
 		============================== */
 		await pool.query(`
 			CREATE TABLE IF NOT EXISTS friendships (
-			id SERIAL PRIMARY KEY,
-			requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-			addressee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-			status VARCHAR(20) NOT NULL DEFAULT 'pending',
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			accepted_at TIMESTAMP NULL,
-			CHECK (requester_id <> addressee_id),
-			UNIQUE (requester_id, addressee_id)
+				id SERIAL PRIMARY KEY,
+				requester_id INTEGER NOT NULL
+					REFERENCES users(id)
+					ON DELETE CASCADE,
+				addressee_id INTEGER NOT NULL
+					REFERENCES users(id)
+					ON DELETE CASCADE,
+				status VARCHAR(20)
+					NOT NULL DEFAULT 'pending',
+				created_at TIMESTAMP
+					DEFAULT CURRENT_TIMESTAMP,
+				accepted_at TIMESTAMP NULL,
+				CHECK (requester_id <> addressee_id),
+				CHECK (requester_id < addressee_id),
+				UNIQUE (requester_id, addressee_id)
 			);
 		`);
 

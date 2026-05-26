@@ -2,62 +2,64 @@ const pool = require('../db');
 
 const { isUserOnline } = require('../sockets/presence');
 
+function normalizeIds(a, b)
+{
+	return a < b
+		? [a, b]
+		: [b, a];
+}
+
 exports.sendRequest = async (req, res) => {
 	try
 	{
 		const requesterId = req.user.id;
 		const addresseeId = parseInt(req.params.id, 10);
-
 		if (Number.isNaN(addresseeId))
 		{
 			return res.status(400).json({ error: 'ID inválido' });
 		}
-
 		if (requesterId === addresseeId)
 		{
 			return res.status(400).json({ error: 'No puedes enviarte solicitud a ti mismo' });
 		}
 
-		const targetUser = await pool.query('SELECT id FROM users WHERE id = $1', [addresseeId]);
+		const targetUser =
+			await pool.query(
+				`
+				SELECT id
+				FROM users
+				WHERE id = $1
+				`,
+				[addresseeId]);
 
-		if (targetUser.rows.length === 0) 
+		if (targetUser.rows.length === 0)
 		{
 			return res.status(404).json({ error: 'Usuario no encontrado' });
 		}
 
-		const existing = await pool.query(
-			`SELECT * FROM friendships
-			WHERE (requester_id = $1 AND addressee_id = $2)
-			OR (requester_id = $2 AND addressee_id = $1)`,
-			[requesterId, addresseeId]);
-
-		if (existing.rows.length > 0)
-		{
-			const relation = existing.rows[0];
-
-			if (relation.status === 'pending')
-			{
-				return res.status(400).json({ error: 'Ya existe una solicitud pendiente' });
-			}
-
-			if (relation.status === 'accepted')
-			{
-				return res.status(400).json({ error: 'Ya sois amigos' });
-			}
-		}
-
+		const [ userA, userB ] = normalizeIds( requesterId, addresseeId);
 		const result = await pool.query(
-			`INSERT INTO friendships (requester_id, addressee_id, status)
+			`
+			INSERT INTO friendships (
+				requester_id,
+				addressee_id,
+				status
+			)
 			VALUES ($1, $2, 'pending')
-			RETURNING id, requester_id, addressee_id, status, created_at`,
-			[requesterId, addresseeId]);
+			RETURNING *
+			`,
+			[userA, userB]);
 
-		return res.status(201).json({ message: 'Solicitud enviada', request: result.rows[0],});
+		return res.status(201).json({ message: 'Solicitud enviada', request: result.rows[0] });
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		if (error.code === '23505')
+		{
+			return res.status(400).json({ error: 'La relación ya existe' });
+		}
+		return res.status(500).json({ error: 'Error en el servidor'});
 	}
 };
 
@@ -67,7 +69,8 @@ exports.acceptRequest = async (req, res) => {
 		const userId = req.user.id;
 		const requesterId = parseInt(req.params.id, 10);
 
-		if (Number.isNaN(requesterId)) {
+		if (Number.isNaN(requesterId))
+		{
 			return res.status(400).json({ error: 'ID inválido' });
 		}
 
@@ -77,7 +80,8 @@ exports.acceptRequest = async (req, res) => {
 			[requesterId, userId]
 		);
 
-		if (request.rows.length === 0) {
+		if (request.rows.length === 0)
+		{
 			return res.status(404).json({ error: 'Solicitud no encontrada' });
 		}
 
@@ -89,10 +93,7 @@ exports.acceptRequest = async (req, res) => {
 			[requesterId, userId]
 		);
 
-		return res.json({
-			message: 'Solicitud aceptada',
-			friendship: updated.rows[0],
-		});
+		return res.json({ message: 'Solicitud aceptada', friendship: updated.rows[0] });
 	}
 	catch (error)
 	{

@@ -1,28 +1,22 @@
 const getAvailableMoves = require('../game/rules/getAvailableMoves');
 const nextTurn = require('../game/rules/nextTurn');
-
 const { createNewGame } = require('../game/gameState');
-const { rollDice, addPlayerToGame, executeMove, canJoinGame, canRollDice} = require('../game/gameEngine');
-const { getGame: getGameById, createGame, saveGame} = require('../game/gameManager');
+const { rollDice, addPlayerToGame, executeMove, canJoinGame, canRollDice } = require('../game/gameEngine');
+const { getGame: getGameById, createGame } = require('../game/gameManager');
+const withGameLock = require('../game/withGameLock');
 const { getIO } = require('../socket');
 
 /* =============================
    CREATE GAME
 ============================= */
-
 exports.createGame = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
-
 		const game = createNewGame(userId);
-
 		await createGame(game);
-
 		getIO().emit("game:created", game);
-
 		res.json(game);
-
 	}
 	catch (error)
 	{
@@ -32,9 +26,8 @@ exports.createGame = async (req, res) => {
 };
 
 /* =============================
-GET GAME
+   GET GAME
 ============================= */
-
 exports.getGame = async (req, res) => {
 	try
 	{
@@ -45,45 +38,48 @@ exports.getGame = async (req, res) => {
 			return res.status(404).json({ error: "Game not found" });
 		}
 		res.json(game);
-
 	}
 	catch (error)
 	{
 		console.error(error);
-
 		res.status(500).json({ error: "Server error" });
 	}
 };
 
 /* =============================
-JOIN GAME
+   JOIN GAME
 ============================= */
-
 exports.joinGame = async (req, res) => {
-	try {
-		const game = await getGameById(req.params.id);
+	try
+	{
+		const userId = req.user.id;
+		const gameId = req.params.id;
 
-		if (!game)
+		const locked = await withGameLock(gameId, async (game) => {
+			const validation = canJoinGame(game, userId);
+			if (!validation.ok)
+			{
+				return { error: validation.error };
+			}
+			addPlayerToGame(game, userId);
+			return { ok: true };
+		});
+
+		if (!locked)
 		{
 			return res.status(404).json({ error: "Game not found" });
 		}
 
-		const userId = req.user.id;
-		const validation = canJoinGame(game, userId);
-
-		if (!validation.ok)
+		if (locked.result.error)
 		{
-			return res.status(400).json({ error: validation.error });
+			return res.status(400).json({ error: locked.result.error });
 		}
 
-		addPlayerToGame(game, userId);
-		await saveGame(game);
-
 		getIO()
-			.to(game.id)
-			.emit("game:update", game);
+			.to(gameId)
+			.emit("game:update", locked.game);
 
-		res.json(game);
+		res.json(locked.game);
 	}
 	catch (error)
 	{
@@ -93,41 +89,47 @@ exports.joinGame = async (req, res) => {
 };
 
 /* =============================
-ROLL DICE
+   ROLL DICE
 ============================= */
-
 exports.rollDice = async (req, res) => {
 	try
 	{
-		const game = await getGameById(req.params.id);
+		const userId = req.user.id;
+		const gameId = req.params.id;
 
-		if (!game)
+		const locked = await withGameLock(gameId, async (game) => {
+			const validation = canRollDice(game, userId);
+
+			if (!validation.ok)
+			{
+				return { error: validation.error };
+			}
+
+			game.dice = rollDice();
+			const availableMoves = getAvailableMoves(game, userId);
+
+			if (availableMoves.length === 0)
+			{
+				game.dice = null;
+				nextTurn(game);
+			}
+			game.updatedAt = Date.now();
+			return { ok: true, dice: game.dice };
+		});
+		if (!locked)
 		{
 			return res.status(404).json({ error: "Game not found" });
 		}
-
-		const userId = req.user.id;
-		const validation = canRollDice(game, userId);
-
-		if (!validation.ok)
+		if (locked.result.error)
 		{
-			return res.status(400).json({ error: validation.error });
+			return res.status(400).json({ error: locked.result.error });
 		}
 
-		game.dice = rollDice();
-		const availableMoves = getAvailableMoves(game, userId);
-
-		if (availableMoves.length === 0)
-		{
-			game.dice = null;
-			nextTurn(game);
-		}
-		await saveGame(game);
 		getIO()
-			.to(game.id)
-			.emit("game:update", game);
+			.to(gameId)
+			.emit("game:update", locked.game);
 
-		res.json({ dice: game.dice });
+		res.json({ dice: locked.result.dice });
 	}
 	catch (error)
 	{
@@ -137,39 +139,45 @@ exports.rollDice = async (req, res) => {
 };
 
 /* =============================
-MOVE PIECE
+   MOVE PIECE
 ============================= */
-
 exports.movePiece = async (req, res) => {
 	try
 	{
-		const game = await getGameById(req.params.id);
+		const userId = req.user.id;
+		const gameId = req.params.id;
 
-		if (!game)
+		const { pieceIndex } = req.body;
+
+		const locked = await withGameLock(gameId, async (game) => {
+			const result = executeMove(game, userId, pieceIndex);
+			if (!result.ok)
+			{
+				return result;
+			}
+			game.updatedAt = Date.now();
+			return result;
+		});
+
+		if (!locked)
 		{
 			return res.status(404).json({ error: "Game not found" });
 		}
-
-		const userId = req.user.id;
-		const {pieceIndex} = req.body;
-		const result = executeMove(game, userId, pieceIndex);
-
-		if (!result.ok)
+		if (!locked.result.ok)
 		{
-			return res.status(400).json({ error: result.error });
+			return res.status(400).json({ error: locked.result.error });
 		}
 
-		await saveGame(game);
-
 		getIO()
-			.to(game.id)
-			.emit("game:update", game);
+			.to(gameId)
+			.emit("game:update", locked.game);
 
-		res.json(game);
+		res.json(locked.game);
 	}
 	catch (error)
 	{
 		console.error(error);
+
 		res.status(500).json({ error: "Server error" });
 	}
 };

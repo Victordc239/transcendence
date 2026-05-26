@@ -28,7 +28,6 @@ import BoardEffects from "../board/BoardEffects";
 
 export default function GameScene({ game }: any) {
   return (
-      //<div className="game-scene">
       <div className="relative w-full h-full min-h-screen overflow-hidden">
 
         <div className="absolute inset-0 flex items-center justify-center">

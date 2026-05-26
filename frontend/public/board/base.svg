@@ -1,0 +1,248 @@
+<svg
+  width="600"
+  height="600"
+  viewBox="0 0 600 600"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+
+  <defs>
+
+    <!-- BACKGROUND -->
+    <linearGradient id="bg" x1="0" y1="0" x2="600" y2="600">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+
+    <!-- CELL -->
+    <linearGradient id="cell" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#dbe4ee"/>
+    </linearGradient>
+
+    <!-- COLORS -->
+    <linearGradient id="pinkZone" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff4fd8"/>
+      <stop offset="100%" stop-color="#ff8ae8"/>
+    </linearGradient>
+
+    <linearGradient id="purpleZone" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9d4dff"/>
+      <stop offset="100%" stop-color="#cf8dff"/>
+    </linearGradient>
+
+    <linearGradient id="blueZone" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#37b8ff"/>
+      <stop offset="100%" stop-color="#79dbff"/>
+    </linearGradient>
+
+    <linearGradient id="greenZone" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#37ff99"/>
+      <stop offset="100%" stop-color="#8dffc2"/>
+    </linearGradient>
+
+    <!-- SHADOW -->
+    <filter id="shadow">
+      <feDropShadow
+        dx="0"
+        dy="8"
+        stdDeviation="12"
+        flood-color="#000"
+        flood-opacity="0.5"
+      />
+    </filter>
+
+  </defs>
+
+  <!-- MAIN BG -->
+  <rect
+    width="600"
+    height="600"
+    rx="40"
+    fill="url(#bg)"
+  />
+
+  <!-- BOARD FRAME -->
+  <rect
+    x="28"
+    y="28"
+    width="544"
+    height="544"
+    rx="38"
+    fill="#111827"
+    stroke="#334155"
+    stroke-width="6"
+    filter="url(#shadow)"
+  />
+
+  <!-- ========================= -->
+  <!-- PLAYER ZONES -->
+  <!-- ========================= -->
+
+  <!-- PINK -->
+  <rect
+    x="50"
+    y="50"
+    width="190"
+    height="190"
+    rx="32"
+    fill="#1e1b2e"
+    stroke="url(#pinkZone)"
+    stroke-width="4"
+  />
+
+  <!-- GREEN -->
+  <rect
+    x="360"
+    y="50"
+    width="190"
+    height="190"
+    rx="32"
+    fill="#14251f"
+    stroke="url(#greenZone)"
+    stroke-width="4"
+  />
+
+  <!-- BLUE -->
+  <rect
+    x="50"
+    y="360"
+    width="190"
+    height="190"
+    rx="32"
+    fill="#132130"
+    stroke="url(#blueZone)"
+    stroke-width="4"
+  />
+
+  <!-- PURPLE -->
+  <rect
+    x="360"
+    y="360"
+    width="190"
+    height="190"
+    rx="32"
+    fill="#24192d"
+    stroke="url(#purpleZone)"
+    stroke-width="4"
+  />
+
+  <!-- ========================= -->
+  <!-- BASE CIRCLES -->
+  <!-- ========================= -->
+
+  <!-- pink -->
+  <circle cx="105" cy="105" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
+  <circle cx="185" cy="105" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
+  <circle cx="105" cy="185" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
+  <circle cx="185" cy="185" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
+
+  <!-- green -->
+  <circle cx="415" cy="105" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
+  <circle cx="495" cy="105" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
+  <circle cx="415" cy="185" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
+  <circle cx="495" cy="185" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
+
+  <!-- blue -->
+  <circle cx="105" cy="415" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
+  <circle cx="185" cy="415" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
+  <circle cx="105" cy="495" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
+  <circle cx="185" cy="495" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
+
+  <!-- purple -->
+  <circle cx="415" cy="415" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
+  <circle cx="495" cy="415" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
+  <circle cx="415" cy="495" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
+  <circle cx="495" cy="495" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
+
+  <!-- ========================= -->
+  <!-- MAIN TRACK -->
+  <!-- 68 CELLS -->
+  <!-- ========================= -->
+
+  <!-- TOP -->
+  <g>
+    <rect x="240" y="40" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+    <rect x="280" y="40" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+    <rect x="320" y="40" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+  </g>
+
+  <!-- RIGHT -->
+  <g>
+    <rect x="520" y="240" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+    <rect x="520" y="280" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+    <rect x="520" y="320" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+  </g>
+
+  <!-- BOTTOM -->
+  <g>
+    <rect x="240" y="520" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+    <rect x="280" y="520" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+    <rect x="320" y="520" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+  </g>
+
+  <!-- LEFT -->
+  <g>
+    <rect x="40" y="240" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+    <rect x="40" y="280" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+    <rect x="40" y="320" width="40" height="40" fill="url(#cell)" stroke="#94a3b8"/>
+  </g>
+
+  <!-- ========================= -->
+  <!-- HOME LANES -->
+  <!-- ========================= -->
+
+  <!-- pink -->
+  <rect x="240" y="240" width="40" height="40" fill="#ff4fd8"/>
+  <rect x="200" y="240" width="40" height="40" fill="#ff4fd8"/>
+  <rect x="160" y="240" width="40" height="40" fill="#ff4fd8"/>
+
+  <!-- green -->
+  <rect x="320" y="160" width="40" height="40" fill="#37ff99"/>
+  <rect x="320" y="200" width="40" height="40" fill="#37ff99"/>
+  <rect x="320" y="240" width="40" height="40" fill="#37ff99"/>
+
+  <!-- blue -->
+  <rect x="240" y="320" width="40" height="40" fill="#37b8ff"/>
+  <rect x="240" y="360" width="40" height="40" fill="#37b8ff"/>
+  <rect x="240" y="400" width="40" height="40" fill="#37b8ff"/>
+
+  <!-- purple -->
+  <rect x="360" y="240" width="40" height="40" fill="#bb6cff"/>
+  <rect x="400" y="240" width="40" height="40" fill="#bb6cff"/>
+  <rect x="440" y="240" width="40" height="40" fill="#bb6cff"/>
+
+  <!-- ========================= -->
+  <!-- CENTER GOAL -->
+  <!-- ========================= -->
+
+  <g>
+
+    <polygon
+      points="300,240 360,300 300,360 240,300"
+      fill="#111827"
+      stroke="#475569"
+      stroke-width="4"
+    />
+
+    <polygon
+      points="300,255 345,300 300,345 255,300"
+      fill="#0f172a"
+      stroke="#94a3b8"
+      stroke-width="2"
+    />
+
+    <text
+      x="300"
+      y="307"
+      text-anchor="middle"
+      fill="white"
+      font-size="22"
+      font-family="Arial"
+      font-weight="bold"
+    >
+    </text>
+
+  </g>
+
+</svg>

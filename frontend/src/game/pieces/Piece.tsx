@@ -20,7 +20,7 @@
   );
 }*/
 
-import { motion } from "framer-motion";
+/*import { motion } from "framer-motion";
 
 const glowClass: Record<string, string> = {
   pink: "neon-pink",
@@ -59,5 +59,45 @@ export default function Piece({
         scale: 1.08,
       }}
     />
+  );
+}*/
+
+export default function Piece({
+  x,
+  y,
+  color,
+}: any) {
+  return (
+    <g
+      style={{
+        transform: `translate(${x}px, ${y}px)`,
+      }}
+    >
+      {/* OUTER GLOW */}
+      <circle
+        r={28}
+        fill={color}
+        opacity={0.18}
+        style={{
+          filter: `blur(10px)`,
+        }}
+      />
+
+      {/* MAIN BODY */}
+      <circle
+        r={18}
+        fill={color}
+        style={{
+          filter: `drop-shadow(0 0 18px ${color})`,
+        }}
+      />
+
+      {/* INNER LIGHT */}
+      <circle
+        cy={-5}
+        r={7}
+        fill="rgba(255,255,255,.65)"
+      />
+    </g>
   );
 }

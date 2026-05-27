@@ -15,22 +15,25 @@ export default function GamePieces({ game }: any) {
             pos = bases[player.color]?.[piece.id % 4];
           }
 
-          if (piece.state === "track") {
+          /*if (piece.state === "track") {
             pos = mainTrack[piece.trackIndex % mainTrack.length];
           }
 
-          /*
           if (piece.state === "base") {
             pos = bases[player.color]?.[i];
-          }
+          }*/
 
           if (piece.state === "track") {
             pos = mainTrack[piece.trackIndex];
-          }*/
+          }
 
           if (piece.state === "home") {
             pos = CENTER;
           }
+
+          /*if (piece.state === "home") {
+            pos = homeLanes[player.color][piece.homeIndex];
+          }*/
 
           if (!pos) return null;
 

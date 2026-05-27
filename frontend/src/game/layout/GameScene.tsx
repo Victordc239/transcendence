@@ -20,8 +20,7 @@ export default function GameScene({ game }: any) {
   );
 }*/
 
-//import ParchisBoard from "../../components/game/ParchisBoard";
-import GameBoard from "../board/GameBoard";
+/*import GameBoard from "../board/GameBoard";
 import GamePieces from "../pieces/GamePieces";
 import GameHUD from "../hud/GameHUD";
 import BoardEffects from "../board/BoardEffects";
@@ -51,4 +50,35 @@ export default function GameScene({ game }: any) {
       <GameHUD game={game} />
     </div>
   );
+}*/
+
+import GameBoard from "../board/GameBoard";
+import GamePieces from "../pieces/GamePieces";
+import GameHUD from "../hud/GameHUD";
+import BoardEffects from "../board/BoardEffects";
+
+export default function GameScene({ game }: any) {
+  return (
+    <div className="relative w-full h-full min-h-screen overflow-hidden flex items-center justify-center">
+
+      <div
+        className="
+          absolute inset-0
+          bg-[radial-gradient(circle_at_center,rgba(59,130,246,.12),transparent_60%)]
+        "
+      />
+
+      <GameBoard>
+
+        <BoardEffects />
+
+        <GamePieces game={game} />
+
+      </GameBoard>
+
+      <GameHUD game={game} />
+
+    </div>
+  );
 }
+

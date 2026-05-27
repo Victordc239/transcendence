@@ -1,7 +1,3 @@
-/*export function useBoardSize() {
-  return 600;
-}*/
-
 import { useEffect, useState } from "react";
 
 export function useBoardSize() {

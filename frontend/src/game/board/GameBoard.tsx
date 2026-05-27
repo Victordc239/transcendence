@@ -11,7 +11,7 @@
     <div className="absolute inset-0">
 */
 
-export default function GameBoard() {
+/*export default function GameBoard() {
   return (
     <div className="relative w-full aspect-square max-w-[1100px]">
 
@@ -55,5 +55,48 @@ export default function GameBoard() {
       />
 
     </div>*/
+//  );
+//}
+
+export default function GameBoard({
+  children,
+}: {
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="relative aspect-square w-[95vmin] max-w-[1100px]">
+
+      <img
+        src="/board/board-base.svg"
+        className="absolute inset-0 w-full h-full select-none"
+        draggable={false}
+      />
+
+      <img
+        src="/board/board-safe.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          pointer-events-none
+          opacity-90
+        "
+      />
+
+      <img
+        src="/board/board-glow.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          opacity-70
+          mix-blend-screen
+          pointer-events-none
+        "
+      />
+
+      <div className="absolute inset-0 z-20">
+        {children}
+      </div>
+
+    </div>
   );
 }

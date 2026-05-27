@@ -43,7 +43,7 @@ export default function DicePanel({ game }: any) {
     ">
       <motion.img
         key={dice}
-        src={`/ui/dice-${dice}.png`}
+        src={`/ui/dice-${dice}.svg`}
         className="w-28 h-28 object-contain"
         initial={{
           rotate: -180,

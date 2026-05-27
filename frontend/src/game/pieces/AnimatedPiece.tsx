@@ -1,5 +1,5 @@
 import Piece from "./Piece";
-import { useAnimatedPiece } from "../../hooks/useAnimatedPiece";
+import { useAnimatedPiece } from "../hooks/useAnimatedPiece";
 
 export default function AnimatedPiece({
   piece,

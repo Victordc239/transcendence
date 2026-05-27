@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { Point } from "../game/board/boardCoordinates";
-import { mainTrack, bases, CENTER } from "../game/board/boardCoordinates";
+import type { Point } from "../board/boardCoordinates";
+import { mainTrack, bases, CENTER } from "../board/boardCoordinates";
 
 type Params = {
   piece: any;

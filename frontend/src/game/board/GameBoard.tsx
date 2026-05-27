@@ -58,7 +58,7 @@
 //  );
 //}
 
-export default function GameBoard({
+/*export default function GameBoard({
   children,
 }: {
   children?: React.ReactNode;
@@ -97,6 +97,51 @@ export default function GameBoard({
         {children}
       </div>
 
+    </div>
+  );
+}*/
+
+export default function GameBoard() {
+  return (
+    <div className="absolute inset-0">
+
+      {/* BASE */}
+      <img
+        src="/board/board-base.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          object-contain
+          select-none
+          pointer-events-none
+        "
+      />
+
+      {/* SAFE CELLS */}
+      <img
+        src="/board/board-safe.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          object-contain
+          opacity-90
+          mix-blend-screen
+          pointer-events-none
+        "
+      />
+
+      {/* GLOW */}
+      <img
+        src="/board/board-glow.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          object-contain
+          opacity-80
+          mix-blend-screen
+          pointer-events-none
+        "
+      />
     </div>
   );
 }

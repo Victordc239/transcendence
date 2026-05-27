@@ -11,13 +11,23 @@ async function getGame(gameId)
 		FROM games
 		WHERE id = $1
 		`,
-		[gameId]);
+		[gameId]
+	);
 
 	if (result.rows.length === 0)
 	{
 		return null;
 	}
-	return result.rows[0].state;
+
+	let state = result.rows[0].state;
+
+	// 🔥 FIX: asegurar objeto JS (Postgres puede devolver string o JSON)
+	if (typeof state === 'string')
+	{
+		state = JSON.parse(state);
+	}
+
+	return state;
 }
 
 /* =============================
@@ -26,21 +36,21 @@ async function getGame(gameId)
 async function createGame(game)
 {
 	await pool.query(
-	`
-	INSERT INTO games (
-		id,
-		host_id,
-		state,
-		status
-	)
-	VALUES ($1, $2, $3, $4)
-	`,
-	[
-		game.id,
-		game.players[0].id,
-		JSON.stringify(game),
-		game.status
-	]
+		`
+		INSERT INTO games (
+			id,
+			host_id,
+			state,
+			status
+		)
+		VALUES ($1, $2, $3, $4)
+		`,
+		[
+			game.id,
+			game.players[0].id,
+			JSON.stringify(game),
+			game.status
+		]
 	);
 }
 
@@ -50,24 +60,24 @@ async function createGame(game)
 async function saveGame(game)
 {
 	await pool.query(
-	`
-	UPDATE games
-	SET
-		state = $1,
-		status = $2,
-		updated_at = CURRENT_TIMESTAMP
-	WHERE id = $3
-	`,
-	[
-		JSON.stringify(game),
-		game.status,
-		game.id
-	]
+		`
+		UPDATE games
+		SET
+			state = $1,
+			status = $2,
+			updated_at = CURRENT_TIMESTAMP
+		WHERE id = $3
+		`,
+		[
+			JSON.stringify(game),
+			game.status,
+			game.id
+		]
 	);
 }
 
 /* =============================
-  DELETE GAME
+   DELETE GAME
 ============================= */
 async function deleteGame(gameId)
 {
@@ -76,7 +86,8 @@ async function deleteGame(gameId)
 		DELETE FROM games
 		WHERE id = $1
 		`,
-		[gameId]);
+		[gameId]
+	);
 }
 
 module.exports = {

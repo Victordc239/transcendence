@@ -5,27 +5,34 @@ const {rollDice, addPlayerToGame, executeMove, canJoinGame, canRollDice} = requi
 const { getGame: getGameById, createGame} = require('../game/gameManager');
 const withGameLock = require('../game/withGameLock');
 const { getIO } = require('../socket');
+const normalizeGame = require('../game/utils/normalizeGame');
 
 /* =============================
 CREATE GAME
 ============================= */
 exports.createGame = async (req, res) => {
-
 	try
 	{
-		console.log('CREATE GAME');
-
 		const userId = req.user.id;
 
 		const game = createNewGame(userId);
+
 		await createGame(game);
-		getIO().emit('game:created', game);
-		return res.json(game);
+
+		const normalized = normalizeGame(game);
+
+		getIO().emit('game:created', normalized);
+
+		// 🔥 FIX IMPORTANTE: respuesta consistente para frontend
+		return res.json({
+			id: normalized.id,
+			game: normalized
+		});
 	}
 	catch (error)
 	{
-		console.error(error);
-		return res.status(500).json({	error: 'Server error'});
+		console.error("CREATE GAME ERROR:", error);
+		return res.status(500).json({ error: 'Server error creating game' });
 	}
 };
 
@@ -33,25 +40,21 @@ exports.createGame = async (req, res) => {
 GET GAME
 ============================= */
 exports.getGame = async (req, res) => {
-
 	try
 	{
 		const game = await getGameById(req.params.id);
-
 		if (!game)
 		{
-			return res.status(404).json({	error: 'Game not found'});
+			return res.status(404).json({ error: 'Game not found' });
 		}
-
-		return res.json(game);
+		return res.json(normalizeGame(game));
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({	error: 'Server error'});
+		return res.status(500).json({ error: 'Server error' });
 	}
 };
-
 /* =============================
 JOIN GAME
 ============================= */
@@ -96,7 +99,7 @@ exports.joinGame = async (req, res) => {
 			.to(gameId)
 			.emit('game:update', locked.game);
 
-		return res.json(locked.game);
+		return res.json(normalizeGame(locked.game));
 	}
 	catch (error)
 	{
@@ -209,7 +212,7 @@ exports.movePiece = async (req, res) => {
 			.to(gameId)
 			.emit('game:update', locked.game);
 
-		return res.json(locked.game);
+		return res.json(normalizeGame(locked.game));
 	}
 	catch (error)
 	{

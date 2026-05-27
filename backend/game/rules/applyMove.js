@@ -1,36 +1,36 @@
 const getPlayer = require('../utils/getPlayer');
 const getPiece = require('../utils/getPiece');
 
-const {BASE_POSITION, FINAL_ENTRY, FINAL_STRETCH_START, FINAL_POSITION} = require('../constants');
-
-function applyMove(game, playerId, pieceIndex)
-{
+function applyMove(game, playerId, pieceIndex) {
 	const player = getPlayer(game, playerId);
 	const piece = getPiece(player, pieceIndex);
 
-	//Sale de casa
-	if (piece.position === BASE_POSITION)
-	{
-		piece.position = 0;
+	if (!piece) return;
+
+	// salir de base
+	if (piece.state === "base") {
+		piece.state = "track";
+		piece.trackIndex = 0;
 		return;
 	}
 
-	let newPosition = piece.position + game.dice;
+	if (piece.state === "track") {
+		piece.trackIndex += game.dice;
 
-	// Entrar al pasillo final
-	if (piece.position <= FINAL_ENTRY[player.color] && newPosition > FINAL_ENTRY[player.color])
-	{
-		const overflow = newPosition - FINAL_ENTRY[player.color] - 1;
-		newPosition = FINAL_STRETCH_START + overflow;
+		if (piece.trackIndex >= 68) {
+			piece.state = "home";
+			piece.homeIndex = 0;
+		}
+		return;
 	}
 
-	// Limitar meta
-	if (newPosition > FINAL_POSITION)
-	{
-		newPosition = FINAL_POSITION;
-	}
+	if (piece.state === "home") {
+		piece.homeIndex += game.dice;
 
-	piece.position = newPosition;
+		if (piece.homeIndex >= 6) {
+			piece.state = "finished";
+		}
+	}
 }
 
 module.exports = applyMove;

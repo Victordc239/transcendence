@@ -2,6 +2,7 @@ const {getGame, saveGame,deleteGame} = require('../game/gameManager');
 const setPlayerConnection = require('../game/rules/setPlayerConnection');
 const checkPausedState = require('../game/rules/checkPausedState');
 const isGameAbandoned = require('../game/rules/isGameAbandoned');
+const normalizeGame = require('../game/utils/normalizeGame');
 
 const { DISCONNECT_TIMEOUT } = require('../game/constants');
 
@@ -44,7 +45,7 @@ function registerGameSocket(io, socket)
 			/* =============================
 			SEND GAME STATE
 			============================= */
-			socket.emit('game:update', game);
+			socket.emit('game:update', normalizeGame(game));
 			io.to(String(gameId)).emit(
 				'game:player_reconnected',
 				{
@@ -76,7 +77,7 @@ function registerGameSocket(io, socket)
 					message: 'Game not found'
 				});
 			}
-			socket.emit('game:update', game);
+			io.to(String(gameId)).emit('game:update', normalizeGame(game));
 		}
 		catch (err)
 		{

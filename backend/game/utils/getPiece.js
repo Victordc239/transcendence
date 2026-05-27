@@ -1,5 +1,4 @@
-function getPiece(player, pieceIndex)
-{
+function getPiece(player, pieceIndex) {
 	return player.pieces[pieceIndex];
 }
 

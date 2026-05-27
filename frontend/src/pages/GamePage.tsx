@@ -6,9 +6,9 @@ import { useGameStore } from "../store/gameStore";
 import { rollDice, movePiece } from "../api/game.api";
 
 import ParchisBoard from "../components/game/ParchisBoard";
-import GamePieces from "../game/pieces/GamePieces";
+import GamePieces from "../game/pieces/GamePieces";*/
 
-export default function GamePage() {
+/*export default function GamePage() {
   const { id } = useParams();
   const { token } = useAuth();
   const game = useGameStore((s) => s.game);
@@ -155,17 +155,7 @@ export default function GamePage() {
   );
 }*/
 
-/*import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { socket, connectSocket } from "../socket/socket";
-import { useAuth } from "../context/AuthContext";
-import { useGameStore } from "../store/gameStore";
-import { rollDice, movePiece } from "../api/game.api";
-
-import ParchisBoard from "../components/game/ParchisBoard";
-import GamePieces from "../game/pieces/GamePieces";
-
-export default function GamePage() {
+/*export default function GamePage() {
   const { id } = useParams();
   const { token } = useAuth();
 

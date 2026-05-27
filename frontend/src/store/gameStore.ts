@@ -1,23 +1,5 @@
 import { create } from "zustand";
 
-/*type Piece = {
-  position: string | number;
-};
-
-type Player = {
-  id: number;
-  color: string;
-  pieces: Piece[];
-};
-
-type Game = {
-  id: string;
-  players: Player[];
-  turn: number;
-  dice: number | null;
-  status: "waiting" | "playing" | "finished";
-};*/
-
 export type PieceState =
   | "base"
   | "track"

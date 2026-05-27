@@ -1,24 +1,6 @@
 //import { mainTrack, bases } from "../boardPositions";
 //import { bases, mainTrack, CENTER } from "../board/boardCoordinates";
-
-/*import AnimatedPiece from "./AnimatedPiece";
-
-export default function GamePieces({ game }: any) {
-  return (
-    <>
-      {game.players?.map((player: any) =>
-        player.pieces?.map((piece: any, i: number) => (
-          <AnimatedPiece
-            key={piece.id}
-            piece={piece}
-            player={player}
-            index={i}
-          />
-        ))
-      )}
-    </>
-  );
-}*/
+//import AnimatedPiece from "./AnimatedPiece";
 
 /*import {
   bases,

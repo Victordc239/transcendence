@@ -13,7 +13,7 @@
 
     <radialGradient id="core">
       <stop offset="0%" stop-color="#E9FCFF"/>
-      <stop offset="40%" stop-color="#7DE3FF"/>
+      <stop offset="40%" stop-color="#E5ECC1FF"/>
       <stop offset="100%" stop-color="#F7F730FF"/>
     </radialGradient>
 

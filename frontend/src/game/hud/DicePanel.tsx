@@ -71,7 +71,6 @@ export default function DicePanel({ game }: any) {
           transition
         "
       >
-        Confirm Move
       </button>
     </div>
   );

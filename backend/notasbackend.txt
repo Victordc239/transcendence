@@ -142,45 +142,36 @@ exports.login = async (req, res) => {
 FILE: ./controllers/friendsController.js
 ==============================
 const pool = require('../db');
-
 const { isUserOnline } = require('../sockets/presence');
-
-function normalizeIds(a, b)
-{
-	return a < b
-		? [a, b]
-		: [b, a];
-}
 
 exports.sendRequest = async (req, res) => {
 	try
 	{
 		const requesterId = req.user.id;
 		const addresseeId = parseInt(req.params.id, 10);
-		if (Number.isNaN(addresseeId))
-		{
-			return res.status(400).json({ error: 'ID inválido' });
-		}
+
 		if (requesterId === addresseeId)
 		{
-			return res.status(400).json({ error: 'No puedes enviarte solicitud a ti mismo' });
+			return res.status(400).json({error: 'No puedes agregarte'});
 		}
 
-		const targetUser =
-			await pool.query(
-				`
-				SELECT id
-				FROM users
-				WHERE id = $1
-				`,
-				[addresseeId]);
+		const existing = await pool.query(
+			`
+			SELECT *
+			FROM friendships
+			WHERE
+				(requester_id = $1 AND addressee_id = $2)
+				OR
+				(requester_id = $2 AND addressee_id = $1)
+			`,
+			[requesterId, addresseeId]
+		);
 
-		if (targetUser.rows.length === 0)
+		if (existing.rows.length > 0)
 		{
-			return res.status(404).json({ error: 'Usuario no encontrado' });
+			return res.status(400).json({ error: 'La relación ya existe'});
 		}
 
-		const [ userA, userB ] = normalizeIds( requesterId, addresseeId);
 		const result = await pool.query(
 			`
 			INSERT INTO friendships (
@@ -191,18 +182,15 @@ exports.sendRequest = async (req, res) => {
 			VALUES ($1, $2, 'pending')
 			RETURNING *
 			`,
-			[userA, userB]);
+			[requesterId, addresseeId]
+		);
 
-		return res.status(201).json({ message: 'Solicitud enviada', request: result.rows[0] });
+		return res.status(201).json({success: true, request: result.rows[0]});
 	}
 	catch (error)
 	{
 		console.error(error);
-		if (error.code === '23505')
-		{
-			return res.status(400).json({ error: 'La relación ya existe' });
-		}
-		return res.status(500).json({ error: 'Error en el servidor'});
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 
@@ -212,68 +200,32 @@ exports.acceptRequest = async (req, res) => {
 		const userId = req.user.id;
 		const requesterId = parseInt(req.params.id, 10);
 
-		if (Number.isNaN(requesterId))
-		{
-			return res.status(400).json({ error: 'ID inválido' });
-		}
-
-		const request = await pool.query(
-			`SELECT * FROM friendships
-			WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'`,
+		const result = await pool.query(
+			`
+			UPDATE friendships
+			SET
+				status = 'accepted',
+				accepted_at = CURRENT_TIMESTAMP
+			WHERE
+				requester_id = $1
+				AND addressee_id = $2
+				AND status = 'pending'
+			RETURNING *
+			`,
 			[requesterId, userId]
 		);
 
-		if (request.rows.length === 0)
+		if (result.rows.length === 0)
 		{
-			return res.status(404).json({ error: 'Solicitud no encontrada' });
+			return res.status(404).json({error: 'Solicitud no encontrada'});
 		}
 
-		const updated = await pool.query(
-			`UPDATE friendships
-			SET status = 'accepted', accepted_at = CURRENT_TIMESTAMP
-			WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'
-			RETURNING id, requester_id, addressee_id, status, created_at, accepted_at`,
-			[requesterId, userId]
-		);
-
-		return res.json({ message: 'Solicitud aceptada', friendship: updated.rows[0] });
+		return res.json({success: true, friendship: result.rows[0]});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
-	}
-};
-
-exports.deleteRelation = async (req, res) => {
-	try
-	{
-		const userId = req.user.id;
-		const otherUserId = parseInt(req.params.id, 10);
-
-		if (Number.isNaN(otherUserId))
-		{
-			return res.status(400).json({ error: 'ID inválido' });
-		}
-
-		const deleted = await pool.query(
-			`DELETE FROM friendships
-			WHERE (requester_id = $1 AND addressee_id = $2)
-			OR (requester_id = $2 AND addressee_id = $1)
-			RETURNING id`,
-			[userId, otherUserId]);
-
-		if (deleted.rows.length === 0)
-		{
-			return res.status(404).json({ error: 'Relación no encontrada' });
-		}
-
-		return res.json({ message: 'Relación eliminada' });
-	}
-	catch (error)
-	{
-		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 
@@ -281,127 +233,113 @@ exports.getFriends = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
-
 		const result = await pool.query(
 			`
 			SELECT
-			u.id,
-			u.username,
-			u.email,
-			u.avatar_url,
-			f.accepted_at
+				u.id,
+				u.username,
+				u.avatar_url
 			FROM friendships f
 			JOIN users u
-			ON (u.id = CASE
-			WHEN f.requester_id = $1 THEN f.addressee_id
-			ELSE f.requester_id
-			END)
-			WHERE (f.requester_id = $1 OR f.addressee_id = $1)
-			AND f.status = 'accepted'
-			ORDER BY f.accepted_at DESC
+			ON (
+				u.id =
+				CASE
+					WHEN f.requester_id = $1
+					THEN f.addressee_id
+					ELSE f.requester_id
+				END
+			)
+			WHERE
+				(f.requester_id = $1 OR f.addressee_id = $1)
+				AND f.status = 'accepted'
 			`,
-			[userId]);
+			[userId]
+		);
 
-		return res.json({ friends: result.rows });
+		const friends = result.rows.map(friend => ({
+			...friend,
+			online: isUserOnline(friend.id)
+		}));
+
+		return res.json({friends});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 
 exports.getPendingRequests = async (req, res) => {
-	try {
-	const userId = req.user.id;
-
-	const result = await pool.query(
-		`
-		SELECT
-		f.id,
-		u.id AS requester_id,
-		u.username,
-		u.email,
-		u.avatar_url,
-		f.created_at
-		FROM friendships f
-		JOIN users u ON u.id = f.requester_id
-		WHERE f.addressee_id = $1
-		AND f.status = 'pending'
-		ORDER BY f.created_at DESC
-		`,
-		[userId]
-	);
-
-	return res.json({ requests: result.rows });
-	} catch (error) {
-	console.error(error);
-	return res.status(500).json({ error: 'Error en el servidor' });
-	}
-};
-
-exports.getOnlineFriends = async (req, res) => {
 	try
 	{
-
 		const userId = req.user.id;
-
 		const result = await pool.query(
 			`
 			SELECT
-			u.id,
-			u.username,
-			u.avatar_url
+				u.id,
+				u.username,
+				u.avatar_url,
+				f.created_at
 			FROM friendships f
 			JOIN users u
-			ON (u.id = CASE
-			WHEN f.requester_id = $1 THEN f.addressee_id
-			ELSE f.requester_id
-			END)
-			WHERE (f.requester_id = $1 OR f.addressee_id = $1)
-			AND f.status = 'accepted'
+			ON u.id = f.requester_id
+			WHERE
+				f.addressee_id = $1
+				AND f.status = 'pending'
 			`,
-			[userId]);
+			[userId]
+		);
 
-		const onlineFriends = result.rows.map(friend => ({
-			...friend,
-			online: isUserOnline(friend.id)}));
-
-		return res.json({friends: onlineFriends});
-
+		return res.json({requests: result.rows});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 ==============================
 FILE: ./controllers/userController.js
 ==============================
 const pool = require('../db');
+const { isUserOnline } = require('../sockets/presence');
 
 exports.getMe = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
+
 		const result = await pool.query(
-			`SELECT id, username, email, avatar_url, created_at, updated_at
+			`
+			SELECT
+				id,
+				username,
+				email,
+				avatar_url,
+				created_at,
+				updated_at
 			FROM users
-			WHERE id = $1`,
+			WHERE id = $1
+			`,
 			[userId]
 		);
 
 		if (result.rows.length === 0)
 		{
-			return res.status(404).json({ error: 'Usuario no encontrado' });
+			return res.status(404).json({error: 'Usuario no encontrado'});
 		}
-		return res.json(result.rows[0]);
+
+		const user = result.rows[0];
+		return res.json({
+			...user,
+			online: true
+		});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 
@@ -413,34 +351,55 @@ exports.updateMe = async (req, res) => {
 
 		if (!username && !avatar_url)
 		{
-			return res.status(400).json({ error: 'No hay datos para actualizar' });
+			return res.status(400).json({error: 'No hay datos para actualizar'});
 		}
 
 		if (username)
 		{
-			const usernameExists = await pool.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, userId]);
+			const usernameExists = await pool.query(
+				`
+				SELECT id
+				FROM users
+				WHERE username = $1
+				AND id != $2
+				`,
+				[username, userId]);
+
 			if (usernameExists.rows.length > 0)
 			{
-				return res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
+				return res.status(400).json({error: 'El nombre de usuario ya está en uso'});
 			}
 		}
 
 		const result = await pool.query(
-			`UPDATE users
+			`
+			UPDATE users
 			SET
-			username = COALESCE($1, username),
-			avatar_url = COALESCE($2, avatar_url),
-			updated_at = CURRENT_TIMESTAMP
+				username = COALESCE($1, username),
+				avatar_url = COALESCE($2, avatar_url),
+				updated_at = CURRENT_TIMESTAMP
 			WHERE id = $3
-			RETURNING id, username, email, avatar_url, created_at, updated_at`,
-			[username || null, avatar_url || null, userId]);
+			RETURNING
+				id,
+				username,
+				email,
+				avatar_url,
+				created_at,
+				updated_at
+			`,
+			[
+				username || null,
+				avatar_url || null,
+				userId
+			]
+		);
 
-		return res.json({message: 'Perfil actualizado', user: result.rows[0]});
+		return res.json({	success: true,user: result.rows[0]});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 
@@ -448,23 +407,71 @@ exports.getUserById = async (req, res) => {
 	try
 	{
 		const { id } = req.params;
-
 		const result = await pool.query(
-			`SELECT id, username, avatar_url, created_at
+			`
+			SELECT
+				id,
+				username,
+				avatar_url,
+				created_at
 			FROM users
-			WHERE id = $1`,
-			[id]);
+			WHERE id = $1
+			`,
+			[id]
+		);
 
 		if (result.rows.length === 0)
 		{
-			return res.status(404).json({ error: 'Usuario no encontrado' });
+			return res.status(404).json({error: 'Usuario no encontrado'});
 		}
-		return res.json(result.rows[0]);
+
+		const user = result.rows[0];
+		return res.json({
+			...user,
+			online: isUserOnline(user.id)
+		});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
+	}
+};
+
+exports.searchUsers = async (req, res) => {
+	try
+	{
+		const query = req.query.q;
+
+		if (!query || query.trim().length === 0)
+		{
+			return res.json({users: []});
+		}
+
+		const result = await pool.query(
+			`
+			SELECT
+				id,
+				username,
+				avatar_url
+			FROM users
+			WHERE LOWER(username) LIKE LOWER($1)
+			ORDER BY username ASC
+			LIMIT 20
+			`,
+			[`%${query}%`]
+		);
+
+		const users = result.rows.map(user => ({
+			...user,
+			online: isUserOnline(user.id)}));
+
+		return res.json({users});
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor'});
 	}
 };
 ==============================
@@ -473,184 +480,220 @@ FILE: ./controllers/gameController.js
 const getAvailableMoves = require('../game/rules/getAvailableMoves');
 const nextTurn = require('../game/rules/nextTurn');
 const { createNewGame } = require('../game/gameState');
-const { rollDice, addPlayerToGame, executeMove, canJoinGame, canRollDice } = require('../game/gameEngine');
-const { getGame: getGameById, createGame } = require('../game/gameManager');
+const {rollDice, addPlayerToGame, executeMove, canJoinGame, canRollDice} = require('../game/gameEngine');
+const { getGame: getGameById, createGame} = require('../game/gameManager');
 const withGameLock = require('../game/withGameLock');
 const { getIO } = require('../socket');
 
 /* =============================
-   CREATE GAME
+CREATE GAME
 ============================= */
 exports.createGame = async (req, res) => {
+
 	try
 	{
+		console.log('CREATE GAME');
+
 		const userId = req.user.id;
+
 		const game = createNewGame(userId);
 		await createGame(game);
-		getIO().emit("game:created", game);
-		res.json(game);
+		getIO().emit('game:created', game);
+		return res.json(game);
 	}
 	catch (error)
 	{
 		console.error(error);
-		res.status(500).json({ error: "Server error" });
+		return res.status(500).json({	error: 'Server error'});
 	}
 };
 
 /* =============================
-   GET GAME
+GET GAME
 ============================= */
 exports.getGame = async (req, res) => {
+
 	try
 	{
 		const game = await getGameById(req.params.id);
 
 		if (!game)
 		{
-			return res.status(404).json({ error: "Game not found" });
+			return res.status(404).json({	error: 'Game not found'});
 		}
-		res.json(game);
+
+		return res.json(game);
 	}
 	catch (error)
 	{
 		console.error(error);
-		res.status(500).json({ error: "Server error" });
+		return res.status(500).json({	error: 'Server error'});
 	}
 };
 
 /* =============================
-   JOIN GAME
+JOIN GAME
 ============================= */
 exports.joinGame = async (req, res) => {
+
 	try
 	{
+		console.log('JOIN GAME');
+
 		const userId = req.user.id;
 		const gameId = req.params.id;
 
-		const locked = await withGameLock(gameId, async (game) => {
-			const validation = canJoinGame(game, userId);
-			if (!validation.ok)
-			{
-				return { error: validation.error };
+		const locked = await withGameLock(gameId,
+			async (game) => {
+
+				const validation = canJoinGame(game, userId);
+
+				if (!validation.ok)
+				{
+					return {error: validation.error};
+				}
+
+				addPlayerToGame(game, userId);
+
+				return {
+					ok: true
+				};
 			}
-			addPlayerToGame(game, userId);
-			return { ok: true };
-		});
+		);
 
 		if (!locked)
 		{
-			return res.status(404).json({ error: "Game not found" });
+			return res.status(404).json({error: 'Game not found'});
 		}
 
 		if (locked.result.error)
 		{
-			return res.status(400).json({ error: locked.result.error });
+			return res.status(400).json({error: locked.result.error});
 		}
 
 		getIO()
 			.to(gameId)
-			.emit("game:update", locked.game);
+			.emit('game:update', locked.game);
 
-		res.json(locked.game);
+		return res.json(locked.game);
 	}
 	catch (error)
 	{
 		console.error(error);
-		res.status(500).json({ error: "Server error" });
+		return res.status(500).json({error: 'Server error'});
 	}
 };
 
 /* =============================
-   ROLL DICE
+ROLL DICE
 ============================= */
 exports.rollDice = async (req, res) => {
+
 	try
 	{
+		console.log('ROLL DICE');
+
 		const userId = req.user.id;
 		const gameId = req.params.id;
 
-		const locked = await withGameLock(gameId, async (game) => {
-			const validation = canRollDice(game, userId);
+		const locked = await withGameLock(
+			gameId,
+			async (game) => {
 
-			if (!validation.ok)
-			{
-				return { error: validation.error };
+				const validation = canRollDice(game, userId);
+				if (!validation.ok)
+				{
+					return { error: validation.error };
+				}
+
+				game.dice = rollDice();
+				const availableMoves = getAvailableMoves(game, userId);
+				if (availableMoves.length === 0)
+				{
+					game.dice = null;
+					nextTurn(game);
+				}
+
+				game.updatedAt = Date.now();
+
+				return {
+					ok: true,
+					dice: game.dice
+				};
 			}
+		);
 
-			game.dice = rollDice();
-			const availableMoves = getAvailableMoves(game, userId);
-
-			if (availableMoves.length === 0)
-			{
-				game.dice = null;
-				nextTurn(game);
-			}
-			game.updatedAt = Date.now();
-			return { ok: true, dice: game.dice };
-		});
 		if (!locked)
 		{
-			return res.status(404).json({ error: "Game not found" });
+			return res.status(404).json({error: 'Game not found'});
 		}
+
 		if (locked.result.error)
 		{
-			return res.status(400).json({ error: locked.result.error });
+			return res.status(400).json({error: locked.result.error});
 		}
 
 		getIO()
 			.to(gameId)
-			.emit("game:update", locked.game);
+			.emit('game:update', locked.game);
 
-		res.json({ dice: locked.result.dice });
+		return res.json({dice: locked.result.dice});
 	}
 	catch (error)
 	{
 		console.error(error);
-		res.status(500).json({ error: "Server error" });
+		return res.status(500).json({error: 'Server error'});
 	}
 };
 
 /* =============================
-   MOVE PIECE
+MOVE PIECE
 ============================= */
 exports.movePiece = async (req, res) => {
+
 	try
 	{
+		console.log('MOVE PIECE');
+
 		const userId = req.user.id;
 		const gameId = req.params.id;
 
 		const { pieceIndex } = req.body;
 
-		const locked = await withGameLock(gameId, async (game) => {
-			const result = executeMove(game, userId, pieceIndex);
-			if (!result.ok)
-			{
+		const locked = await withGameLock(
+			gameId,
+			async (game) => {
+
+				const result = executeMove(game, userId, pieceIndex);
+				if (!result.ok)
+				{
+					return result;
+				}
+				game.updatedAt = Date.now();
 				return result;
 			}
-			game.updatedAt = Date.now();
-			return result;
-		});
+		);
 
 		if (!locked)
 		{
-			return res.status(404).json({ error: "Game not found" });
+			return res.status(404).json({error: 'Game not found'});
 		}
+
 		if (!locked.result.ok)
 		{
-			return res.status(400).json({ error: locked.result.error });
+			return res.status(400).json({error: locked.result.error});
 		}
 
 		getIO()
 			.to(gameId)
-			.emit("game:update", locked.game);
+			.emit('game:update', locked.game);
 
-		res.json(locked.game);
+		return res.json(locked.game);
 	}
 	catch (error)
 	{
 		console.error(error);
-
-		res.status(500).json({ error: "Server error" });
+		return res.status(500).json({error: 'Server error'});
 	}
 };
 ==============================
@@ -1347,14 +1390,11 @@ const { COLORS, GAME_STATUS} = require('./constants');
 const canJoinGame = require('./validators/canJoinGame');
 const canRollDice = require('./validators/canRollDice');
 const canMovePiece = require('./validators/canMovePiece');
-
 const applyMove = require('./rules/applyMove');
 const nextTurn = require('./rules/nextTurn');
 const checkCapture = require('./rules/checkCapture');
 const checkWin = require('./rules/checkWin');
-
 const createPieces = require('./utils/createPieces');
-
 const {startTurnTimer} = require('./turnTimer');
 
 function rollDice()
@@ -1372,7 +1412,7 @@ function addPlayerToGame(game, userId)
 		abandoned: false,
 		pieces: createPieces()});
 
-	if (game.players.length >= 2)
+	if (game.players.length >= 2 && game.status === GAME_STATUS.WAITING)
 	{
 		game.status = GAME_STATUS.PLAYING;
 		game.turn = game.players[0].id;
@@ -1735,7 +1775,6 @@ async function initDB()
 					DEFAULT CURRENT_TIMESTAMP,
 				accepted_at TIMESTAMP NULL,
 				CHECK (requester_id <> addressee_id),
-				CHECK (requester_id < addressee_id),
 				UNIQUE (requester_id, addressee_id)
 			);
 		`);
@@ -1812,22 +1851,17 @@ module.exports = router;
 FILE: ./routes/friendsRoutes.js
 ==============================
 const express = require('express');
+
 const router = express.Router();
 
 const authMiddleware = require('../middleware/authMiddleware');
 const friendsController = require('../controllers/friendsController');
 
-router.post('/request/:id', authMiddleware, friendsController.sendRequest);
-
-router.post('/accept/:id', authMiddleware, friendsController.acceptRequest);
-
-router.delete('/:id', authMiddleware, friendsController.deleteRelation);
-
-router.get('/', authMiddleware, friendsController.getFriends);
-
-router.get('/online', authMiddleware, friendsController.getOnlineFriends);
-
-router.get('/requests', authMiddleware, friendsController.getPendingRequests);
+router.use(authMiddleware);
+router.get('/', friendsController.getFriends);
+router.get('/requests', friendsController.getPendingRequests);
+router.post('/request/:id', friendsController.sendRequest);
+router.post('/accept/:id', friendsController.acceptRequest);
 
 module.exports = router;
 ==============================
@@ -1851,6 +1885,7 @@ module.exports = router;
 FILE: ./routes/userRoutes.js
 ==============================
 const express = require('express');
+
 const router = express.Router();
 
 const authMiddleware = require('../middleware/authMiddleware');
@@ -1858,6 +1893,7 @@ const userController = require('../controllers/userController');
 
 router.get('/me', authMiddleware, userController.getMe);
 router.put('/me', authMiddleware, userController.updateMe);
+router.get('/search', authMiddleware, userController.searchUsers);
 router.get('/:id', authMiddleware, userController.getUserById);
 
 module.exports = router;
@@ -1868,20 +1904,24 @@ const jwt = require('jsonwebtoken');
 
 function authSocket(socket, next)
 {
-	const token = socket.handshake.auth?.token;
-
-	if (!token)
-		return next(new Error("No token"));
-
 	try
 	{
+		const token = socket.handshake.auth?.token;
+
+		if (!token)
+		{
+			return next(new Error('Authentication error'));
+		}
+
 		const decoded = jwt.verify( token, process.env.JWT_SECRET);
+
 		socket.user = decoded;
+
 		next();
 	}
 	catch (err)
 	{
-		next(new Error("Invalid token"));
+		next(new Error('Invalid token'));
 	}
 }
 
@@ -1936,57 +1976,33 @@ module.exports = {
 FILE: ./sockets/index.js
 ==============================
 const { Server } = require('socket.io');
-
 const authSocket = require('./authSocket');
 const registerGameSocket = require('./gameSocket');
-
-const { addUserSocket, removeUserSocket} = require('./presence');
-
+const {addUserSocket, removeUserSocket} = require('./presence');
 const { setIO } = require('../socket');
 
 function initSockets(httpServer)
 {
 	const io = new Server(httpServer, {
 		cors: {
-			origin: true,
+			origin: '*',
+			methods: ['GET', 'POST'],
 			credentials: true
 		}
 	});
 
-	/* =============================
-	SAVE GLOBAL IO
-	============================= */
 	setIO(io);
 	io.use(authSocket);
-	io.on("connection", (socket) => {
+	io.on('connection', (socket) => {
+
 		const userId = socket.user.id;
-		console.log("User connected:", userId);
-
-		/* -----------------------------
-			USER ONLINE
-		------------------------------ */
 		addUserSocket(userId, socket.id);
-		io.emit("presence:update", {
-			userId,
-			online: true
-		});
-
-		/* -----------------------------
-			REGISTER GAME EVENTS
-		------------------------------ */
+		io.emit('presence:update', {userId, online: true});
 		registerGameSocket(io, socket);
-
-		/* -----------------------------
-			DISCONNECT
-		------------------------------ */
-		socket.on("disconnect", () => {
-
-			console.log("User disconnected:", userId);
+		socket.on('disconnect', () => {
 			removeUserSocket(userId, socket.id);
-			io.emit("presence:update", {
-				userId,
-				online: false});
-			});
+			io.emit('presence:update', {userId, online: false});
+		});
 	});
 }
 
@@ -1994,7 +2010,7 @@ module.exports = initSockets;
 ==============================
 FILE: ./sockets/gameSocket.js
 ==============================
-const { getGame, saveGame, deleteGame } = require('../game/gameManager');
+const {getGame, saveGame,deleteGame} = require('../game/gameManager');
 const setPlayerConnection = require('../game/rules/setPlayerConnection');
 const checkPausedState = require('../game/rules/checkPausedState');
 const isGameAbandoned = require('../game/rules/isGameAbandoned');
@@ -2003,57 +2019,99 @@ const { DISCONNECT_TIMEOUT } = require('../game/constants');
 
 function registerGameSocket(io, socket)
 {
-	/* -----------------------------
+	/* =============================
 	JOIN GAME ROOM
-	------------------------------ */
-	socket.on("game:join", async ({ gameId }) => {
-		const game = await getGame(gameId);
-		if (!game)
+	============================= */
+
+	socket.on('game:join', async ({ gameId }) => {
+
+		try
 		{
-			return socket.emit("error", { message: "Game not found" });
+			const game = await getGame(gameId);
+
+			if (!game)
+			{
+				return socket.emit('error', { message: 'Game not found' });
+			}
+
+			const player = game.players.find( p => p.id === socket.user.id );
+
+			if (!player)
+			{
+				return socket.emit('error', { message: 'You are not part of this game' });
+			}
+
+			/* =============================
+			JOIN ROOM
+			============================= */
+			socket.join(String(gameId));
+
+			/* =============================
+			RECONNECT
+			============================= */
+			setPlayerConnection( game, socket.user.id, true	);
+			checkPausedState(game);
+			await saveGame(game);
+
+			/* =============================
+			SEND GAME STATE
+			============================= */
+			socket.emit('game:update', game);
+			io.to(String(gameId)).emit(
+				'game:player_reconnected',
+				{
+					userId: socket.user.id
+				}
+			);
+
+			io.to(String(gameId)).emit( 'game:update', game);
 		}
-
-		const player = game.players.find( p => p.id === socket.user.id );
-
-		if (!player)
+		catch (err)
 		{
-			return socket.emit("error", { message: "You are not part of this game" });
+			console.error(err);
+			socket.emit('error', { message: 'Socket join error' });
 		}
-
-		setPlayerConnection(game, socket.user.id, true);
-		checkPausedState(game);
-		await saveGame(game);
-		socket.join(gameId);
-		socket.emit("game:update", game);
-		io.to(gameId).emit( "game:player_reconnected",{ userId: socket.user.id });
 	});
 
-	/* -----------------------------
+	/* =============================
 	GET GAME STATE
-	------------------------------ */
-	socket.on("game:state", async ({ gameId }) => {
-		const game = await getGame(gameId);
+	============================= */
 
-		if (!game)
+	socket.on('game:state', async ({ gameId }) => {
+
+		try
 		{
-			return socket.emit("error", { message: "Game not found" });
+			const game = await getGame(gameId);
+			if (!game)
+			{
+				return socket.emit('error', {
+					message: 'Game not found'
+				});
+			}
+			socket.emit('game:update', game);
 		}
-		socket.emit("game:update", game);
+		catch (err)
+		{
+			console.error(err);
+		}
 	});
 
-	/* -----------------------------
+	/* =============================
 	DISCONNECT
-	------------------------------ */
-	socket.on("disconnect", async () => {
+	============================= */
+
+	socket.on('disconnect', async () => {
+
 		try
 		{
 			const joinedGames =
-			Array.from(socket.rooms)
-			.filter(room => room !== socket.id);
+				Array.from(socket.rooms)
+				.filter(room => room !== socket.id);
 
 			for (const gameId of joinedGames)
 			{
 				const game = await getGame(gameId);
+
 				if (!game)
 				{
 					continue;
@@ -2062,48 +2120,65 @@ function registerGameSocket(io, socket)
 				setPlayerConnection(game, socket.user.id, false);
 				checkPausedState(game);
 				await saveGame(game);
+				io.to(String(gameId)).emit('game:update', game);
 
-				io.to(gameId).emit( "game:update", game);
-				io.to(gameId).emit( "game:player_disconnected", { userId: socket.user.id });
+				io.to(String(gameId)).emit(
+					'game:player_disconnected',
+					{
+						userId: socket.user.id
+					}
+				);
 
 				setTimeout(async () => {
-					const updatedGame = await getGame(gameId);
 
-					if (!updatedGame)
+					try
 					{
-						return;
-					}
+						const updatedGame = await getGame(gameId);
+						if (!updatedGame)
+						{
+							return;
+						}
 
-					const player =
-						updatedGame.players.find(
-						p => p.id === socket.user.id
+						const player = updatedGame.players.find( p => p.id === socket.user.id);
+						if (!player)
+						{
+							return;
+						}
+
+						/* Reconnected */
+						if (player.connected)
+						{
+							return;
+						}
+
+						/* Abandoned */
+						player.abandoned = true;
+						const abandoned = isGameAbandoned(updatedGame);
+						if (abandoned)
+						{
+							await deleteGame(gameId);
+							return;
+						}
+
+						await saveGame(updatedGame);
+
+						io.to(String(gameId)).emit(
+							'game:player_abandoned',
+							{
+								userId: socket.user.id
+							}
 						);
 
-					if (!player)
+						io.to(String(gameId)).emit(
+							'game:update',
+							updatedGame
+						);
+					}
+					catch (err)
 					{
-						return;
+						console.error(err);
 					}
 
-					/* Se reconectó*/
-					if (player.connected)
-					{
-						return;
-					}
-
-					/* Abandono definitivo */
-					player.abandoned = true;
-					const abandoned = isGameAbandoned(updatedGame);
-
-					if (abandoned)
-					{
-						await deleteGame(gameId);
-						return;
-					}
-
-					await saveGame(updatedGame);
-
-					io.to(gameId).emit( "game:player_abandoned", { userId: socket.user.id });
-					io.to(gameId).emit( "game:update", updatedGame );
 				}, DISCONNECT_TIMEOUT);
 			}
 		}
@@ -2152,22 +2227,27 @@ FILE: ./server.js
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
-
 const initDB = require('./initDb');
 const initSockets = require('./sockets');
-
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const friendsRoutes = require('./routes/friendsRoutes');
 const gameRoutes = require('./routes/gameRoutes');
-
 const app = express();
 
 app.use(cors({
-	origin: true,
+	origin: '*',
+	methods: ['GET', 'POST', 'PUT', 'DELETE'],
 	credentials: true
 }));
+
 app.use(express.json());
+
+app.get('/', (req, res) => {
+	res.json({
+		status: 'ok'
+	});
+});
 
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
@@ -2182,11 +2262,14 @@ const PORT = process.env.PORT || 3000;
 
 initDB()
 	.then(() => {
-	httpServer.listen(PORT, () => {
-		console.log(`Backend running on port ${PORT}`);
-	});
+
+		httpServer.listen(PORT, () => {
+			console.log(`Backend running on port ${PORT}`);
+		});
 	})
 	.catch((err) => {
+
 		console.error('DB init failed:', err);
+
 		process.exit(1);
 	});

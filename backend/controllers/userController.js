@@ -1,26 +1,41 @@
 const pool = require('../db');
+const { isUserOnline } = require('../sockets/presence');
 
 exports.getMe = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
+
 		const result = await pool.query(
-			`SELECT id, username, email, avatar_url, created_at, updated_at
+			`
+			SELECT
+				id,
+				username,
+				email,
+				avatar_url,
+				created_at,
+				updated_at
 			FROM users
-			WHERE id = $1`,
+			WHERE id = $1
+			`,
 			[userId]
 		);
 
 		if (result.rows.length === 0)
 		{
-			return res.status(404).json({ error: 'Usuario no encontrado' });
+			return res.status(404).json({error: 'Usuario no encontrado'});
 		}
-		return res.json(result.rows[0]);
+
+		const user = result.rows[0];
+		return res.json({
+			...user,
+			online: true
+		});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 
@@ -32,34 +47,55 @@ exports.updateMe = async (req, res) => {
 
 		if (!username && !avatar_url)
 		{
-			return res.status(400).json({ error: 'No hay datos para actualizar' });
+			return res.status(400).json({error: 'No hay datos para actualizar'});
 		}
 
 		if (username)
 		{
-			const usernameExists = await pool.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, userId]);
+			const usernameExists = await pool.query(
+				`
+				SELECT id
+				FROM users
+				WHERE username = $1
+				AND id != $2
+				`,
+				[username, userId]);
+
 			if (usernameExists.rows.length > 0)
 			{
-				return res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
+				return res.status(400).json({error: 'El nombre de usuario ya está en uso'});
 			}
 		}
 
 		const result = await pool.query(
-			`UPDATE users
+			`
+			UPDATE users
 			SET
-			username = COALESCE($1, username),
-			avatar_url = COALESCE($2, avatar_url),
-			updated_at = CURRENT_TIMESTAMP
+				username = COALESCE($1, username),
+				avatar_url = COALESCE($2, avatar_url),
+				updated_at = CURRENT_TIMESTAMP
 			WHERE id = $3
-			RETURNING id, username, email, avatar_url, created_at, updated_at`,
-			[username || null, avatar_url || null, userId]);
+			RETURNING
+				id,
+				username,
+				email,
+				avatar_url,
+				created_at,
+				updated_at
+			`,
+			[
+				username || null,
+				avatar_url || null,
+				userId
+			]
+		);
 
-		return res.json({message: 'Perfil actualizado', user: result.rows[0]});
+		return res.json({	success: true,user: result.rows[0]});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 
@@ -67,22 +103,70 @@ exports.getUserById = async (req, res) => {
 	try
 	{
 		const { id } = req.params;
-
 		const result = await pool.query(
-			`SELECT id, username, avatar_url, created_at
+			`
+			SELECT
+				id,
+				username,
+				avatar_url,
+				created_at
 			FROM users
-			WHERE id = $1`,
-			[id]);
+			WHERE id = $1
+			`,
+			[id]
+		);
 
 		if (result.rows.length === 0)
 		{
-			return res.status(404).json({ error: 'Usuario no encontrado' });
+			return res.status(404).json({error: 'Usuario no encontrado'});
 		}
-		return res.json(result.rows[0]);
+
+		const user = result.rows[0];
+		return res.json({
+			...user,
+			online: isUserOnline(user.id)
+		});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
+	}
+};
+
+exports.searchUsers = async (req, res) => {
+	try
+	{
+		const query = req.query.q;
+
+		if (!query || query.trim().length === 0)
+		{
+			return res.json({users: []});
+		}
+
+		const result = await pool.query(
+			`
+			SELECT
+				id,
+				username,
+				avatar_url
+			FROM users
+			WHERE LOWER(username) LIKE LOWER($1)
+			ORDER BY username ASC
+			LIMIT 20
+			`,
+			[`%${query}%`]
+		);
+
+		const users = result.rows.map(user => ({
+			...user,
+			online: isUserOnline(user.id)}));
+
+		return res.json({users});
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor'});
 	}
 };

@@ -37,7 +37,6 @@ async function initDB()
 					DEFAULT CURRENT_TIMESTAMP,
 				accepted_at TIMESTAMP NULL,
 				CHECK (requester_id <> addressee_id),
-				CHECK (requester_id < addressee_id),
 				UNIQUE (requester_id, addressee_id)
 			);
 		`);

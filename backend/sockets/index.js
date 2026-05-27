@@ -1,55 +1,31 @@
 const { Server } = require('socket.io');
-
 const authSocket = require('./authSocket');
 const registerGameSocket = require('./gameSocket');
-
-const { addUserSocket, removeUserSocket} = require('./presence');
-
+const {addUserSocket, removeUserSocket} = require('./presence');
 const { setIO } = require('../socket');
 
 function initSockets(httpServer)
 {
 	const io = new Server(httpServer, {
 		cors: {
-			origin: true,
+			origin: '*',
+			methods: ['GET', 'POST'],
 			credentials: true
 		}
 	});
 
-	/* =============================
-	SAVE GLOBAL IO
-	============================= */
 	setIO(io);
 	io.use(authSocket);
-	io.on("connection", (socket) => {
+	io.on('connection', (socket) => {
+
 		const userId = socket.user.id;
-		console.log("User connected:", userId);
-
-		/* -----------------------------
-			USER ONLINE
-		------------------------------ */
 		addUserSocket(userId, socket.id);
-		io.emit("presence:update", {
-			userId,
-			online: true
-		});
-
-		/* -----------------------------
-			REGISTER GAME EVENTS
-		------------------------------ */
+		io.emit('presence:update', {userId, online: true});
 		registerGameSocket(io, socket);
-
-		/* -----------------------------
-			DISCONNECT
-		------------------------------ */
-		socket.on("disconnect", () => {
-
-			console.log("User disconnected:", userId);
+		socket.on('disconnect', () => {
 			removeUserSocket(userId, socket.id);
-			io.emit("presence:update", {
-				userId,
-				online: false});
-			});
+			io.emit('presence:update', {userId, online: false});
+		});
 	});
 }
 

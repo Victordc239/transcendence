@@ -1,43 +1,34 @@
 const pool = require('../db');
-
 const { isUserOnline } = require('../sockets/presence');
-
-function normalizeIds(a, b)
-{
-	return a < b
-		? [a, b]
-		: [b, a];
-}
 
 exports.sendRequest = async (req, res) => {
 	try
 	{
 		const requesterId = req.user.id;
 		const addresseeId = parseInt(req.params.id, 10);
-		if (Number.isNaN(addresseeId))
-		{
-			return res.status(400).json({ error: 'ID inválido' });
-		}
+
 		if (requesterId === addresseeId)
 		{
-			return res.status(400).json({ error: 'No puedes enviarte solicitud a ti mismo' });
+			return res.status(400).json({error: 'No puedes agregarte'});
 		}
 
-		const targetUser =
-			await pool.query(
-				`
-				SELECT id
-				FROM users
-				WHERE id = $1
-				`,
-				[addresseeId]);
+		const existing = await pool.query(
+			`
+			SELECT *
+			FROM friendships
+			WHERE
+				(requester_id = $1 AND addressee_id = $2)
+				OR
+				(requester_id = $2 AND addressee_id = $1)
+			`,
+			[requesterId, addresseeId]
+		);
 
-		if (targetUser.rows.length === 0)
+		if (existing.rows.length > 0)
 		{
-			return res.status(404).json({ error: 'Usuario no encontrado' });
+			return res.status(400).json({ error: 'La relación ya existe'});
 		}
 
-		const [ userA, userB ] = normalizeIds( requesterId, addresseeId);
 		const result = await pool.query(
 			`
 			INSERT INTO friendships (
@@ -48,18 +39,15 @@ exports.sendRequest = async (req, res) => {
 			VALUES ($1, $2, 'pending')
 			RETURNING *
 			`,
-			[userA, userB]);
+			[requesterId, addresseeId]
+		);
 
-		return res.status(201).json({ message: 'Solicitud enviada', request: result.rows[0] });
+		return res.status(201).json({success: true, request: result.rows[0]});
 	}
 	catch (error)
 	{
 		console.error(error);
-		if (error.code === '23505')
-		{
-			return res.status(400).json({ error: 'La relación ya existe' });
-		}
-		return res.status(500).json({ error: 'Error en el servidor'});
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 
@@ -69,68 +57,32 @@ exports.acceptRequest = async (req, res) => {
 		const userId = req.user.id;
 		const requesterId = parseInt(req.params.id, 10);
 
-		if (Number.isNaN(requesterId))
-		{
-			return res.status(400).json({ error: 'ID inválido' });
-		}
-
-		const request = await pool.query(
-			`SELECT * FROM friendships
-			WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'`,
+		const result = await pool.query(
+			`
+			UPDATE friendships
+			SET
+				status = 'accepted',
+				accepted_at = CURRENT_TIMESTAMP
+			WHERE
+				requester_id = $1
+				AND addressee_id = $2
+				AND status = 'pending'
+			RETURNING *
+			`,
 			[requesterId, userId]
 		);
 
-		if (request.rows.length === 0)
+		if (result.rows.length === 0)
 		{
-			return res.status(404).json({ error: 'Solicitud no encontrada' });
+			return res.status(404).json({error: 'Solicitud no encontrada'});
 		}
 
-		const updated = await pool.query(
-			`UPDATE friendships
-			SET status = 'accepted', accepted_at = CURRENT_TIMESTAMP
-			WHERE requester_id = $1 AND addressee_id = $2 AND status = 'pending'
-			RETURNING id, requester_id, addressee_id, status, created_at, accepted_at`,
-			[requesterId, userId]
-		);
-
-		return res.json({ message: 'Solicitud aceptada', friendship: updated.rows[0] });
+		return res.json({success: true, friendship: result.rows[0]});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
-	}
-};
-
-exports.deleteRelation = async (req, res) => {
-	try
-	{
-		const userId = req.user.id;
-		const otherUserId = parseInt(req.params.id, 10);
-
-		if (Number.isNaN(otherUserId))
-		{
-			return res.status(400).json({ error: 'ID inválido' });
-		}
-
-		const deleted = await pool.query(
-			`DELETE FROM friendships
-			WHERE (requester_id = $1 AND addressee_id = $2)
-			OR (requester_id = $2 AND addressee_id = $1)
-			RETURNING id`,
-			[userId, otherUserId]);
-
-		if (deleted.rows.length === 0)
-		{
-			return res.status(404).json({ error: 'Relación no encontrada' });
-		}
-
-		return res.json({ message: 'Relación eliminada' });
-	}
-	catch (error)
-	{
-		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 
@@ -138,98 +90,69 @@ exports.getFriends = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
-
 		const result = await pool.query(
 			`
 			SELECT
-			u.id,
-			u.username,
-			u.email,
-			u.avatar_url,
-			f.accepted_at
+				u.id,
+				u.username,
+				u.avatar_url
 			FROM friendships f
 			JOIN users u
-			ON (u.id = CASE
-			WHEN f.requester_id = $1 THEN f.addressee_id
-			ELSE f.requester_id
-			END)
-			WHERE (f.requester_id = $1 OR f.addressee_id = $1)
-			AND f.status = 'accepted'
-			ORDER BY f.accepted_at DESC
-			`,
-			[userId]);
-
-		return res.json({ friends: result.rows });
-	}
-	catch (error)
-	{
-		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
-	}
-};
-
-exports.getPendingRequests = async (req, res) => {
-	try {
-		const userId = req.user.id;
-
-		const result = await pool.query(
-			`
-			SELECT
-			f.id,
-			u.id AS requester_id,
-			u.username,
-			u.email,
-			u.avatar_url,
-			f.created_at
-			FROM friendships f
-			JOIN users u ON u.id = f.requester_id
-			WHERE f.addressee_id = $1
-			AND f.status = 'pending'
-			ORDER BY f.created_at DESC
+			ON (
+				u.id =
+				CASE
+					WHEN f.requester_id = $1
+					THEN f.addressee_id
+					ELSE f.requester_id
+				END
+			)
+			WHERE
+				(f.requester_id = $1 OR f.addressee_id = $1)
+				AND f.status = 'accepted'
 			`,
 			[userId]
 		);
 
-		return res.json({ requests: result.rows });
+		const friends = result.rows.map(friend => ({
+			...friend,
+			online: isUserOnline(friend.id)
+		}));
+
+		return res.json({friends});
 	}
-	catch (error) 
+	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 
-exports.getOnlineFriends = async (req, res) => {
+exports.getPendingRequests = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
 		const result = await pool.query(
 			`
 			SELECT
-			u.id,
-			u.username,
-			u.avatar_url
+				u.id,
+				u.username,
+				u.avatar_url,
+				f.created_at
 			FROM friendships f
 			JOIN users u
-			ON (u.id = CASE
-			WHEN f.requester_id = $1 THEN f.addressee_id
-			ELSE f.requester_id
-			END)
-			WHERE (f.requester_id = $1 OR f.addressee_id = $1)
-			AND f.status = 'accepted'
+			ON u.id = f.requester_id
+			WHERE
+				f.addressee_id = $1
+				AND f.status = 'pending'
 			`,
-			[userId]);
+			[userId]
+		);
 
-		const onlineFriends = result.rows.map(friend => ({
-			...friend,
-			online: isUserOnline(friend.id)}));
-
-		return res.json({friends: onlineFriends});
-
+		return res.json({requests: result.rows});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };

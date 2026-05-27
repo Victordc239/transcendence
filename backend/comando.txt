@@ -1,0 +1,15 @@
+find . -type f \
+! -name "package.json" \
+! -name "package-lock.json" \
+! -name "notasbackend.txt" \
+! -name "comando.txt" \
+! -name ".dockerignore" \
+-exec sh -c '
+  for file do
+    echo "=============================="
+    echo "FILE: $file"
+    echo "=============================="
+    cat "$file"
+    echo
+  done
+' sh {} + > notasbackend.txt

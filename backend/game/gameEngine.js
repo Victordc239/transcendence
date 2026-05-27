@@ -3,14 +3,11 @@ const { COLORS, GAME_STATUS} = require('./constants');
 const canJoinGame = require('./validators/canJoinGame');
 const canRollDice = require('./validators/canRollDice');
 const canMovePiece = require('./validators/canMovePiece');
-
 const applyMove = require('./rules/applyMove');
 const nextTurn = require('./rules/nextTurn');
 const checkCapture = require('./rules/checkCapture');
 const checkWin = require('./rules/checkWin');
-
 const createPieces = require('./utils/createPieces');
-
 const {startTurnTimer} = require('./turnTimer');
 
 function rollDice()
@@ -28,7 +25,7 @@ function addPlayerToGame(game, userId)
 		abandoned: false,
 		pieces: createPieces()});
 
-	if (game.players.length >= 2)
+	if (game.players.length >= 2 && game.status === GAME_STATUS.WAITING)
 	{
 		game.status = GAME_STATUS.PLAYING;
 		game.turn = game.players[0].id;

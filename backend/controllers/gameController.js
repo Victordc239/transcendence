@@ -17,7 +17,7 @@ exports.createGame = async (req, res) => {
 
 		const game = createNewGame(userId);
 
-		await createGame(game);
+		await createGame(game, userId);
 
 		const normalized = normalizeGame(game);
 
@@ -59,52 +59,41 @@ exports.getGame = async (req, res) => {
 JOIN GAME
 ============================= */
 exports.joinGame = async (req, res) => {
+	try {
+		const userId = Number(req.user.id);
+		const gameId = String(req.params.id);
 
-	try
-	{
-		console.log('JOIN GAME');
+		const locked = await withGameLock(gameId, async (game) => {
+			if (!game) return { error: 'Game not found' };
 
-		const userId = req.user.id;
-		const gameId = req.params.id;
-
-		const locked = await withGameLock(gameId,
-			async (game) => {
-
-				const validation = canJoinGame(game, userId);
-
-				if (!validation.ok)
-				{
-					return {error: validation.error};
-				}
-
-				addPlayerToGame(game, userId);
-
-				return {
-					ok: true
-				};
+			const validation = canJoinGame(game, userId);
+			if (!validation.ok) {
+				return { error: validation.error };
 			}
-		);
 
-		if (!locked)
-		{
-			return res.status(404).json({error: 'Game not found'});
+			addPlayerToGame(game, userId);
+
+			return { ok: true };
+		});
+
+		if (!locked) {
+			return res.status(404).json({ error: 'Game not found' });
 		}
 
-		if (locked.result.error)
-		{
-			return res.status(400).json({error: locked.result.error});
+		if (locked.result?.error) {
+			return res.status(400).json({ error: locked.result.error });
 		}
 
-		getIO()
-			.to(gameId)
-			.emit('game:update', locked.game);
+		getIO().to(gameId).emit('game:update', normalizeGame(locked.game));
 
 		return res.json(normalizeGame(locked.game));
 	}
-	catch (error)
-	{
+	catch (error) {
 		console.error(error);
-		return res.status(500).json({error: 'Server error'});
+		return res.status(500).json({
+			error: 'Server error joining game',
+			details: error.message
+		});
 	}
 };
 

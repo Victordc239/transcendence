@@ -12,21 +12,37 @@ function rollDice() {
 	return Math.floor(Math.random() * 6) + 1;
 }
 
-function addPlayerToGame(game, userId) {
+function addPlayerToGame(game, userId)
+{
+	if (game.players.length >= 4)
+	{
+		return { error: 'Game full' };
+	}
+
+	const color = COLORS[game.players.length];
+
+	if (!color)
+	{
+		return { error: 'No available colors for player' };
+	}
+
 	game.players.push({
 		id: userId,
-		color: COLORS[game.players.length],
+		color,
 		connected: true,
 		disconnectedAt: null,
 		abandoned: false,
 		pieces: createPieces()
 	});
 
-	if (game.players.length >= 2 && game.status === GAME_STATUS.WAITING) {
+	if (game.players.length >= 2 && game.status === GAME_STATUS.WAITING)
+	{
 		game.status = GAME_STATUS.PLAYING;
 		game.turn = game.players[0].id;
 		startTurnTimer(game.id);
 	}
+
+	return { ok: true };
 }
 
 function executeMove(game, playerId, pieceIndex) {

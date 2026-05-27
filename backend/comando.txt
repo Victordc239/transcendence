@@ -1,3 +1,6 @@
+
+comando backend:
+
 find . -type f \
 ! -name "package.json" \
 ! -name "package-lock.json" \
@@ -13,3 +16,25 @@ find . -type f \
     echo
   done
 ' sh {} + > notasbackend.txt
+
+
+
+comando frontend:
+
+find . -type f \
+! -name "README.md" \
+! -name "package.json" \
+! -name "package-lock.json" \
+! -name "notas-frontend.txt" \
+! -name ".gitignore" \
+! -name ".dockerignore" \
+-exec sh -c '
+  for file do
+    echo "=============================="
+    echo "FILE: $file"
+    echo "=============================="
+    cat "$file"
+    echo
+  done
+' sh {} + > notas-frontend.txt
+

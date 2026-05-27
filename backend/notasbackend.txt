@@ -321,7 +321,7 @@ exports.createGame = async (req, res) => {
 
 		const game = createNewGame(userId);
 
-		await createGame(game);
+		await createGame(game, userId);
 
 		const normalized = normalizeGame(game);
 
@@ -363,40 +363,42 @@ exports.getGame = async (req, res) => {
 JOIN GAME
 ============================= */
 exports.joinGame = async (req, res) => {
+	try {
+		const userId = Number(req.user.id);
+		const gameId = String(req.params.id);
+		const result = addPlayerToGame(game, userId);
 
-	try
-	{
-		console.log('JOIN GAME');
-
-		const userId = req.user.id;
-		const gameId = req.params.id;
-
-		const locked = await withGameLock(gameId,
-			async (game) => {
-
-				const validation = canJoinGame(game, userId);
-
-				if (!validation.ok)
-				{
-					return {error: validation.error};
-				}
-
-				addPlayerToGame(game, userId);
-
-				return {
-					ok: true
-				};
-			}
-		);
-
-		if (!locked)
-		{
-			return res.status(404).json({error: 'Game not found'});
+		if (result.error) {
+			return { error: result.error };
 		}
 
-		if (locked.result.error)
-		{
-			return res.status(400).json({error: locked.result.error});
+		const locked = await withGameLock(gameId, async (game) => {
+			if (!game) {
+				return { error: 'Game not found' };
+			}
+
+			if (!Array.isArray(game.players)) {
+				return { error: 'Invalid game state' };
+			}
+
+			// ⚠️ normalizar IDs por seguridad
+			const validation = canJoinGame(game, userId);
+
+			if (!validation.ok) {
+				return { error: validation.error };
+			}
+
+			addPlayerToGame(game, userId);
+
+			return { ok: true };
+		});
+
+		if (!locked) {
+			return res.status(404).json({ error: 'Game not found' });
+		}
+
+		if (locked.result?.error) {
+			return res.status(400).json({ error: locked.result.error });
 		}
 
 		getIO()
@@ -405,10 +407,12 @@ exports.joinGame = async (req, res) => {
 
 		return res.json(normalizeGame(locked.game));
 	}
-	catch (error)
-	{
-		console.error(error);
-		return res.status(500).json({error: 'Server error'});
+	catch (error) {
+		console.error('JOIN GAME ERROR FULL STACK:', error);
+		return res.status(500).json({
+			error: 'Server error joining game',
+			details: error.message
+		});
 	}
 };
 
@@ -760,7 +764,39 @@ module.exports = getGlobalPosition;
 FILE: ./game/utils/normalizeGame.js
 ==============================
 function normalizeGame(game) {
-	return game;
+	if (!game) return game;
+
+	return {
+		id: game.id,
+		status: game.status,
+		turn: game.turn,
+		dice: game.dice,
+		winner: game.winner,
+		createdAt: game.createdAt,
+		updatedAt: game.updatedAt,
+
+		players: game.players.map(player => ({
+			id: player.id,
+			color: player.color,
+			connected: player.connected,
+			abandoned: player.abandoned,
+
+			// 🔥 NORMALIZACIÓN CLAVE PARA FRONTEND
+			pieces: player.pieces.map(piece => ({
+				id: piece.id,
+				state: piece.state,
+
+				// frontend-friendly fields
+				position:
+					piece.state === "base" ? -1 :
+					piece.state === "finished" ? 999 :
+					piece.trackIndex ?? piece.homeIndex ?? 0,
+
+				trackIndex: piece.trackIndex,
+				homeIndex: piece.homeIndex
+			}))
+		}))
+	};
 }
 
 module.exports = normalizeGame;
@@ -1259,57 +1295,65 @@ FILE: ./game/gameManager.js
 const pool = require('../db');
 
 /* =============================
-   GET GAME
+   CREATE GAME
 ============================= */
-async function getGame(gameId)
+async function createGame(game, hostId)
 {
-	const result = await pool.query(
-		`
-		SELECT state
-		FROM games
-		WHERE id = $1
-		`,
-		[gameId]
-	);
-
-	if (result.rows.length === 0)
+	try
 	{
-		return null;
+		await pool.query(
+			`
+			INSERT INTO games (id, host_id, state, status)
+			VALUES ($1, $2, $3, $4)
+			`,
+			[
+				game.id,
+				hostId,
+				JSON.stringify(game),
+				game.status
+			]
+		);
+
+		return true;
 	}
-
-	let state = result.rows[0].state;
-
-	// 🔥 FIX: asegurar objeto JS (Postgres puede devolver string o JSON)
-	if (typeof state === 'string')
+	catch (err)
 	{
-		state = JSON.parse(state);
+		console.error('createGame error:', err);
+		return false;
 	}
-
-	return state;
 }
 
 /* =============================
-   CREATE GAME
+   GET GAME
 ============================= */
-async function createGame(game)
-{
-	await pool.query(
-		`
-		INSERT INTO games (
-			id,
-			host_id,
-			state,
-			status
-		)
-		VALUES ($1, $2, $3, $4)
-		`,
-		[
-			game.id,
-			game.players[0].id,
-			JSON.stringify(game),
-			game.status
-		]
-	);
+async function getGame(gameId) {
+	try {
+		const result = await pool.query(
+			`
+			SELECT state
+			FROM games
+			WHERE id = $1
+			`,
+			[gameId]
+		);
+
+		if (result.rows.length === 0) return null;
+
+		const state = result.rows[0].state;
+
+		if (!state) return null;
+
+		if (typeof state === 'string') {
+			return JSON.parse(state);
+		}
+
+		// JSONB ya parseado
+		return state;
+	}
+	catch (err) {
+		console.error('getGame error:', err);
+		return null;
+	}
 }
 
 /* =============================
@@ -1317,21 +1361,30 @@ async function createGame(game)
 ============================= */
 async function saveGame(game)
 {
-	await pool.query(
-		`
-		UPDATE games
-		SET
-			state = $1,
-			status = $2,
-			updated_at = CURRENT_TIMESTAMP
-		WHERE id = $3
-		`,
-		[
-			JSON.stringify(game),
-			game.status,
-			game.id
-		]
-	);
+	try
+	{
+		await pool.query(
+			`
+			UPDATE games
+			SET state = $1,
+				status = $2,
+				updated_at = CURRENT_TIMESTAMP
+			WHERE id = $3
+			`,
+			[
+				JSON.stringify(game),
+				game.status,
+				game.id
+			]
+		);
+
+		return true;
+	}
+	catch (err)
+	{
+		console.error('saveGame error:', err);
+		return false;
+	}
 }
 
 /* =============================
@@ -1339,18 +1392,28 @@ async function saveGame(game)
 ============================= */
 async function deleteGame(gameId)
 {
-	await pool.query(
-		`
-		DELETE FROM games
-		WHERE id = $1
-		`,
-		[gameId]
-	);
+	try
+	{
+		await pool.query(
+			`
+			DELETE FROM games
+			WHERE id = $1
+			`,
+			[gameId]
+		);
+
+		return true;
+	}
+	catch (err)
+	{
+		console.error('deleteGame error:', err);
+		return false;
+	}
 }
 
 module.exports = {
-	getGame,
 	createGame,
+	getGame,
 	saveGame,
 	deleteGame
 };
@@ -1475,12 +1538,28 @@ FILE: ./game/withGameLock.js
 ==============================
 const pool = require('../db');
 
-async function withGameLock(gameId, callback)
-{
+function safeParse(state) {
+	if (!state) return null;
+
+	// PostgreSQL JSONB ya puede venir como objeto
+	if (typeof state === 'object') return state;
+
+	if (typeof state === 'string') {
+		try {
+			return JSON.parse(state);
+		} catch (e) {
+			console.error('❌ JSON parse error:', e);
+			return null;
+		}
+	}
+
+	return null;
+}
+
+async function withGameLock(gameId, callback) {
 	const client = await pool.connect();
 
-	try
-	{
+	try {
 		await client.query('BEGIN');
 
 		const result = await client.query(
@@ -1490,23 +1569,38 @@ async function withGameLock(gameId, callback)
 			WHERE id = $1
 			FOR UPDATE
 			`,
-			[gameId]);
+			[gameId]
+		);
 
-		if (result.rows.length === 0)
-		{
+		if (result.rows.length === 0) {
 			await client.query('ROLLBACK');
 			return null;
 		}
 
-		const game = result.rows[0].state;
+		const game = safeParse(result.rows[0].state);
+
+		if (!game || !Array.isArray(game.players)) {
+			console.error('❌ Invalid game state:', game);
+			await client.query('ROLLBACK');
+			return null;
+		}
 
 		const callbackResult = await callback(game, client);
+
+		if (!callbackResult) {
+			await client.query('ROLLBACK');
+			return null;
+		}
+
+		if (callbackResult.error) {
+			await client.query('ROLLBACK');
+			return { game, result: callbackResult };
+		}
 
 		await client.query(
 			`
 			UPDATE games
-			SET
-				state = $1,
+			SET state = $1,
 				status = $2,
 				updated_at = CURRENT_TIMESTAMP
 			WHERE id = $3
@@ -1517,16 +1611,17 @@ async function withGameLock(gameId, callback)
 				game.id
 			]
 		);
+
 		await client.query('COMMIT');
+
 		return { game, result: callbackResult };
 	}
-	catch (error)
-	{
+	catch (error) {
 		await client.query('ROLLBACK');
+		console.error('withGameLock error:', error);
 		throw error;
 	}
-	finally
-	{
+	finally {
 		client.release();
 	}
 }
@@ -1549,21 +1644,37 @@ function rollDice() {
 	return Math.floor(Math.random() * 6) + 1;
 }
 
-function addPlayerToGame(game, userId) {
+function addPlayerToGame(game, userId)
+{
+	if (game.players.length >= 4)
+	{
+		return { error: 'Game full' };
+	}
+
+	const color = COLORS[game.players.length];
+
+	if (!color)
+	{
+		return { error: 'No available colors for player' };
+	}
+
 	game.players.push({
 		id: userId,
-		color: COLORS[game.players.length],
+		color,
 		connected: true,
 		disconnectedAt: null,
 		abandoned: false,
 		pieces: createPieces()
 	});
 
-	if (game.players.length >= 2 && game.status === GAME_STATUS.WAITING) {
+	if (game.players.length >= 2 && game.status === GAME_STATUS.WAITING)
+	{
 		game.status = GAME_STATUS.PLAYING;
 		game.turn = game.players[0].id;
 		startTurnTimer(game.id);
 	}
+
+	return { ok: true };
 }
 
 function executeMove(game, playerId, pieceIndex) {
@@ -1775,7 +1886,7 @@ module.exports = authSocket;
 ==============================
 FILE: ./sockets/gameSocket.js
 ==============================
-const {getGame, saveGame,deleteGame} = require('../game/gameManager');
+const { getGame, saveGame, deleteGame } = require('../game/gameManager');
 const setPlayerConnection = require('../game/rules/setPlayerConnection');
 const checkPausedState = require('../game/rules/checkPausedState');
 const isGameAbandoned = require('../game/rules/isGameAbandoned');
@@ -1785,12 +1896,7 @@ const { DISCONNECT_TIMEOUT } = require('../game/constants');
 
 function registerGameSocket(io, socket)
 {
-	/* =============================
-	JOIN GAME ROOM
-	============================= */
-
 	socket.on('game:join', async ({ gameId }) => {
-
 		try
 		{
 			const game = await getGame(gameId);
@@ -1800,126 +1906,99 @@ function registerGameSocket(io, socket)
 				return socket.emit('error', { message: 'Game not found' });
 			}
 
-			const player = game.players.find( p => p.id === socket.user.id );
+			const player = game.players.find(p => p.id === socket.user.id);
 
 			if (!player)
 			{
 				return socket.emit('error', { message: 'You are not part of this game' });
 			}
 
-			/* =============================
-			JOIN ROOM
-			============================= */
 			socket.join(String(gameId));
 
-			/* =============================
-			RECONNECT
-			============================= */
-			setPlayerConnection( game, socket.user.id, true	);
+			setPlayerConnection(game, socket.user.id, true);
 			checkPausedState(game);
+
 			await saveGame(game);
 
-			/* =============================
-			SEND GAME STATE
-			============================= */
-			socket.emit('game:update', normalizeGame(game));
-			io.to(String(gameId)).emit(
-				'game:player_reconnected',
-				{
-					userId: socket.user.id
-				}
-			);
+			const normalized = normalizeGame(game);
 
-			io.to(String(gameId)).emit( 'game:update', game);
+			socket.emit('game:update', normalized);
+
+			io.to(String(gameId)).emit('game:player_reconnected', {
+				userId: socket.user.id
+			});
+
+			io.to(String(gameId)).emit('game:update', normalized);
 		}
 		catch (err)
 		{
-			console.error(err);
+			console.error('game:join error:', err);
 			socket.emit('error', { message: 'Socket join error' });
 		}
 	});
 
-	/* =============================
-	GET GAME STATE
-	============================= */
-
 	socket.on('game:state', async ({ gameId }) => {
-
 		try
 		{
 			const game = await getGame(gameId);
+
 			if (!game)
 			{
-				return socket.emit('error', {
-					message: 'Game not found'
-				});
+				return socket.emit('error', { message: 'Game not found' });
 			}
-			io.to(String(gameId)).emit('game:update', normalizeGame(game));
+
+			const normalized = normalizeGame(game);
+
+			io.to(String(gameId)).emit('game:update', normalized);
 		}
 		catch (err)
 		{
-			console.error(err);
+			console.error('game:state error:', err);
 		}
 	});
 
-	/* =============================
-	DISCONNECT
-	============================= */
-
 	socket.on('disconnect', async () => {
-
 		try
 		{
 			const joinedGames =
-				Array.from(socket.rooms)
-				.filter(room => room !== socket.id);
+				Array.from(socket.rooms).filter(room => room !== socket.id);
 
 			for (const gameId of joinedGames)
 			{
 				const game = await getGame(gameId);
 
-				if (!game)
-				{
-					continue;
-				}
+				if (!game) continue;
 
 				setPlayerConnection(game, socket.user.id, false);
 				checkPausedState(game);
 				await saveGame(game);
-				io.to(String(gameId)).emit('game:update', game);
 
-				io.to(String(gameId)).emit(
-					'game:player_disconnected',
-					{
-						userId: socket.user.id
-					}
-				);
+				const normalized = normalizeGame(game);
+
+				io.to(String(gameId)).emit('game:update', normalized);
+
+				io.to(String(gameId)).emit('game:player_disconnected', {
+					userId: socket.user.id
+				});
 
 				setTimeout(async () => {
-
 					try
 					{
 						const updatedGame = await getGame(gameId);
-						if (!updatedGame)
-						{
-							return;
-						}
+						if (!updatedGame) return;
 
-						const player = updatedGame.players.find( p => p.id === socket.user.id);
-						if (!player)
-						{
-							return;
-						}
+						const player = updatedGame.players.find(
+							p => p.id === socket.user.id
+						);
 
-						/* Reconnected */
-						if (player.connected)
-						{
-							return;
-						}
+						if (!player) return;
 
-						/* Abandoned */
+						if (player.connected) return;
+
 						player.abandoned = true;
+
 						const abandoned = isGameAbandoned(updatedGame);
+
 						if (abandoned)
 						{
 							await deleteGame(gameId);
@@ -1930,21 +2009,18 @@ function registerGameSocket(io, socket)
 
 						io.to(String(gameId)).emit(
 							'game:player_abandoned',
-							{
-								userId: socket.user.id
-							}
+							{ userId: socket.user.id }
 						);
 
 						io.to(String(gameId)).emit(
 							'game:update',
-							updatedGame
+							normalizeGame(updatedGame)
 						);
 					}
 					catch (err)
 					{
 						console.error(err);
 					}
-
 				}, DISCONNECT_TIMEOUT);
 			}
 		}

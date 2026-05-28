@@ -1,5 +1,9 @@
-function normalizeGame(game) {
-	if (!game) return game;
+function normalizeGame(game)
+{
+	if (!game)
+	{
+		return game;
+	}
 
 	return {
 		id: game.id,
@@ -16,19 +20,14 @@ function normalizeGame(game) {
 			connected: player.connected,
 			abandoned: player.abandoned,
 
-			// 🔥 NORMALIZACIÓN CLAVE PARA FRONTEND
 			pieces: player.pieces.map(piece => ({
 				id: piece.id,
 				state: piece.state,
 
-				// frontend-friendly fields
-				position:
-					piece.state === "base" ? -1 :
-					piece.state === "finished" ? 999 :
-					piece.trackIndex ?? piece.homeIndex ?? 0,
-
-				trackIndex: piece.trackIndex,
-				homeIndex: piece.homeIndex
+				/*
+				🔥 EL FRONTEND NECESITA ESTO
+				*/
+				position: piece.position
 			}))
 		}))
 	};

@@ -1021,33 +1021,93 @@ module.exports = canRollDice;
 ==============================
 FILE: ./game/validators/canMovePiece.js
 ==============================
-const getPlayer = require('../utils/getPlayer');
-const getPiece = require('../utils/getPiece');
+const getPlayer =
+	require('../utils/getPlayer');
 
-function canMovePiece(game, playerId, pieceIndex) {
-	if (game.turn !== playerId) {
-		return { ok: false, error: "Not your turn" };
+const getPiece =
+	require('../utils/getPiece');
+
+function canMovePiece(
+	game,
+	playerId,
+	pieceIndex
+)
+{
+	if (game.turn !== playerId)
+	{
+		return {
+			ok: false,
+			error: 'Not your turn'
+		};
 	}
 
-	const player = getPlayer(game, playerId);
-	const piece = getPiece(player, pieceIndex);
+	const player =
+		getPlayer(game, playerId);
 
-	if (!piece) {
-		return { ok: false, error: "Piece not found" };
+	if (!player)
+	{
+		return {
+			ok: false,
+			error: 'Player not found'
+		};
 	}
 
-	if (game.dice === null) {
-		return { ok: false, error: "Roll dice first" };
+	const piece =
+		getPiece(player, pieceIndex);
+
+	if (!piece)
+	{
+		return {
+			ok: false,
+			error: 'Piece not found'
+		};
 	}
 
-	if (piece.state === "base" && game.dice !== 5) {
-		return { ok: false, error: "Need 5 to leave base" };
+	if (game.dice === null)
+	{
+		return {
+			ok: false,
+			error: 'Roll dice first'
+		};
 	}
 
-	return { ok: true };
+	/*
+	🔥 SI ESTÁ EN BASE
+	NECESITA 5
+	*/
+	if (
+		piece.state === 'base' &&
+		game.dice !== 5
+	)
+	{
+		return {
+			ok: false,
+			error:
+				'Need 5 to leave base'
+		};
+	}
+
+	/*
+	🔥 YA TERMINADA
+	*/
+	if (
+		piece.state === 'finished'
+	)
+	{
+		return {
+			ok: false,
+			error:
+				'Piece already finished'
+		};
+	}
+
+	return {
+		ok: true
+	};
 }
 
-module.exports = canMovePiece;
+module.exports =
+	canMovePiece;
 ==============================
 FILE: ./game/validators/validateTurn.js
 ==============================
@@ -1233,37 +1293,59 @@ module.exports = checkCapture;
 ==============================
 FILE: ./game/rules/applyMove.js
 ==============================
-const getPlayer = require('../utils/getPlayer');
-const getPiece = require('../utils/getPiece');
+const { BOARD_SIZE } = require('../constants');
 
-function applyMove(game, playerId, pieceIndex) {
-	const player = getPlayer(game, playerId);
-	const piece = getPiece(player, pieceIndex);
+const BASE_POSITION = -1;
+const FINISHED_POSITION = 999;
 
-	if (!piece) return;
+function applyMove(game, playerId, pieceIndex)
+{
+	const player =
+		game.players.find(
+			p => p.id === playerId
+		);
 
-	// salir de base
-	if (piece.state === "base") {
-		piece.state = "track";
-		piece.trackIndex = 0;
+	if (!player)
+	{
 		return;
 	}
 
-	if (piece.state === "track") {
-		piece.trackIndex += game.dice;
+	const piece =
+		player.pieces[pieceIndex];
 
-		if (piece.trackIndex >= 68) {
-			piece.state = "home";
-			piece.homeIndex = 0;
-		}
+	if (!piece)
+	{
 		return;
 	}
 
-	if (piece.state === "home") {
-		piece.homeIndex += game.dice;
+	/*
+	🔥 SACAR DE BASE
+	*/
+	if (
+		piece.state === 'base' &&
+		game.dice === 5
+	)
+	{
+		piece.state = 'track';
+		piece.position = 0;
+		return;
+	}
 
-		if (piece.homeIndex >= 6) {
-			piece.state = "finished";
+	/*
+	🔥 MOVER EN TABLERO
+	*/
+	if (piece.state === 'track')
+	{
+		piece.position += game.dice;
+
+		/*
+		🔥 LLEGAR A META
+		*/
+		if (piece.position >= BOARD_SIZE)
+		{
+			piece.state = 'finished';
+			piece.position =
+				FINISHED_POSITION;
 		}
 	}
 }
@@ -1734,45 +1816,67 @@ module.exports = {
 ==============================
 FILE: ./game/gameEngine.js
 ==============================
-const { COLORS, GAME_STATUS } = require('./constants');
+const { COLORS, GAME_STATUS } =
+	require('./constants');
 
-const canMovePiece = require('./validators/canMovePiece');
-const applyMove = require('./rules/applyMove');
-const nextTurn = require('./rules/nextTurn');
-const checkCapture = require('./rules/checkCapture');
-const checkWin = require('./rules/checkWin');
-const createPieces = require('./utils/createPieces');
-const { startTurnTimer } = require('./turnTimer');
+const canMovePiece =
+	require('./validators/canMovePiece');
+
+const applyMove =
+	require('./rules/applyMove');
+
+const nextTurn =
+	require('./rules/nextTurn');
+
+const checkCapture =
+	require('./rules/checkCapture');
+
+const checkWin =
+	require('./rules/checkWin');
+
+const createPieces =
+	require('./utils/createPieces');
+
+const {
+	startTurnTimer
+} = require('./turnTimer');
 
 function rollDice()
 {
-	return Math.floor(Math.random() * 6) + 1;
+	return Math.floor(
+		Math.random() * 6
+	) + 1;
 }
 
-function addPlayerToGame(game, userId)
+function addPlayerToGame(
+	game,
+	userId
+)
 {
 	if (game.players.length >= 4)
 	{
-		return { error: 'Game full' };
+		return {
+			error: 'Game full'
+		};
 	}
 
-	const alreadyInGame = game.players.find(
-		player => player.id === userId
-	);
+	const alreadyInGame =
+		game.players.find(
+			player =>
+				player.id === userId
+		);
 
 	if (alreadyInGame)
 	{
-		return { error: 'Already in game' };
-	}
-
-	const color = COLORS[game.players.length];
-
-	if (!color)
-	{
 		return {
-			error: 'No available colors for player'
+			error: 'Already in game'
 		};
 	}
+
+	const color =
+		COLORS[
+			game.players.length
+		];
 
 	game.players.push({
 		id: userId,
@@ -1784,29 +1888,33 @@ function addPlayerToGame(game, userId)
 	});
 
 	/*
-	🔥 IMPORTANTE
-	NO iniciar automáticamente la partida
-	al entrar el segundo jugador
-	*/
-
-	/*
-	🔥 OPCIONAL:
-	iniciar automáticamente SOLO con 4 jugadores
+	🔥 INICIAR CON 2 JUGADORES
 	*/
 	if (
-		game.players.length === 4 &&
-		game.status === GAME_STATUS.WAITING
+		game.players.length >= 2 &&
+		game.status ===
+			GAME_STATUS.WAITING
 	)
 	{
-		game.status = GAME_STATUS.PLAYING;
-		game.turn = game.players[0].id;
+		game.status =
+			GAME_STATUS.PLAYING;
+
+		game.turn =
+			game.players[0].id;
+
 		startTurnTimer(game.id);
 	}
 
-	return { ok: true };
+	return {
+		ok: true
+	};
 }
 
-function executeMove(game, playerId, pieceIndex)
+function executeMove(
+	game,
+	playerId,
+	pieceIndex
+)
 {
 	const validation =
 		canMovePiece(
@@ -1841,7 +1949,8 @@ function executeMove(game, playerId, pieceIndex)
 	{
 		const {
 			clearTurnTimer
-		} = require('./turnTimer');
+		} =
+			require('./turnTimer');
 
 		clearTurnTimer(game.id);
 
@@ -1864,11 +1973,14 @@ function executeMove(game, playerId, pieceIndex)
 
 	game.dice = null;
 
-	game.updatedAt = Date.now();
+	game.updatedAt =
+		Date.now();
 
 	startTurnTimer(game.id);
 
-	return { ok: true };
+	return {
+		ok: true
+	};
 }
 
 module.exports = {
@@ -1879,12 +1991,14 @@ module.exports = {
 ==============================
 FILE: ./game/utils/createPieces.js
 ==============================
-function createPieces() {
+function createPieces()
+{
 	return Array.from({ length: 4 }).map((_, index) => ({
 		id: index,
-		state: "base",
-		trackIndex: 0,
-		homeIndex: 0
+		state: 'base',
+
+		// 🔥 EL FRONTEND USA ESTO
+		position: -1
 	}));
 }
 
@@ -1914,8 +2028,12 @@ module.exports = getGlobalPosition;
 ==============================
 FILE: ./game/utils/normalizeGame.js
 ==============================
-function normalizeGame(game) {
-	if (!game) return game;
+function normalizeGame(game)
+{
+	if (!game)
+	{
+		return game;
+	}
 
 	return {
 		id: game.id,
@@ -1932,19 +2050,14 @@ function normalizeGame(game) {
 			connected: player.connected,
 			abandoned: player.abandoned,
 
-			// 🔥 NORMALIZACIÓN CLAVE PARA FRONTEND
 			pieces: player.pieces.map(piece => ({
 				id: piece.id,
 				state: piece.state,
 
-				// frontend-friendly fields
-				position:
-					piece.state === "base" ? -1 :
-					piece.state === "finished" ? 999 :
-					piece.trackIndex ?? piece.homeIndex ?? 0,
-
-				trackIndex: piece.trackIndex,
-				homeIndex: piece.homeIndex
+				/*
+				🔥 EL FRONTEND NECESITA ESTO
+				*/
+				position: piece.position
 			}))
 		}))
 	};

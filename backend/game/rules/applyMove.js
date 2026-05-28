@@ -1,34 +1,56 @@
-const getPlayer = require('../utils/getPlayer');
-const getPiece = require('../utils/getPiece');
+const { BOARD_SIZE } = require('../constants');
 
-function applyMove(game, playerId, pieceIndex) {
-	const player = getPlayer(game, playerId);
-	const piece = getPiece(player, pieceIndex);
+const BASE_POSITION = -1;
+const FINISHED_POSITION = 999;
 
-	if (!piece) return;
+function applyMove(game, playerId, pieceIndex)
+{
+	const player =
+		game.players.find(
+			p => p.id === playerId
+		);
 
-	// salir de base
-	if (piece.state === "base") {
-		piece.state = "track";
-		piece.trackIndex = 0;
+	if (!player)
+	{
 		return;
 	}
 
-	if (piece.state === "track") {
-		piece.trackIndex += game.dice;
+	const piece =
+		player.pieces[pieceIndex];
 
-		if (piece.trackIndex >= 68) {
-			piece.state = "home";
-			piece.homeIndex = 0;
-		}
+	if (!piece)
+	{
 		return;
 	}
 
-	if (piece.state === "home") {
-		piece.homeIndex += game.dice;
+	/*
+	🔥 SACAR DE BASE
+	*/
+	if (
+		piece.state === 'base' &&
+		game.dice === 5
+	)
+	{
+		piece.state = 'track';
+		piece.position = 0;
+		return;
+	}
 
-		if (piece.homeIndex >= 6) {
-			piece.state = "finished";
+	/*
+	🔥 MOVER EN TABLERO
+	*/
+	if (piece.state === 'track')
+	{
+		piece.position += game.dice;
+
+		/*
+		🔥 LLEGAR A META
+		*/
+		if (piece.position >= BOARD_SIZE)
+		{
+			piece.state = 'finished';
+			piece.position =
+				FINISHED_POSITION;
 		}
 	}
 }

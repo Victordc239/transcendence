@@ -1,42 +1,64 @@
-const { COLORS, GAME_STATUS } = require('./constants');
+const { COLORS, GAME_STATUS } =
+	require('./constants');
 
-const canMovePiece = require('./validators/canMovePiece');
-const applyMove = require('./rules/applyMove');
-const nextTurn = require('./rules/nextTurn');
-const checkCapture = require('./rules/checkCapture');
-const checkWin = require('./rules/checkWin');
-const createPieces = require('./utils/createPieces');
-const { startTurnTimer } = require('./turnTimer');
+const canMovePiece =
+	require('./validators/canMovePiece');
+
+const applyMove =
+	require('./rules/applyMove');
+
+const nextTurn =
+	require('./rules/nextTurn');
+
+const checkCapture =
+	require('./rules/checkCapture');
+
+const checkWin =
+	require('./rules/checkWin');
+
+const createPieces =
+	require('./utils/createPieces');
+
+const {
+	startTurnTimer
+} = require('./turnTimer');
 
 function rollDice()
 {
-	return Math.floor(Math.random() * 6) + 1;
+	return Math.floor(
+		Math.random() * 6
+	) + 1;
 }
 
-function addPlayerToGame(game, userId)
+function addPlayerToGame(
+	game,
+	userId
+)
 {
 	if (game.players.length >= 4)
 	{
-		return { error: 'Game full' };
+		return {
+			error: 'Game full'
+		};
 	}
 
-	const alreadyInGame = game.players.find(
-		player => player.id === userId
-	);
+	const alreadyInGame =
+		game.players.find(
+			player =>
+				player.id === userId
+		);
 
 	if (alreadyInGame)
 	{
-		return { error: 'Already in game' };
-	}
-
-	const color = COLORS[game.players.length];
-
-	if (!color)
-	{
 		return {
-			error: 'No available colors for player'
+			error: 'Already in game'
 		};
 	}
+
+	const color =
+		COLORS[
+			game.players.length
+		];
 
 	game.players.push({
 		id: userId,
@@ -48,29 +70,33 @@ function addPlayerToGame(game, userId)
 	});
 
 	/*
-	🔥 IMPORTANTE
-	NO iniciar automáticamente la partida
-	al entrar el segundo jugador
-	*/
-
-	/*
-	🔥 OPCIONAL:
-	iniciar automáticamente SOLO con 4 jugadores
+	🔥 INICIAR CON 2 JUGADORES
 	*/
 	if (
-		game.players.length === 4 &&
-		game.status === GAME_STATUS.WAITING
+		game.players.length >= 2 &&
+		game.status ===
+			GAME_STATUS.WAITING
 	)
 	{
-		game.status = GAME_STATUS.PLAYING;
-		game.turn = game.players[0].id;
+		game.status =
+			GAME_STATUS.PLAYING;
+
+		game.turn =
+			game.players[0].id;
+
 		startTurnTimer(game.id);
 	}
 
-	return { ok: true };
+	return {
+		ok: true
+	};
 }
 
-function executeMove(game, playerId, pieceIndex)
+function executeMove(
+	game,
+	playerId,
+	pieceIndex
+)
 {
 	const validation =
 		canMovePiece(
@@ -105,7 +131,8 @@ function executeMove(game, playerId, pieceIndex)
 	{
 		const {
 			clearTurnTimer
-		} = require('./turnTimer');
+		} =
+			require('./turnTimer');
 
 		clearTurnTimer(game.id);
 
@@ -128,11 +155,14 @@ function executeMove(game, playerId, pieceIndex)
 
 	game.dice = null;
 
-	game.updatedAt = Date.now();
+	game.updatedAt =
+		Date.now();
 
 	startTurnTimer(game.id);
 
-	return { ok: true };
+	return {
+		ok: true
+	};
 }
 
 module.exports = {

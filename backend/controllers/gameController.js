@@ -176,21 +176,24 @@ exports.joinGame = async (req, res) => {
 					/*
 					🔥 AÑADIR JUGADOR
 					*/
-					const addResult =
-						addPlayerToGame(
-							game,
-							userId
-						);
-
-					if (
-						addResult &&
-						addResult.error
-					)
+					if (!validation.rejoin)
 					{
-						return {
-							error:
-								addResult.error
-						};
+						const addResult =
+							addPlayerToGame(
+								game,
+								userId
+							);
+
+						if (
+							addResult &&
+							addResult.error
+						)
+						{
+							return {
+								error:
+									addResult.error
+							};
+						}
 					}
 
 					game.updatedAt =

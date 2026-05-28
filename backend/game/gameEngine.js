@@ -8,7 +8,8 @@ const checkWin = require('./rules/checkWin');
 const createPieces = require('./utils/createPieces');
 const { startTurnTimer } = require('./turnTimer');
 
-function rollDice() {
+function rollDice()
+{
 	return Math.floor(Math.random() * 6) + 1;
 }
 
@@ -19,11 +20,22 @@ function addPlayerToGame(game, userId)
 		return { error: 'Game full' };
 	}
 
+	const alreadyInGame = game.players.find(
+		player => player.id === userId
+	);
+
+	if (alreadyInGame)
+	{
+		return { error: 'Already in game' };
+	}
+
 	const color = COLORS[game.players.length];
 
 	if (!color)
 	{
-		return { error: 'No available colors for player' };
+		return {
+			error: 'No available colors for player'
+		};
 	}
 
 	game.players.push({
@@ -35,7 +47,20 @@ function addPlayerToGame(game, userId)
 		pieces: createPieces()
 	});
 
-	if (game.players.length >= 2 && game.status === GAME_STATUS.WAITING)
+	/*
+	🔥 IMPORTANTE
+	NO iniciar automáticamente la partida
+	al entrar el segundo jugador
+	*/
+
+	/*
+	🔥 OPCIONAL:
+	iniciar automáticamente SOLO con 4 jugadores
+	*/
+	if (
+		game.players.length === 4 &&
+		game.status === GAME_STATUS.WAITING
+	)
 	{
 		game.status = GAME_STATUS.PLAYING;
 		game.turn = game.players[0].id;
@@ -45,30 +70,64 @@ function addPlayerToGame(game, userId)
 	return { ok: true };
 }
 
-function executeMove(game, playerId, pieceIndex) {
-	const validation = canMovePiece(game, playerId, pieceIndex);
-	if (!validation.ok) return validation;
+function executeMove(game, playerId, pieceIndex)
+{
+	const validation =
+		canMovePiece(
+			game,
+			playerId,
+			pieceIndex
+		);
 
-	applyMove(game, playerId, pieceIndex);
-	checkCapture(game, playerId);
-
-	const won = checkWin(game, playerId);
-
-	if (won) {
-		const { clearTurnTimer } = require('./turnTimer');
-		clearTurnTimer(game.id);
-
-		game.status = GAME_STATUS.FINISHED;
-		game.winner = playerId;
-
-		return { ok: true, finished: true };
+	if (!validation.ok)
+	{
+		return validation;
 	}
 
-	if (game.dice !== 6) {
+	applyMove(
+		game,
+		playerId,
+		pieceIndex
+	);
+
+	checkCapture(
+		game,
+		playerId
+	);
+
+	const won =
+		checkWin(
+			game,
+			playerId
+		);
+
+	if (won)
+	{
+		const {
+			clearTurnTimer
+		} = require('./turnTimer');
+
+		clearTurnTimer(game.id);
+
+		game.status =
+			GAME_STATUS.FINISHED;
+
+		game.winner =
+			playerId;
+
+		return {
+			ok: true,
+			finished: true
+		};
+	}
+
+	if (game.dice !== 6)
+	{
 		nextTurn(game);
 	}
 
 	game.dice = null;
+
 	game.updatedAt = Date.now();
 
 	startTurnTimer(game.id);

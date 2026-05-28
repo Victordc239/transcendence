@@ -1,144 +1,4 @@
 ==============================
-FILE: ./Dockerfile
-==============================
-FROM node:18
-
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install
-
-COPY . .
-
-EXPOSE 3000
-
-CMD ["node", "server.js"]
-==============================
-FILE: ./controllers/authController.js
-==============================
-const pool = require('../db');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-exports.register = async (req, res) => {
-	try
-	{
-		const { username, email, password } = req.body;
-		if (!username || !email || !password)
-		{
-			return res.status(400).json({ error: 'Faltan datos' });
-		}
-		if (!EMAIL_REGEX.test(email))
-		{
-			return res.status(400).json({ error: 'Email inválido' });
-		}
-		if (password.length < 8)
-		{
-			return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
-		}
-		const salt = await bcrypt.genSalt(10);
-		const hashedPassword = await bcrypt.hash(password, salt);
-		const newUser = await pool.query(
-			`
-			INSERT INTO users (
-				username,
-				email,
-				password
-			)
-			VALUES ($1, $2, $3)
-			RETURNING
-				id,
-				username,
-				email,
-				avatar_url,
-				created_at
-			`,
-			[
-				username,
-				email.toLowerCase(),
-				hashedPassword
-			]
-		);
-
-		return res.status(201).json({ message: 'Usuario creado', user: newUser.rows[0] });
-	}
-	catch (error)
-	{
-		console.error(error);
-
-		if (error.code === '23505')
-		{
-			return res.status(400).json({ error: 'El usuario o email ya existe' });
-		}
-		return res.status(500).json({ error: 'Error en el servidor' });
-	}
-};
-
-exports.login = async (req, res) => {
-	try
-	{
-		const { email, password } = req.body;
-
-		if (!email || !password)
-		{
-			return res.status(400).json({ error: 'Faltan datos' });
-		}
-		const result = await pool.query(
-			`
-			SELECT *
-			FROM users
-			WHERE email = $1
-			`,
-			[email.toLowerCase()]
-		);
-
-		if (result.rows.length === 0)
-		{
-			return res.status(400).json({ error: 'Credenciales inválidas' });
-		}
-
-		const user = result.rows[0];
-		const validPassword = await bcrypt.compare( password, user.password);
-
-		if (!validPassword)
-		{
-			return res.status(400).json({ error: 'Credenciales inválidas' });
-		}
-
-		const token = jwt.sign(
-			{
-				id: user.id,
-				email: user.email,
-				username: user.username
-			},
-			JWT_SECRET,
-			{
-				expiresIn: '24h'
-			});
-
-		return res.json({
-			message: 'Login correcto',
-			token,
-			user: {
-				id: user.id,
-				username: user.username,
-				email: user.email,
-				avatar_url:
-					user.avatar_url
-			}
-		});
-	}
-	catch (error)
-	{
-		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor' });
-	}
-};
-==============================
 FILE: ./controllers/friendsController.js
 ==============================
 const pool = require('../db');
@@ -297,235 +157,6 @@ exports.getPendingRequests = async (req, res) => {
 	{
 		console.error(error);
 		return res.status(500).json({error: 'Error en el servidor'});
-	}
-};
-==============================
-FILE: ./controllers/gameController.js
-==============================
-const getAvailableMoves = require('../game/rules/getAvailableMoves');
-const nextTurn = require('../game/rules/nextTurn');
-const { createNewGame } = require('../game/gameState');
-const {rollDice, addPlayerToGame, executeMove, canJoinGame, canRollDice} = require('../game/gameEngine');
-const { getGame: getGameById, createGame} = require('../game/gameManager');
-const withGameLock = require('../game/withGameLock');
-const { getIO } = require('../socket');
-const normalizeGame = require('../game/utils/normalizeGame');
-
-/* =============================
-CREATE GAME
-============================= */
-exports.createGame = async (req, res) => {
-	try
-	{
-		const userId = req.user.id;
-
-		const game = createNewGame(userId);
-
-		await createGame(game, userId);
-
-		const normalized = normalizeGame(game);
-
-		getIO().emit('game:created', normalized);
-
-		// 🔥 FIX IMPORTANTE: respuesta consistente para frontend
-		return res.json({
-			id: normalized.id,
-			game: normalized
-		});
-	}
-	catch (error)
-	{
-		console.error("CREATE GAME ERROR:", error);
-		return res.status(500).json({ error: 'Server error creating game' });
-	}
-};
-
-/* =============================
-GET GAME
-============================= */
-exports.getGame = async (req, res) => {
-	try
-	{
-		const game = await getGameById(req.params.id);
-		if (!game)
-		{
-			return res.status(404).json({ error: 'Game not found' });
-		}
-		return res.json(normalizeGame(game));
-	}
-	catch (error)
-	{
-		console.error(error);
-		return res.status(500).json({ error: 'Server error' });
-	}
-};
-/* =============================
-JOIN GAME
-============================= */
-exports.joinGame = async (req, res) => {
-	try {
-		const userId = Number(req.user.id);
-		const gameId = String(req.params.id);
-		const result = addPlayerToGame(game, userId);
-
-		if (result.error) {
-			return { error: result.error };
-		}
-
-		const locked = await withGameLock(gameId, async (game) => {
-			if (!game) {
-				return { error: 'Game not found' };
-			}
-
-			if (!Array.isArray(game.players)) {
-				return { error: 'Invalid game state' };
-			}
-
-			// ⚠️ normalizar IDs por seguridad
-			const validation = canJoinGame(game, userId);
-
-			if (!validation.ok) {
-				return { error: validation.error };
-			}
-
-			addPlayerToGame(game, userId);
-
-			return { ok: true };
-		});
-
-		if (!locked) {
-			return res.status(404).json({ error: 'Game not found' });
-		}
-
-		if (locked.result?.error) {
-			return res.status(400).json({ error: locked.result.error });
-		}
-
-		getIO()
-			.to(gameId)
-			.emit('game:update', locked.game);
-
-		return res.json(normalizeGame(locked.game));
-	}
-	catch (error) {
-		console.error('JOIN GAME ERROR FULL STACK:', error);
-		return res.status(500).json({
-			error: 'Server error joining game',
-			details: error.message
-		});
-	}
-};
-
-/* =============================
-ROLL DICE
-============================= */
-exports.rollDice = async (req, res) => {
-
-	try
-	{
-		console.log('ROLL DICE');
-
-		const userId = req.user.id;
-		const gameId = req.params.id;
-
-		const locked = await withGameLock(
-			gameId,
-			async (game) => {
-
-				const validation = canRollDice(game, userId);
-				if (!validation.ok)
-				{
-					return { error: validation.error };
-				}
-
-				game.dice = rollDice();
-				const availableMoves = getAvailableMoves(game, userId);
-				if (availableMoves.length === 0)
-				{
-					game.dice = null;
-					nextTurn(game);
-				}
-
-				game.updatedAt = Date.now();
-
-				return {
-					ok: true,
-					dice: game.dice
-				};
-			}
-		);
-
-		if (!locked)
-		{
-			return res.status(404).json({error: 'Game not found'});
-		}
-
-		if (locked.result.error)
-		{
-			return res.status(400).json({error: locked.result.error});
-		}
-
-		getIO()
-			.to(gameId)
-			.emit('game:update', locked.game);
-
-		return res.json({dice: locked.result.dice});
-	}
-	catch (error)
-	{
-		console.error(error);
-		return res.status(500).json({error: 'Server error'});
-	}
-};
-
-/* =============================
-MOVE PIECE
-============================= */
-exports.movePiece = async (req, res) => {
-
-	try
-	{
-		console.log('MOVE PIECE');
-
-		const userId = req.user.id;
-		const gameId = req.params.id;
-
-		const { pieceIndex } = req.body;
-
-		const locked = await withGameLock(
-			gameId,
-			async (game) => {
-
-				const result = executeMove(game, userId, pieceIndex);
-				if (!result.ok)
-				{
-					return result;
-				}
-				game.updatedAt = Date.now();
-				return result;
-			}
-		);
-
-		if (!locked)
-		{
-			return res.status(404).json({error: 'Game not found'});
-		}
-
-		if (!locked.result.ok)
-		{
-			return res.status(400).json({error: locked.result.error});
-		}
-
-		getIO()
-			.to(gameId)
-			.emit('game:update', locked.game);
-
-		return res.json(normalizeGame(locked.game));
-	}
-	catch (error)
-	{
-		console.error(error);
-		return res.status(500).json({error: 'Server error'});
 	}
 };
 ==============================
@@ -704,102 +335,600 @@ exports.searchUsers = async (req, res) => {
 	}
 };
 ==============================
-FILE: ./db.js
+FILE: ./controllers/gameController.js
 ==============================
-const { Pool } = require('pg');
+const getAvailableMoves = require('../game/rules/getAvailableMoves');
+const nextTurn = require('../game/rules/nextTurn');
 
-const pool = new Pool({
-	host: process.env.DB_HOST || 'localhost',
-	user: process.env.DB_USER || 'user',
-	password: process.env.DB_PASSWORD || 'password',
-	database: process.env.DB_NAME || 'transcendence',
-	port: Number(process.env.DB_PORT || 5432),
-});
+const { createNewGame } = require('../game/gameState');
 
-module.exports = pool;
+const {
+	rollDice,
+	addPlayerToGame,
+	executeMove
+} = require('../game/gameEngine');
+
+/*
+🔥 IMPORTANTE:
+LOS VALIDATORS VIENEN DE validators/
+NO de gameEngine
+*/
+const canJoinGame =
+	require('../game/validators/canJoinGame');
+
+const canRollDice =
+	require('../game/validators/canRollDice');
+
+const {
+	getGame: getGameById,
+	createGame: createGameInDB
+} = require('../game/gameManager');
+
+const withGameLock = require('../game/withGameLock');
+
+const { getIO } = require('../socket');
+
+const normalizeGame =
+	require('../game/utils/normalizeGame');
+
+/* =============================
+CREATE GAME
+============================= */
+exports.createGame = async (req, res) => {
+	try
+	{
+		const userId = Number(req.user.id);
+
+		if (!userId)
+		{
+			return res.status(401).json({
+				error: 'Invalid user'
+			});
+		}
+
+		const game = createNewGame(userId);
+
+		const created =
+			await createGameInDB(
+				game,
+				userId
+			);
+
+		if (!created)
+		{
+			return res.status(500).json({
+				error:
+					'Database error creating game'
+			});
+		}
+
+		const normalized =
+			normalizeGame(game);
+
+		try
+		{
+			getIO().emit(
+				'game:created',
+				normalized
+			);
+		}
+		catch (socketError)
+		{
+			console.error(
+				'SOCKET ERROR:',
+				socketError
+			);
+		}
+
+		return res.status(201).json({
+			id: normalized.id,
+			game: normalized
+		});
+	}
+	catch (error)
+	{
+		console.error(
+			'CREATE GAME ERROR:',
+			error
+		);
+
+		return res.status(500).json({
+			error:
+				'Server error creating game',
+			details: error.message
+		});
+	}
+};
+
+/* =============================
+GET GAME
+============================= */
+exports.getGame = async (req, res) => {
+	try
+	{
+		const game =
+			await getGameById(req.params.id);
+
+		if (!game)
+		{
+			return res.status(404).json({
+				error: 'Game not found'
+			});
+		}
+
+		return res.json(
+			normalizeGame(game)
+		);
+	}
+	catch (error)
+	{
+		console.error(error);
+
+		return res.status(500).json({
+			error: 'Server error'
+		});
+	}
+};
+
+/* =============================
+JOIN GAME
+============================= */
+exports.joinGame = async (req, res) => {
+	try
+	{
+		const userId =
+			Number(req.user.id);
+
+		const gameId =
+			String(req.params.id);
+
+		const locked =
+			await withGameLock(
+				gameId,
+				async (game) => {
+
+					if (!game)
+					{
+						return {
+							error:
+								'Game not found'
+						};
+					}
+
+					/*
+					🔥 VALIDAR JOIN
+					*/
+					const validation =
+						canJoinGame(
+							game,
+							userId
+						);
+
+					if (!validation.ok)
+					{
+						return {
+							error:
+								validation.error
+						};
+					}
+
+					/*
+					🔥 AÑADIR JUGADOR
+					*/
+					const addResult =
+						addPlayerToGame(
+							game,
+							userId
+						);
+
+					if (
+						addResult &&
+						addResult.error
+					)
+					{
+						return {
+							error:
+								addResult.error
+						};
+					}
+
+					game.updatedAt =
+						Date.now();
+
+					return {
+						ok: true
+					};
+				}
+			);
+
+		if (!locked)
+		{
+			return res.status(404).json({
+				error:
+					'Game not found'
+			});
+		}
+
+		if (locked.result?.error)
+		{
+			return res.status(400).json({
+				error:
+					locked.result.error
+			});
+		}
+
+		/*
+		🔥 SOCKET UPDATE
+		*/
+		try
+		{
+			getIO()
+				.to(gameId)
+				.emit(
+					'game:update',
+					normalizeGame(
+						locked.game
+					)
+				);
+		}
+		catch (socketError)
+		{
+			console.error(
+				'SOCKET ERROR:',
+				socketError
+			);
+		}
+
+		return res.json(
+			normalizeGame(
+				locked.game
+			)
+		);
+	}
+	catch (error)
+	{
+		console.error(
+			'JOIN GAME ERROR:',
+			error
+		);
+
+		return res.status(500).json({
+			error:
+				'Server error joining game',
+			details:
+				error.message
+		});
+	}
+};
+
+/* =============================
+ROLL DICE
+============================= */
+exports.rollDice = async (req, res) => {
+	try
+	{
+		const userId = req.user.id;
+
+		const gameId = req.params.id;
+
+		const locked =
+			await withGameLock(
+				gameId,
+				async (game) => {
+
+					const validation =
+						canRollDice(
+							game,
+							userId
+						);
+
+					if (!validation.ok)
+					{
+						return {
+							error:
+								validation.error
+						};
+					}
+
+					game.dice =
+						rollDice();
+
+					const availableMoves =
+						getAvailableMoves(
+							game,
+							userId
+						);
+
+					if (
+						availableMoves.length === 0
+					)
+					{
+						game.dice = null;
+						nextTurn(game);
+					}
+
+					game.updatedAt =
+						Date.now();
+
+					return {
+						ok: true,
+						dice: game.dice
+					};
+				}
+			);
+
+		if (!locked)
+		{
+			return res.status(404).json({
+				error:
+					'Game not found'
+			});
+		}
+
+		if (locked.result.error)
+		{
+			return res.status(400).json({
+				error:
+					locked.result.error
+			});
+		}
+
+		getIO()
+			.to(gameId)
+			.emit(
+				'game:update',
+				locked.game
+			);
+
+		return res.json({
+			dice:
+				locked.result.dice
+		});
+	}
+	catch (error)
+	{
+		console.error(error);
+
+		return res.status(500).json({
+			error:
+				'Server error'
+		});
+	}
+};
+
+/* =============================
+MOVE PIECE
+============================= */
+exports.movePiece = async (req, res) => {
+	try
+	{
+		const userId = req.user.id;
+
+		const gameId = req.params.id;
+
+		const { pieceIndex } =
+			req.body;
+
+		const locked =
+			await withGameLock(
+				gameId,
+				async (game) => {
+
+					const result =
+						executeMove(
+							game,
+							userId,
+							pieceIndex
+						);
+
+					if (!result.ok)
+					{
+						return result;
+					}
+
+					game.updatedAt =
+						Date.now();
+
+					return result;
+				}
+			);
+
+		if (!locked)
+		{
+			return res.status(404).json({
+				error:
+					'Game not found'
+			});
+		}
+
+		if (!locked.result.ok)
+		{
+			return res.status(400).json({
+				error:
+					locked.result.error
+			});
+		}
+
+		getIO()
+			.to(gameId)
+			.emit(
+				'game:update',
+				locked.game
+			);
+
+		return res.json(
+			normalizeGame(
+				locked.game
+			)
+		);
+	}
+	catch (error)
+	{
+		console.error(error);
+
+		return res.status(500).json({
+			error:
+				'Server error'
+		});
+	}
+};
 ==============================
-FILE: ./game/utils/createPieces.js
+FILE: ./controllers/authController.js
 ==============================
-function createPieces() {
-	return Array.from({ length: 4 }).map((_, index) => ({
-		id: index,
-		state: "base",
-		trackIndex: 0,
-		homIndex: 0
-	}));
-}
+const pool = require('../db');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-module.exports = createPieces;
+const JWT_SECRET = process.env.JWT_SECRET;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+exports.register = async (req, res) => {
+	try
+	{
+		const { username, email, password } = req.body;
+		if (!username || !email || !password)
+		{
+			return res.status(400).json({ error: 'Faltan datos' });
+		}
+		if (!EMAIL_REGEX.test(email))
+		{
+			return res.status(400).json({ error: 'Email inválido' });
+		}
+		if (password.length < 8)
+		{
+			return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+		}
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(password, salt);
+		const newUser = await pool.query(
+			`
+			INSERT INTO users (
+				username,
+				email,
+				password
+			)
+			VALUES ($1, $2, $3)
+			RETURNING
+				id,
+				username,
+				email,
+				avatar_url,
+				created_at
+			`,
+			[
+				username,
+				email.toLowerCase(),
+				hashedPassword
+			]
+		);
+
+		return res.status(201).json({ message: 'Usuario creado', user: newUser.rows[0] });
+	}
+	catch (error)
+	{
+		console.error(error);
+
+		if (error.code === '23505')
+		{
+			return res.status(400).json({ error: 'El usuario o email ya existe' });
+		}
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
+};
+
+exports.login = async (req, res) => {
+	try
+	{
+		const { email, password } = req.body;
+
+		if (!email || !password)
+		{
+			return res.status(400).json({ error: 'Faltan datos' });
+		}
+		const result = await pool.query(
+			`
+			SELECT *
+			FROM users
+			WHERE email = $1
+			`,
+			[email.toLowerCase()]
+		);
+
+		if (result.rows.length === 0)
+		{
+			return res.status(400).json({ error: 'Credenciales inválidas' });
+		}
+
+		const user = result.rows[0];
+		const validPassword = await bcrypt.compare( password, user.password);
+
+		if (!validPassword)
+		{
+			return res.status(400).json({ error: 'Credenciales inválidas' });
+		}
+
+		const token = jwt.sign(
+			{
+				id: user.id,
+				email: user.email,
+				username: user.username
+			},
+			JWT_SECRET,
+			{
+				expiresIn: '24h'
+			});
+
+		return res.json({
+			message: 'Login correcto',
+			token,
+			user: {
+				id: user.id,
+				username: user.username,
+				email: user.email,
+				avatar_url:
+					user.avatar_url
+			}
+		});
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({ error: 'Error en el servidor' });
+	}
+};
 ==============================
-FILE: ./game/utils/getPlayer.js
+FILE: ./middleware/authMiddleware.js
 ==============================
-function getPlayer(game, playerId) {
-	return game.players.find(p => p.id === playerId);
-}
+const jwt = require('jsonwebtoken');
 
-module.exports = getPlayer;
-==============================
-FILE: ./game/utils/getPiece.js
-==============================
-function getPiece(player, pieceIndex) {
-	return player.pieces[pieceIndex];
-}
+module.exports = (req, res, next) => {
+	const authHeader = req.headers.authorization;
 
-module.exports = getPiece;
-==============================
-FILE: ./game/utils/getGlobalPosition.js
-==============================
-const { START_POSITIONS, BOARD_SIZE} = require('../constants');
+	if (!authHeader)
+	{
+		return res.status(401).json({ error: 'No token provided' });
+	}
 
-//Convierte posición relativa a posición global del tablero.
+	const [scheme, token] = authHeader.split(' ');
 
-function getGlobalPosition(color, relativePosition)
-{
+	if (scheme !== 'Bearer' || !token)
+	{
+		return res.status(401).json({ error: 'Formato de token inválido' });
+	}
 
-	return (START_POSITIONS[color] + relativePosition) % BOARD_SIZE;
-}
+	const secret = process.env.JWT_SECRET;
 
-module.exports = getGlobalPosition;
-==============================
-FILE: ./game/utils/normalizeGame.js
-==============================
-function normalizeGame(game) {
-	if (!game) return game;
-
-	return {
-		id: game.id,
-		status: game.status,
-		turn: game.turn,
-		dice: game.dice,
-		winner: game.winner,
-		createdAt: game.createdAt,
-		updatedAt: game.updatedAt,
-
-		players: game.players.map(player => ({
-			id: player.id,
-			color: player.color,
-			connected: player.connected,
-			abandoned: player.abandoned,
-
-			// 🔥 NORMALIZACIÓN CLAVE PARA FRONTEND
-			pieces: player.pieces.map(piece => ({
-				id: piece.id,
-				state: piece.state,
-
-				// frontend-friendly fields
-				position:
-					piece.state === "base" ? -1 :
-					piece.state === "finished" ? 999 :
-					piece.trackIndex ?? piece.homeIndex ?? 0,
-
-				trackIndex: piece.trackIndex,
-				homeIndex: piece.homeIndex
-			}))
-		}))
-	};
-}
-
-module.exports = normalizeGame;
+	try
+	{
+		const decoded = jwt.verify(token, secret);
+		req.user = decoded;
+		next();
+	}
+	catch (err)
+	{
+		return res.status(401).json({ error: 'Token inválido' });
+	}
+};
 ==============================
 FILE: ./game/validators/canJoinGame.js
 ==============================
@@ -840,25 +969,6 @@ function canJoinGame(game, userId)
 }
 
 module.exports = canJoinGame;
-==============================
-FILE: ./game/validators/validateTurn.js
-==============================
-function validateTurn(game, userId)
-{
-	if (game.turn !== userId)
-	{
-		return{
-			ok: false,
-			error: "Not your turn"
-		};
-	}
-
-	return {
-		ok: true
-	};
-}
-
-module.exports = validateTurn;
 ==============================
 FILE: ./game/validators/canRollDice.js
 ==============================
@@ -927,6 +1037,25 @@ function canMovePiece(game, playerId, pieceIndex) {
 
 module.exports = canMovePiece;
 ==============================
+FILE: ./game/validators/validateTurn.js
+==============================
+function validateTurn(game, userId)
+{
+	if (game.turn !== userId)
+	{
+		return{
+			ok: false,
+			error: "Not your turn"
+		};
+	}
+
+	return {
+		ok: true
+	};
+}
+
+module.exports = validateTurn;
+==============================
 FILE: ./game/rules/nextTurn.js
 ==============================
 function nextTurn(game)
@@ -939,6 +1068,72 @@ function nextTurn(game)
 }
 
 module.exports = nextTurn;
+==============================
+FILE: ./game/rules/getAvailableMoves.js
+==============================
+const canMovePiece = require('../validators/canMovePiece');
+
+function getAvailableMoves(game, playerId)
+{
+	const availableMoves = [];
+
+	for (let i = 0; i < 4; i++)
+	{
+		const validation = canMovePiece(game, playerId, i);
+
+		if (validation.ok)
+		{
+			availableMoves.push(i);
+		}
+	}
+
+	return availableMoves;
+}
+
+module.exports = getAvailableMoves;
+==============================
+FILE: ./game/rules/getBlockades.js
+==============================
+const { BASE_POSITION, FINAL_STRETCH_START } = require('../constants');
+const getGlobalPosition = require('../utils/getGlobalPosition');
+
+function getBlockades(game)
+{
+
+	const blockades = [];
+
+	for (const player of game.players)
+	{
+		const positionsCount = {};
+
+		for (const piece of player.pieces)
+		{
+			if (piece.position === BASE_POSITION)
+			{
+				continue;
+			}
+
+			if (piece.position >= FINAL_STRETCH_START)
+			{
+				continue;
+			}
+
+			const globalPosition = getGlobalPosition(player.color, piece.position);
+			positionsCount[globalPosition] = (positionsCount[globalPosition] || 0) + 1;
+		}
+
+		for (const position in positionsCount)
+		{
+			if (positionsCount[position] >= 2)
+			{
+				blockades.push({ color: player.color, position: Number(position)});
+			}
+		}
+	}
+	return blockades;
+}
+
+module.exports = getBlockades;
 ==============================
 FILE: ./game/rules/checkCapture.js
 ==============================
@@ -1024,24 +1219,6 @@ function checkCapture(game, currentPlayerId)
 
 module.exports = checkCapture;
 ==============================
-FILE: ./game/rules/checkWin.js
-==============================
-const { FINAL_POSITION } = require('../constants');
-
-function checkWin(game, playerId)
-{
-	const player = game.players.find(p => p.id === playerId);
-
-	if (!player)
-	{
-		return false;
-	}
-
-	return player.pieces.every(piece => piece.position === FINAL_POSITION);
-}
-
-module.exports = checkWin;
-==============================
 FILE: ./game/rules/applyMove.js
 ==============================
 const getPlayer = require('../utils/getPlayer');
@@ -1081,29 +1258,6 @@ function applyMove(game, playerId, pieceIndex) {
 
 module.exports = applyMove;
 ==============================
-FILE: ./game/rules/getAvailableMoves.js
-==============================
-const canMovePiece = require('../validators/canMovePiece');
-
-function getAvailableMoves(game, playerId)
-{
-	const availableMoves = [];
-
-	for (let i = 0; i < 4; i++)
-	{
-		const validation = canMovePiece(game, playerId, i);
-
-		if (validation.ok)
-		{
-			availableMoves.push(i);
-		}
-	}
-
-	return availableMoves;
-}
-
-module.exports = getAvailableMoves;
-==============================
 FILE: ./game/rules/isGameAbandoned.js
 ==============================
 function isGameAbandoned(game)
@@ -1113,29 +1267,23 @@ function isGameAbandoned(game)
 
 module.exports = isGameAbandoned;
 ==============================
-FILE: ./game/rules/setPlayerConnection.js
+FILE: ./game/rules/checkWin.js
 ==============================
-function setPlayerConnection(game, playerId, connected)
+const { FINAL_POSITION } = require('../constants');
+
+function checkWin(game, playerId)
 {
 	const player = game.players.find(p => p.id === playerId);
 
 	if (!player)
 	{
-		return;
+		return false;
 	}
 
-	player.connected = connected;
-
-	if (connected)
-	{
-		player.disconnectedAt = null;
-		return;
-	}
-
-	player.disconnectedAt = Date.now();
+	return player.pieces.every(piece => piece.position === FINAL_POSITION);
 }
 
-module.exports = setPlayerConnection;
+module.exports = checkWin;
 ==============================
 FILE: ./game/rules/isBlockade.js
 ==============================
@@ -1179,48 +1327,29 @@ function isBlockade(game, color, globalPosition)
 
 module.exports = isBlockade;
 ==============================
-FILE: ./game/rules/getBlockades.js
+FILE: ./game/rules/setPlayerConnection.js
 ==============================
-const { BASE_POSITION, FINAL_STRETCH_START } = require('../constants');
-const getGlobalPosition = require('../utils/getGlobalPosition');
-
-function getBlockades(game)
+function setPlayerConnection(game, playerId, connected)
 {
+	const player = game.players.find(p => p.id === playerId);
 
-	const blockades = [];
-
-	for (const player of game.players)
+	if (!player)
 	{
-		const positionsCount = {};
-
-		for (const piece of player.pieces)
-		{
-			if (piece.position === BASE_POSITION)
-			{
-				continue;
-			}
-
-			if (piece.position >= FINAL_STRETCH_START)
-			{
-				continue;
-			}
-
-			const globalPosition = getGlobalPosition(player.color, piece.position);
-			positionsCount[globalPosition] = (positionsCount[globalPosition] || 0) + 1;
-		}
-
-		for (const position in positionsCount)
-		{
-			if (positionsCount[position] >= 2)
-			{
-				blockades.push({ color: player.color, position: Number(position)});
-			}
-		}
+		return;
 	}
-	return blockades;
+
+	player.connected = connected;
+
+	if (connected)
+	{
+		player.disconnectedAt = null;
+		return;
+	}
+
+	player.disconnectedAt = Date.now();
 }
 
-module.exports = getBlockades;
+module.exports = setPlayerConnection;
 ==============================
 FILE: ./game/rules/checkPausedState.js
 ==============================
@@ -1252,43 +1381,6 @@ function checkPausedState(game)
 }
 
 module.exports = checkPausedState;
-==============================
-FILE: ./game/constants.js
-==============================
-const COLORS = ["pink", "purple", "green", "blue"];
-
-const GAME_STATUS = {
-	WAITING: "waiting",
-	PLAYING: "playing",
-	PAUSED: "paused",
-	FINISHED: "finished"
-};
-
-const BOARD_SIZE = 68;
-
-const START_POSITIONS = {
-	pink: 0,
-	purple: 17,
-	green: 34,
-	blue: 51
-};
-
-const SAFE_CELLS = [
-	0,5,12,17,22,29,34,39,46,51,56,63
-];
-
-const DISCONNECT_TIMEOUT = 60000;
-const TURN_TIMEOUT = 30000;
-
-module.exports = {
-	COLORS,
-	GAME_STATUS,
-	BOARD_SIZE,
-	START_POSITIONS,
-	SAFE_CELLS,
-	DISCONNECT_TIMEOUT,
-	TURN_TIMEOUT
-};
 ==============================
 FILE: ./game/gameManager.js
 ==============================
@@ -1449,91 +1541,6 @@ function createNewGame(hostId)
 
 module.exports = { createNewGame };
 ==============================
-FILE: ./game/turnTimer.js
-==============================
-const {TURN_TIMEOUT, GAME_STATUS} = require('./constants');
-const nextTurn = require('./rules/nextTurn');
-const withGameLock = require('./withGameLock');
-const { getIO } = require('../socket');
-
-/* =============================
-   ACTIVE TIMERS
-============================= */
-const turnTimers = new Map();
-
-/* =============================
-   CLEAR TURN TIMER
-============================= */
-function clearTurnTimer(gameId)
-{
-	const existingTimer = turnTimers.get(gameId);
-	if (existingTimer)
-	{
-		clearTimeout(existingTimer);
-		turnTimers.delete(gameId);
-	}
-}
-
-/* =============================
-   START TURN TIMER
-============================= */
-function startTurnTimer(gameId)
-{
-	clearTurnTimer(gameId);
-	const timeout = setTimeout(async () => {
-		try
-		{
-			const locked = await withGameLock(
-				gameId,
-				async (game) => {
-
-					if (game.status !== GAME_STATUS.PLAYING)
-					{
-						return { skip: true };
-					}
-					game.dice = null;
-					nextTurn(game);
-					game.updatedAt = Date.now();
-					return { ok: true };
-				}
-			);
-
-			if (!locked)
-			{
-				clearTurnTimer(gameId);
-				return;
-			}
-
-			if (locked.result.skip)
-			{
-				return;
-			}
-
-			startTurnTimer(gameId);
-
-			getIO()
-				.to(gameId)
-				.emit("game:turn_timeout",{ nextTurn: locked.game.turn });
-
-			getIO()
-				.to(gameId)
-				.emit( "game:update", locked.game );
-		}
-		catch (err)
-		{
-			console.error(err);
-		}
-
-	}, TURN_TIMEOUT);
-
-	turnTimers.set(gameId, timeout);
-}
-
-module.exports = {
-	startTurnTimer,
-	clearTurnTimer
-};
-==============================
 FILE: ./game/withGameLock.js
 ==============================
 const pool = require('../db');
@@ -1628,6 +1635,91 @@ async function withGameLock(gameId, callback) {
 
 module.exports = withGameLock;
 ==============================
+FILE: ./game/turnTimer.js
+==============================
+const {TURN_TIMEOUT, GAME_STATUS} = require('./constants');
+const nextTurn = require('./rules/nextTurn');
+const withGameLock = require('./withGameLock');
+const { getIO } = require('../socket');
+
+/* =============================
+   ACTIVE TIMERS
+============================= */
+const turnTimers = new Map();
+
+/* =============================
+   CLEAR TURN TIMER
+============================= */
+function clearTurnTimer(gameId)
+{
+	const existingTimer = turnTimers.get(gameId);
+	if (existingTimer)
+	{
+		clearTimeout(existingTimer);
+		turnTimers.delete(gameId);
+	}
+}
+
+/* =============================
+   START TURN TIMER
+============================= */
+function startTurnTimer(gameId)
+{
+	clearTurnTimer(gameId);
+	const timeout = setTimeout(async () => {
+		try
+		{
+			const locked = await withGameLock(
+				gameId,
+				async (game) => {
+
+					if (game.status !== GAME_STATUS.PLAYING)
+					{
+						return { skip: true };
+					}
+					game.dice = null;
+					nextTurn(game);
+					game.updatedAt = Date.now();
+					return { ok: true };
+				}
+			);
+
+			if (!locked)
+			{
+				clearTurnTimer(gameId);
+				return;
+			}
+
+			if (locked.result.skip)
+			{
+				return;
+			}
+
+			startTurnTimer(gameId);
+
+			getIO()
+				.to(gameId)
+				.emit("game:turn_timeout",{ nextTurn: locked.game.turn });
+
+			getIO()
+				.to(gameId)
+				.emit( "game:update", locked.game );
+		}
+		catch (err)
+		{
+			console.error(err);
+		}
+
+	}, TURN_TIMEOUT);
+
+	turnTimers.set(gameId, timeout);
+}
+
+module.exports = {
+	startTurnTimer,
+	clearTurnTimer
+};
+==============================
 FILE: ./game/gameEngine.js
 ==============================
 const { COLORS, GAME_STATUS } = require('./constants');
@@ -1714,50 +1806,170 @@ module.exports = {
 	executeMove
 };
 ==============================
-FILE: ./middleware/authMiddleware.js
+FILE: ./game/utils/createPieces.js
 ==============================
-const jwt = require('jsonwebtoken');
+function createPieces() {
+	return Array.from({ length: 4 }).map((_, index) => ({
+		id: index,
+		state: "base",
+		trackIndex: 0,
+		homeIndex: 0
+	}));
+}
 
-module.exports = (req, res, next) => {
-	const authHeader = req.headers.authorization;
+module.exports = createPieces;
+==============================
+FILE: ./game/utils/getPlayer.js
+==============================
+function getPlayer(game, playerId) {
+	return game.players.find(p => p.id === playerId);
+}
 
-	if (!authHeader)
-	{
-		return res.status(401).json({ error: 'No token provided' });
-	}
+module.exports = getPlayer;
+==============================
+FILE: ./game/utils/getGlobalPosition.js
+==============================
+const { START_POSITIONS, BOARD_SIZE} = require('../constants');
 
-	const [scheme, token] = authHeader.split(' ');
+//Convierte posición relativa a posición global del tablero.
 
-	if (scheme !== 'Bearer' || !token)
-	{
-		return res.status(401).json({ error: 'Formato de token inválido' });
-	}
+function getGlobalPosition(color, relativePosition)
+{
 
-	const secret = process.env.JWT_SECRET;
+	return (START_POSITIONS[color] + relativePosition) % BOARD_SIZE;
+}
 
-	try
-	{
-		const decoded = jwt.verify(token, secret);
-		req.user = decoded;
-		next();
-	}
-	catch (err)
-	{
-		return res.status(401).json({ error: 'Token inválido' });
-	}
+module.exports = getGlobalPosition;
+==============================
+FILE: ./game/utils/normalizeGame.js
+==============================
+function normalizeGame(game) {
+	if (!game) return game;
+
+	return {
+		id: game.id,
+		status: game.status,
+		turn: game.turn,
+		dice: game.dice,
+		winner: game.winner,
+		createdAt: game.createdAt,
+		updatedAt: game.updatedAt,
+
+		players: game.players.map(player => ({
+			id: player.id,
+			color: player.color,
+			connected: player.connected,
+			abandoned: player.abandoned,
+
+			// 🔥 NORMALIZACIÓN CLAVE PARA FRONTEND
+			pieces: player.pieces.map(piece => ({
+				id: piece.id,
+				state: piece.state,
+
+				// frontend-friendly fields
+				position:
+					piece.state === "base" ? -1 :
+					piece.state === "finished" ? 999 :
+					piece.trackIndex ?? piece.homeIndex ?? 0,
+
+				trackIndex: piece.trackIndex,
+				homeIndex: piece.homeIndex
+			}))
+		}))
+	};
+}
+
+module.exports = normalizeGame;
+==============================
+FILE: ./game/utils/getPiece.js
+==============================
+function getPiece(player, pieceIndex) {
+	return player.pieces[pieceIndex];
+}
+
+module.exports = getPiece;
+==============================
+FILE: ./game/constants.js
+==============================
+const COLORS = ["pink", "purple", "green", "blue"];
+
+const GAME_STATUS = {
+	WAITING: "waiting",
+	PLAYING: "playing",
+	PAUSED: "paused",
+	FINISHED: "finished"
+};
+
+const BOARD_SIZE = 68;
+
+const START_POSITIONS = {
+	pink: 0,
+	purple: 17,
+	green: 34,
+	blue: 51
+};
+
+const SAFE_CELLS = [
+	0,5,12,17,22,29,34,39,46,51,56,63
+];
+
+const DISCONNECT_TIMEOUT = 60000;
+const TURN_TIMEOUT = 30000;
+
+module.exports = {
+	COLORS,
+	GAME_STATUS,
+	BOARD_SIZE,
+	START_POSITIONS,
+	SAFE_CELLS,
+	DISCONNECT_TIMEOUT,
+	TURN_TIMEOUT
 };
 ==============================
-FILE: ./routes/authRoutes.js
+FILE: ./db.js
 ==============================
-const express = require('express');
-const router = express.Router();
+const { Pool } = require('pg');
 
-const authController = require('../controllers/authController');
+const pool = new Pool({
+	host: process.env.DB_HOST || 'localhost',
+	user: process.env.DB_USER || 'user',
+	password: process.env.DB_PASSWORD || 'password',
+	database: process.env.DB_NAME || 'transcendence',
+	port: Number(process.env.DB_PORT || 5432),
+});
 
-router.post('/register', authController.register);
-router.post('/login', authController.login);
+module.exports = pool;
+==============================
+FILE: ./socket.js
+==============================
+let io = null;
 
-module.exports = router;
+/* =============================
+SET IO INSTANCE
+============================= */
+
+function setIO(serverIO)
+{
+	io = serverIO;
+}
+
+/* =============================
+GET IO INSTANCE
+============================= */
+
+function getIO()
+{
+	if (!io)
+	{
+		throw new Error("Socket.io not initialized");
+	}
+	return io;
+}
+
+module.exports = {
+setIO,
+getIO
+};
 ==============================
 FILE: ./routes/gameRoutes.js
 ==============================
@@ -1773,6 +1985,34 @@ router.get('/:id', authMiddleware, gameController.getGame);
 router.post('/:id/join', authMiddleware, gameController.joinGame);
 router.post('/:id/roll', authMiddleware, gameController.rollDice);
 router.post('/:id/move', authMiddleware, gameController.movePiece);
+
+module.exports = router;
+==============================
+FILE: ./routes/authRoutes.js
+==============================
+const express = require('express');
+const router = express.Router();
+
+const authController = require('../controllers/authController');
+
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+
+module.exports = router;
+==============================
+FILE: ./routes/userRoutes.js
+==============================
+const express = require('express');
+
+const router = express.Router();
+
+const authMiddleware = require('../middleware/authMiddleware');
+const userController = require('../controllers/userController');
+
+router.get('/me', authMiddleware, userController.getMe);
+router.put('/me', authMiddleware, userController.updateMe);
+router.get('/search', authMiddleware, userController.searchUsers);
+router.get('/:id', authMiddleware, userController.getUserById);
 
 module.exports = router;
 ==============================
@@ -1793,67 +2033,147 @@ router.post('/accept/:id', friendsController.acceptRequest);
 
 module.exports = router;
 ==============================
-FILE: ./routes/userRoutes.js
+FILE: ./Dockerfile
+==============================
+FROM node:18
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
+==============================
+FILE: ./server.js
 ==============================
 const express = require('express');
+const cors = require('cors');
+const http = require('http');
 
-const router = express.Router();
+const initDB = require('./initDb');
+const initSockets = require('./sockets');
 
-const authMiddleware = require('../middleware/authMiddleware');
-const userController = require('../controllers/userController');
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const friendsRoutes = require('./routes/friendsRoutes');
+const gameRoutes = require('./routes/gameRoutes');
 
-router.get('/me', authMiddleware, userController.getMe);
-router.put('/me', authMiddleware, userController.updateMe);
-router.get('/search', authMiddleware, userController.searchUsers);
-router.get('/:id', authMiddleware, userController.getUserById);
+const app = express();
 
-module.exports = router;
+app.use(cors({
+	origin: '*',
+	methods: ['GET', 'POST', 'PUT', 'DELETE'],
+	credentials: true
+}));
+
+app.use(express.json());
+
+app.get('/', (req, res) => {
+	res.json({ status: 'ok' });
+});
+
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/friends', friendsRoutes);
+app.use('/games', gameRoutes);
+
+const httpServer = http.createServer(app);
+
+const PORT = process.env.PORT || 3000;
+
+/* ======================================
+   🔥 FIX: inicializar sockets DESPUÉS de DB
+====================================== */
+
+initDB()
+	.then(() => {
+
+		// 🔥 mover aquí sockets
+		initSockets(httpServer);
+
+		httpServer.listen(PORT, () => {
+			console.log(`Backend running on port ${PORT}`);
+		});
+	})
+	.catch((err) => {
+
+		console.error('DB init failed:', err);
+		process.exit(1);
+	});
 ==============================
-FILE: ./sockets/presence.js
+FILE: ./initDb.js
 ==============================
-const onlineUsers = new Map();
+const pool = require('./db');
 
-function addUserSocket(userId, socketId)
+async function initDB()
 {
-	if (!onlineUsers.has(userId))
+	try
 	{
-		onlineUsers.set(userId, new Set());
-	}
-	onlineUsers.get(userId).add(socketId);
-}
+		/* =============================
+			USERS
+		============================== */
+		await pool.query(`
+			CREATE TABLE IF NOT EXISTS users (
+			id SERIAL PRIMARY KEY,
+			username VARCHAR(50) UNIQUE NOT NULL,
+			email VARCHAR(255) UNIQUE NOT NULL,
+			password TEXT NOT NULL,
+			avatar_url TEXT DEFAULT '/uploads/default-avatar.png',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			);
+		`);
 
-function removeUserSocket(userId, socketId)
-{
-	if (!onlineUsers.has(userId))
+		/* =============================
+			FRIENDSHIPS
+		============================== */
+		await pool.query(`
+			CREATE TABLE IF NOT EXISTS friendships (
+				id SERIAL PRIMARY KEY,
+				requester_id INTEGER NOT NULL
+					REFERENCES users(id)
+					ON DELETE CASCADE,
+				addressee_id INTEGER NOT NULL
+					REFERENCES users(id)
+					ON DELETE CASCADE,
+				status VARCHAR(20)
+					NOT NULL DEFAULT 'pending',
+				created_at TIMESTAMP
+					DEFAULT CURRENT_TIMESTAMP,
+				accepted_at TIMESTAMP NULL,
+				CHECK (requester_id <> addressee_id),
+				UNIQUE (requester_id, addressee_id)
+			);
+		`);
+
+		/* =============================
+			GAMES
+		============================== */
+		await pool.query(`
+			CREATE TABLE IF NOT EXISTS games (
+			id VARCHAR(255) PRIMARY KEY,
+			host_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			state JSONB NOT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'waiting',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			);
+		`);
+		console.log('✅ Tablas listas');
+	}
+	catch (err)
 	{
-		return;
-	}
-
-	const sockets = onlineUsers.get(userId);
-	sockets.delete(socketId);
-
-	if (sockets.size === 0)
-	{
-		onlineUsers.delete(userId);
+		console.error('❌ Error creando tablas:', err);
+		throw err;
 	}
 }
 
-function isUserOnline(userId)
-{
-	return onlineUsers.has(userId);
-}
-
-function getOnlineUsers()
-{
-	return Array.from(onlineUsers.keys());
-}
-
-module.exports = {
-  addUserSocket,
-  removeUserSocket,
-  isUserOnline,
-  getOnlineUsers
-};
+module.exports = initDB;
 ==============================
 FILE: ./sockets/authSocket.js
 ==============================
@@ -2033,6 +2353,52 @@ function registerGameSocket(io, socket)
 
 module.exports = registerGameSocket;
 ==============================
+FILE: ./sockets/presence.js
+==============================
+const onlineUsers = new Map();
+
+function addUserSocket(userId, socketId)
+{
+	if (!onlineUsers.has(userId))
+	{
+		onlineUsers.set(userId, new Set());
+	}
+	onlineUsers.get(userId).add(socketId);
+}
+
+function removeUserSocket(userId, socketId)
+{
+	if (!onlineUsers.has(userId))
+	{
+		return;
+	}
+
+	const sockets = onlineUsers.get(userId);
+	sockets.delete(socketId);
+
+	if (sockets.size === 0)
+	{
+		onlineUsers.delete(userId);
+	}
+}
+
+function isUserOnline(userId)
+{
+	return onlineUsers.has(userId);
+}
+
+function getOnlineUsers()
+{
+	return Array.from(onlineUsers.keys());
+}
+
+module.exports = {
+  addUserSocket,
+  removeUserSocket,
+  isUserOnline,
+  getOnlineUsers
+};
+==============================
 FILE: ./sockets/index.js
 ==============================
 const { Server } = require('socket.io');
@@ -2067,160 +2433,3 @@ function initSockets(httpServer)
 }
 
 module.exports = initSockets;
-==============================
-FILE: ./socket.js
-==============================
-let io = null;
-
-/* =============================
-SET IO INSTANCE
-============================= */
-
-function setIO(serverIO)
-{
-	io = serverIO;
-}
-
-/* =============================
-GET IO INSTANCE
-============================= */
-
-function getIO()
-{
-	if (!io)
-	{
-		throw new Error("Socket.io not initialized");
-	}
-	return io;
-}
-
-module.exports = {
-setIO,
-getIO
-};
-==============================
-FILE: ./initDb.js
-==============================
-const pool = require('./db');
-
-async function initDB()
-{
-	try
-	{
-		/* =============================
-			USERS
-		============================== */
-		await pool.query(`
-			CREATE TABLE IF NOT EXISTS users (
-			id SERIAL PRIMARY KEY,
-			username VARCHAR(50) UNIQUE NOT NULL,
-			email VARCHAR(255) UNIQUE NOT NULL,
-			password TEXT NOT NULL,
-			avatar_url TEXT DEFAULT '/uploads/default-avatar.png',
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-			);
-		`);
-
-		/* =============================
-			FRIENDSHIPS
-		============================== */
-		await pool.query(`
-			CREATE TABLE IF NOT EXISTS friendships (
-				id SERIAL PRIMARY KEY,
-				requester_id INTEGER NOT NULL
-					REFERENCES users(id)
-					ON DELETE CASCADE,
-				addressee_id INTEGER NOT NULL
-					REFERENCES users(id)
-					ON DELETE CASCADE,
-				status VARCHAR(20)
-					NOT NULL DEFAULT 'pending',
-				created_at TIMESTAMP
-					DEFAULT CURRENT_TIMESTAMP,
-				accepted_at TIMESTAMP NULL,
-				CHECK (requester_id <> addressee_id),
-				UNIQUE (requester_id, addressee_id)
-			);
-		`);
-
-		/* =============================
-			GAMES
-		============================== */
-		await pool.query(`
-			CREATE TABLE IF NOT EXISTS games (
-			id VARCHAR(255) PRIMARY KEY,
-			host_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-			state JSONB NOT NULL,
-			status VARCHAR(20) NOT NULL DEFAULT 'waiting',
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-			);
-		`);
-		console.log('✅ Tablas listas');
-	}
-	catch (err)
-	{
-		console.error('❌ Error creando tablas:', err);
-		throw err;
-	}
-}
-
-module.exports = initDB;
-==============================
-FILE: ./server.js
-==============================
-const express = require('express');
-const cors = require('cors');
-const http = require('http');
-
-const initDB = require('./initDb');
-const initSockets = require('./sockets');
-
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-const friendsRoutes = require('./routes/friendsRoutes');
-const gameRoutes = require('./routes/gameRoutes');
-
-const app = express();
-
-app.use(cors({
-	origin: '*',
-	methods: ['GET', 'POST', 'PUT', 'DELETE'],
-	credentials: true
-}));
-
-app.use(express.json());
-
-app.get('/', (req, res) => {
-	res.json({ status: 'ok' });
-});
-
-app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
-app.use('/friends', friendsRoutes);
-app.use('/games', gameRoutes);
-
-const httpServer = http.createServer(app);
-
-const PORT = process.env.PORT || 3000;
-
-/* ======================================
-   🔥 FIX: inicializar sockets DESPUÉS de DB
-====================================== */
-
-initDB()
-	.then(() => {
-
-		// 🔥 mover aquí sockets
-		initSockets(httpServer);
-
-		httpServer.listen(PORT, () => {
-			console.log(`Backend running on port ${PORT}`);
-		});
-	})
-	.catch((err) => {
-
-		console.error('DB init failed:', err);
-		process.exit(1);
-	});

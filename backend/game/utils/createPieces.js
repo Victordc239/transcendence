@@ -3,7 +3,7 @@ function createPieces() {
 		id: index,
 		state: "base",
 		trackIndex: 0,
-		homIndex: 0
+		homeIndex: 0
 	}));
 }
 

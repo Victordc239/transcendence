@@ -1,11 +1,36 @@
 const getAvailableMoves = require('../game/rules/getAvailableMoves');
 const nextTurn = require('../game/rules/nextTurn');
+
 const { createNewGame } = require('../game/gameState');
-const {rollDice, addPlayerToGame, executeMove, canJoinGame, canRollDice} = require('../game/gameEngine');
-const { getGame: getGameById, createGame} = require('../game/gameManager');
+
+const {
+	rollDice,
+	addPlayerToGame,
+	executeMove
+} = require('../game/gameEngine');
+
+/*
+🔥 IMPORTANTE:
+LOS VALIDATORS VIENEN DE validators/
+NO de gameEngine
+*/
+const canJoinGame =
+	require('../game/validators/canJoinGame');
+
+const canRollDice =
+	require('../game/validators/canRollDice');
+
+const {
+	getGame: getGameById,
+	createGame: createGameInDB
+} = require('../game/gameManager');
+
 const withGameLock = require('../game/withGameLock');
+
 const { getIO } = require('../socket');
-const normalizeGame = require('../game/utils/normalizeGame');
+
+const normalizeGame =
+	require('../game/utils/normalizeGame');
 
 /* =============================
 CREATE GAME
@@ -13,26 +38,66 @@ CREATE GAME
 exports.createGame = async (req, res) => {
 	try
 	{
-		const userId = req.user.id;
+		const userId = Number(req.user.id);
+
+		if (!userId)
+		{
+			return res.status(401).json({
+				error: 'Invalid user'
+			});
+		}
 
 		const game = createNewGame(userId);
 
-		await createGame(game, userId);
+		const created =
+			await createGameInDB(
+				game,
+				userId
+			);
 
-		const normalized = normalizeGame(game);
+		if (!created)
+		{
+			return res.status(500).json({
+				error:
+					'Database error creating game'
+			});
+		}
 
-		getIO().emit('game:created', normalized);
+		const normalized =
+			normalizeGame(game);
 
-		// 🔥 FIX IMPORTANTE: respuesta consistente para frontend
-		return res.json({
+		try
+		{
+			getIO().emit(
+				'game:created',
+				normalized
+			);
+		}
+		catch (socketError)
+		{
+			console.error(
+				'SOCKET ERROR:',
+				socketError
+			);
+		}
+
+		return res.status(201).json({
 			id: normalized.id,
 			game: normalized
 		});
 	}
 	catch (error)
 	{
-		console.error("CREATE GAME ERROR:", error);
-		return res.status(500).json({ error: 'Server error creating game' });
+		console.error(
+			'CREATE GAME ERROR:',
+			error
+		);
+
+		return res.status(500).json({
+			error:
+				'Server error creating game',
+			details: error.message
+		});
 	}
 };
 
@@ -42,57 +107,157 @@ GET GAME
 exports.getGame = async (req, res) => {
 	try
 	{
-		const game = await getGameById(req.params.id);
+		const game =
+			await getGameById(req.params.id);
+
 		if (!game)
 		{
-			return res.status(404).json({ error: 'Game not found' });
+			return res.status(404).json({
+				error: 'Game not found'
+			});
 		}
-		return res.json(normalizeGame(game));
+
+		return res.json(
+			normalizeGame(game)
+		);
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Server error' });
+
+		return res.status(500).json({
+			error: 'Server error'
+		});
 	}
 };
+
 /* =============================
 JOIN GAME
 ============================= */
 exports.joinGame = async (req, res) => {
-	try {
-		const userId = Number(req.user.id);
-		const gameId = String(req.params.id);
+	try
+	{
+		const userId =
+			Number(req.user.id);
 
-		const locked = await withGameLock(gameId, async (game) => {
-			if (!game) return { error: 'Game not found' };
+		const gameId =
+			String(req.params.id);
 
-			const validation = canJoinGame(game, userId);
-			if (!validation.ok) {
-				return { error: validation.error };
-			}
+		const locked =
+			await withGameLock(
+				gameId,
+				async (game) => {
 
-			addPlayerToGame(game, userId);
+					if (!game)
+					{
+						return {
+							error:
+								'Game not found'
+						};
+					}
 
-			return { ok: true };
-		});
+					/*
+					🔥 VALIDAR JOIN
+					*/
+					const validation =
+						canJoinGame(
+							game,
+							userId
+						);
 
-		if (!locked) {
-			return res.status(404).json({ error: 'Game not found' });
+					if (!validation.ok)
+					{
+						return {
+							error:
+								validation.error
+						};
+					}
+
+					/*
+					🔥 AÑADIR JUGADOR
+					*/
+					const addResult =
+						addPlayerToGame(
+							game,
+							userId
+						);
+
+					if (
+						addResult &&
+						addResult.error
+					)
+					{
+						return {
+							error:
+								addResult.error
+						};
+					}
+
+					game.updatedAt =
+						Date.now();
+
+					return {
+						ok: true
+					};
+				}
+			);
+
+		if (!locked)
+		{
+			return res.status(404).json({
+				error:
+					'Game not found'
+			});
 		}
 
-		if (locked.result?.error) {
-			return res.status(400).json({ error: locked.result.error });
+		if (locked.result?.error)
+		{
+			return res.status(400).json({
+				error:
+					locked.result.error
+			});
 		}
 
-		getIO().to(gameId).emit('game:update', normalizeGame(locked.game));
+		/*
+		🔥 SOCKET UPDATE
+		*/
+		try
+		{
+			getIO()
+				.to(gameId)
+				.emit(
+					'game:update',
+					normalizeGame(
+						locked.game
+					)
+				);
+		}
+		catch (socketError)
+		{
+			console.error(
+				'SOCKET ERROR:',
+				socketError
+			);
+		}
 
-		return res.json(normalizeGame(locked.game));
+		return res.json(
+			normalizeGame(
+				locked.game
+			)
+		);
 	}
-	catch (error) {
-		console.error(error);
+	catch (error)
+	{
+		console.error(
+			'JOIN GAME ERROR:',
+			error
+		);
+
 		return res.status(500).json({
-			error: 'Server error joining game',
-			details: error.message
+			error:
+				'Server error joining game',
+			details:
+				error.message
 		});
 	}
 };
@@ -101,61 +266,94 @@ exports.joinGame = async (req, res) => {
 ROLL DICE
 ============================= */
 exports.rollDice = async (req, res) => {
-
 	try
 	{
-		console.log('ROLL DICE');
-
 		const userId = req.user.id;
+
 		const gameId = req.params.id;
 
-		const locked = await withGameLock(
-			gameId,
-			async (game) => {
+		const locked =
+			await withGameLock(
+				gameId,
+				async (game) => {
 
-				const validation = canRollDice(game, userId);
-				if (!validation.ok)
-				{
-					return { error: validation.error };
+					const validation =
+						canRollDice(
+							game,
+							userId
+						);
+
+					if (!validation.ok)
+					{
+						return {
+							error:
+								validation.error
+						};
+					}
+
+					game.dice =
+						rollDice();
+
+					const availableMoves =
+						getAvailableMoves(
+							game,
+							userId
+						);
+
+					if (
+						availableMoves.length === 0
+					)
+					{
+						game.dice = null;
+						nextTurn(game);
+					}
+
+					game.updatedAt =
+						Date.now();
+
+					return {
+						ok: true,
+						dice: game.dice
+					};
 				}
-
-				game.dice = rollDice();
-				const availableMoves = getAvailableMoves(game, userId);
-				if (availableMoves.length === 0)
-				{
-					game.dice = null;
-					nextTurn(game);
-				}
-
-				game.updatedAt = Date.now();
-
-				return {
-					ok: true,
-					dice: game.dice
-				};
-			}
-		);
+			);
 
 		if (!locked)
 		{
-			return res.status(404).json({error: 'Game not found'});
+			return res.status(404).json({
+				error:
+					'Game not found'
+			});
 		}
 
 		if (locked.result.error)
 		{
-			return res.status(400).json({error: locked.result.error});
+			return res.status(400).json({
+				error:
+					locked.result.error
+			});
 		}
 
 		getIO()
 			.to(gameId)
-			.emit('game:update', locked.game);
+			.emit(
+				'game:update',
+				locked.game
+			);
 
-		return res.json({dice: locked.result.dice});
+		return res.json({
+			dice:
+				locked.result.dice
+		});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({error: 'Server error'});
+
+		return res.status(500).json({
+			error:
+				'Server error'
+		});
 	}
 };
 
@@ -163,49 +361,75 @@ exports.rollDice = async (req, res) => {
 MOVE PIECE
 ============================= */
 exports.movePiece = async (req, res) => {
-
 	try
 	{
-		console.log('MOVE PIECE');
-
 		const userId = req.user.id;
+
 		const gameId = req.params.id;
 
-		const { pieceIndex } = req.body;
+		const { pieceIndex } =
+			req.body;
 
-		const locked = await withGameLock(
-			gameId,
-			async (game) => {
+		const locked =
+			await withGameLock(
+				gameId,
+				async (game) => {
 
-				const result = executeMove(game, userId, pieceIndex);
-				if (!result.ok)
-				{
+					const result =
+						executeMove(
+							game,
+							userId,
+							pieceIndex
+						);
+
+					if (!result.ok)
+					{
+						return result;
+					}
+
+					game.updatedAt =
+						Date.now();
+
 					return result;
 				}
-				game.updatedAt = Date.now();
-				return result;
-			}
-		);
+			);
 
 		if (!locked)
 		{
-			return res.status(404).json({error: 'Game not found'});
+			return res.status(404).json({
+				error:
+					'Game not found'
+			});
 		}
 
 		if (!locked.result.ok)
 		{
-			return res.status(400).json({error: locked.result.error});
+			return res.status(400).json({
+				error:
+					locked.result.error
+			});
 		}
 
 		getIO()
 			.to(gameId)
-			.emit('game:update', locked.game);
+			.emit(
+				'game:update',
+				locked.game
+			);
 
-		return res.json(normalizeGame(locked.game));
+		return res.json(
+			normalizeGame(
+				locked.game
+			)
+		);
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({error: 'Server error'});
+
+		return res.status(500).json({
+			error:
+				'Server error'
+		});
 	}
 };

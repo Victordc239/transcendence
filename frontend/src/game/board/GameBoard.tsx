@@ -137,11 +137,22 @@ export default function GameBoard() {
           absolute inset-0
           w-full h-full
           object-contain
-          opacity-80
+          opacity-90
           mix-blend-screen
           pointer-events-none
         "
       />
+      <img
+        src="/board/board-home-paths.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          object-contain
+          opacity-50
+          pointer-events-none
+        "
+      />
+
     </div>
   );
 }

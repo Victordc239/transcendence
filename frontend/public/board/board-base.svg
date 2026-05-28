@@ -1,168 +1,124 @@
-<svg width="1600" height="1600" viewBox="0 0 1600 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="1600">
-      <stop offset="0%" stop-color="#0B1020"/>
-      <stop offset="100%" stop-color="#060816"/>
-    </linearGradient>
+<svg width="1000" height="1000" viewBox="0 0 1000 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
 
-    <linearGradient id="pinkZone" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#FF5EA8"/>
-      <stop offset="100%" stop-color="#FF2E7A"/>
-    </linearGradient>
+<rect width="1000" height="1000" rx="60" fill="#050816"/>
 
-    <linearGradient id="purpleZone" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#B05CFF"/>
-      <stop offset="100%" stop-color="#7D2CFF"/>
-    </linearGradient>
+<!-- GRID -->
+<g opacity="0.12">
+  <path d="M0 100H1000" stroke="#ffffff"/>
+  <path d="M0 200H1000" stroke="#ffffff"/>
+  <path d="M0 300H1000" stroke="#ffffff"/>
+  <path d="M0 400H1000" stroke="#ffffff"/>
+  <path d="M0 500H1000" stroke="#ffffff"/>
+  <path d="M0 600H1000" stroke="#ffffff"/>
+  <path d="M0 700H1000" stroke="#ffffff"/>
+  <path d="M0 800H1000" stroke="#ffffff"/>
+  <path d="M0 900H1000" stroke="#ffffff"/>
 
-    <linearGradient id="blueZone" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#47D8FF"/>
-      <stop offset="100%" stop-color="#178BFF"/>
-    </linearGradient>
+  <path d="M100 0V1000" stroke="#ffffff"/>
+  <path d="M200 0V1000" stroke="#ffffff"/>
+  <path d="M300 0V1000" stroke="#ffffff"/>
+  <path d="M400 0V1000" stroke="#ffffff"/>
+  <path d="M500 0V1000" stroke="#ffffff"/>
+  <path d="M600 0V1000" stroke="#ffffff"/>
+  <path d="M700 0V1000" stroke="#ffffff"/>
+  <path d="M800 0V1000" stroke="#ffffff"/>
+  <path d="M900 0V1000" stroke="#ffffff"/>
+</g>
 
-    <linearGradient id="greenZone" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#49FFB3"/>
-      <stop offset="100%" stop-color="#0FD976"/>
-    </linearGradient>
+<!-- PLAYER ZONES -->
 
-    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="10" stdDeviation="20" flood-color="#000000" flood-opacity="0.45"/>
-    </filter>
+<rect x="70" y="70" width="360" height="360" rx="40"
+fill="#1a1028"
+stroke="#ff3bd4"
+stroke-width="10"/>
 
-    <filter id="glowPink">
-      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+<rect x="570" y="70" width="360" height="360" rx="40"
+fill="#0f241d"
+stroke="#00ff9d"
+stroke-width="10"/>
 
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
-    </pattern>
-  </defs>
+<rect x="70" y="570" width="360" height="360" rx="40"
+fill="#071f2d"
+stroke="#00d9ff"
+stroke-width="10"/>
 
-  <rect width="1600" height="1600" fill="url(#bg)"/>
-  <rect width="1600" height="1600" fill="url(#grid)" opacity="0.25"/>
+<rect x="570" y="570" width="360" height="360" rx="40"
+fill="#22142c"
+stroke="#c86cff"
+stroke-width="10"/>
 
-  <!-- OUTER BOARD -->
-  <g filter="url(#shadow)">
-    <rect x="180" y="180" width="1240" height="1240" rx="55" fill="#11182D" stroke="#2A3658" stroke-width="8"/>
+<!-- INNER HOMES -->
 
-    <!-- INNER FRAME -->
-    <rect x="220" y="220" width="1160" height="1160" rx="40" fill="#151D36" stroke="#3D4C78" stroke-width="4"/>
+<rect x="145" y="145" width="210" height="210" rx="30"
+stroke="#ff69e7"
+stroke-width="6"/>
 
-    <!-- PLAYER ZONES -->
-    <rect x="240" y="240" width="430" height="430" rx="40" fill="url(#pinkZone)" opacity="0.2"/>
-    <rect x="930" y="240" width="430" height="430" rx="40" fill="url(#greenZone)" opacity="0.2"/>
-    <rect x="240" y="930" width="430" height="430" rx="40" fill="url(#blueZone)" opacity="0.2"/>
-    <rect x="930" y="930" width="430" height="430" rx="40" fill="url(#purpleZone)" opacity="0.2"/>
+<rect x="645" y="145" width="210" height="210" rx="30"
+stroke="#52ffb8"
+stroke-width="6"/>
 
-    <!-- BASES -->
-    <g>
-      <!-- PINK BASE -->
-      <rect x="300" y="300" width="310" height="310" rx="45" fill="#1B1020" stroke="#FF4B91" stroke-width="6"/>
-      <circle cx="390" cy="390" r="38" fill="#2D1628" stroke="#FF5EA8" stroke-width="5"/>
-      <circle cx="520" cy="390" r="38" fill="#2D1628" stroke="#FF5EA8" stroke-width="5"/>
-      <circle cx="390" cy="520" r="38" fill="#2D1628" stroke="#FF5EA8" stroke-width="5"/>
-      <circle cx="520" cy="520" r="38" fill="#2D1628" stroke="#FF5EA8" stroke-width="5"/>
+<rect x="145" y="645" width="210" height="210" rx="30"
+stroke="#52dfff"
+stroke-width="6"/>
 
-      <!-- GREEN BASE -->
-      <rect x="990" y="300" width="310" height="310" rx="45" fill="#0F211B" stroke="#25F19C" stroke-width="6"/>
-      <circle cx="1080" cy="390" r="38" fill="#143126" stroke="#49FFB3" stroke-width="5"/>
-      <circle cx="1210" cy="390" r="38" fill="#143126" stroke="#49FFB3" stroke-width="5"/>
-      <circle cx="1080" cy="520" r="38" fill="#143126" stroke="#49FFB3" stroke-width="5"/>
-      <circle cx="1210" cy="520" r="38" fill="#143126" stroke="#49FFB3" stroke-width="5"/>
+<rect x="645" y="645" width="210" height="210" rx="30"
+stroke="#d88cff"
+stroke-width="6"/>
 
-      <!-- BLUE BASE -->
-      <rect x="300" y="990" width="310" height="310" rx="45" fill="#0F1828" stroke="#33CFFF" stroke-width="6"/>
-      <circle cx="390" cy="1080" r="38" fill="#16253B" stroke="#47D8FF" stroke-width="5"/>
-      <circle cx="520" cy="1080" r="38" fill="#16253B" stroke="#47D8FF" stroke-width="5"/>
-      <circle cx="390" cy="1210" r="38" fill="#16253B" stroke="#47D8FF" stroke-width="5"/>
-      <circle cx="520" cy="1210" r="38" fill="#16253B" stroke="#47D8FF" stroke-width="5"/>
+<!-- CENTER -->
 
-      <!-- PURPLE BASE -->
-      <rect x="990" y="990" width="310" height="310" rx="45" fill="#1C1228" stroke="#B05CFF" stroke-width="6"/>
-      <circle cx="1080" cy="1080" r="38" fill="#2A173A" stroke="#C986FF" stroke-width="5"/>
-      <circle cx="1210" cy="1080" r="38" fill="#2A173A" stroke="#C986FF" stroke-width="5"/>
-      <circle cx="1080" cy="1210" r="38" fill="#2A173A" stroke="#C986FF" stroke-width="5"/>
-      <circle cx="1210" cy="1210" r="38" fill="#2A173A" stroke="#C986FF" stroke-width="5"/>
-    </g>
+<circle cx="500" cy="500" r="110"
+fill="#0a1020"
+stroke="#ffffff22"
+stroke-width="8"/>
 
-    <!-- MAIN TRACK -->
-    <g>
-      <!-- HORIZONTAL TRACK -->
-      <g>
-        <rect x="240" y="720" width="1120" height="160" rx="12" fill="#D8DCE7"/>
+<polygon
+points="500,390 610,500 500,610 390,500"
+fill="#101f40"
+stroke="#00e5ff"
+stroke-width="8"
+/>
 
-        <!-- CELLS -->
-        <g stroke="#9CA7C5" stroke-width="3">
-          <line x1="320" y1="720" x2="320" y2="880"/>
-          <line x1="400" y1="720" x2="400" y2="880"/>
-          <line x1="480" y1="720" x2="480" y2="880"/>
-          <line x1="560" y1="720" x2="560" y2="880"/>
-          <line x1="640" y1="720" x2="640" y2="880"/>
-          <line x1="720" y1="720" x2="720" y2="880"/>
-          <line x1="800" y1="720" x2="800" y2="880"/>
-          <line x1="880" y1="720" x2="880" y2="880"/>
-          <line x1="960" y1="720" x2="960" y2="880"/>
-          <line x1="1040" y1="720" x2="1040" y2="880"/>
-          <line x1="1120" y1="720" x2="1120" y2="880"/>
-          <line x1="1200" y1="720" x2="1200" y2="880"/>
-          <line x1="1280" y1="720" x2="1280" y2="880"/>
-        </g>
-      </g>
+<!-- BASE CIRCLES -->
 
-      <!-- VERTICAL TRACK -->
-      <g>
-        <rect x="720" y="240" width="160" height="1120" rx="12" fill="#D8DCE7"/>
 
-        <g stroke="#9CA7C5" stroke-width="3">
-          <line x1="720" y1="320" x2="880" y2="320"/>
-          <line x1="720" y1="400" x2="880" y2="400"/>
-          <line x1="720" y1="480" x2="880" y2="480"/>
-          <line x1="720" y1="560" x2="880" y2="560"/>
-          <line x1="720" y1="640" x2="880" y2="640"/>
-          <line x1="720" y1="720" x2="880" y2="720"/>
-          <line x1="720" y1="800" x2="880" y2="800"/>
-          <line x1="720" y1="880" x2="880" y2="880"/>
-          <line x1="720" y1="960" x2="880" y2="960"/>
-          <line x1="720" y1="1040" x2="880" y2="1040"/>
-          <line x1="720" y1="1120" x2="880" y2="1120"/>
-          <line x1="720" y1="1200" x2="880" y2="1200"/>
-          <line x1="720" y1="1280" x2="880" y2="1280"/>
-        </g>
-      </g>
-    </g>
+<!-- pink -->
+<circle cx="205" cy="205" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
+<circle cx="285" cy="205" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
+<circle cx="205" cy="285" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
+<circle cx="285" cy="285" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
 
-    <!-- COLORED HOME LANES -->
-    <rect x="720" y="240" width="160" height="400" fill="#2BDA8E" opacity="0.85"/>
-    <rect x="960" y="720" width="400" height="160" fill="#9A4CFF" opacity="0.85"/>
-    <rect x="720" y="960" width="160" height="400" fill="#29BFFF" opacity="0.85"/>
-    <rect x="240" y="720" width="400" height="160" fill="#FF4D97" opacity="0.85"/>
+<!-- green -->
+<circle cx="710" cy="205" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
+<circle cx="790" cy="205" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
+<circle cx="710" cy="285" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
+<circle cx="790" cy="285" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
 
-    <!-- CENTER GOAL -->
-    <g filter="url(#glowPink)">
-      <polygon points="800,610 930,740 800,870 670,740" fill="#11182D" stroke="#4A5C88" stroke-width="8"/>
+<!-- blue -->
+<circle cx="205" cy="705" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
+<circle cx="285" cy="705" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
+<circle cx="205" cy="785" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
+<circle cx="285" cy="785" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
 
-      <polygon points="800,650 885,740 800,830 715,740" fill="#161F3B"/>
+ <!-- purple -->
+<circle cx="710" cy="705" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
+<circle cx="790" cy="705" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
+<circle cx="710" cy="785" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
+<circle cx="790" cy="785" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
 
-      <polygon points="800,670 850,740 800,810 750,740" fill="#1D294B"/>
 
-      <text x="800" y="755" text-anchor="middle" fill="#FFFFFF" font-size="48" font-family="Inter, Arial" font-weight="700">
-        
-      </text>
+<!-- PATHS -->
 
-      <polygon points="800,610 850,660 750,660" fill="#27F0A1" opacity="0.9"/>
-      <polygon points="930,740 880,790 880,690" fill="#B05CFF" opacity="0.9"/>
-      <polygon points="800,870 850,820 750,820" fill="#3EC7FF" opacity="0.9"/>
-      <polygon points="670,740 720,790 720,690" fill="#FF5EA8" opacity="0.9"/>
-    </g>
+<rect x="430" y="70" width="140" height="360" rx="24"
+fill="#00ff9d22"/>
 
-    <!-- CORNER LIGHTS -->
-    <rect x="355" y="255" width="200" height="12" rx="6" fill="#FF5EA8" opacity="0.85"/>
-    <rect x="1045" y="255" width="200" height="12" rx="6" fill="#49FFB3" opacity="0.85"/>
-    <rect x="355" y="1335" width="200" height="12" rx="6" fill="#47D8FF" opacity="0.85"/>
-    <rect x="1045" y="1335" width="200" height="12" rx="6" fill="#C986FF" opacity="0.85"/>
-  </g>
+<rect x="430" y="570" width="140" height="360" rx="24"
+fill="#00d9ff22"/>
+
+<rect x="70" y="430" width="360" height="140" rx="24"
+fill="#ff3bd422"/>
+
+<rect x="570" y="430" width="360" height="140" rx="24"
+fill="#c86cff22"/>
+
 </svg>

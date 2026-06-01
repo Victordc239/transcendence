@@ -142,6 +142,19 @@ export default function GameBoard() {
           pointer-events-none
         "
       />
+
+      <img
+        src="/board/board-effects.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          object-contain
+          opacity-90
+          mix-blend-screen
+          pointer-events-none
+        "
+      />
+
       <img
         src="/board/board-home-paths.svg"
         className="

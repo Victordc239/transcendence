@@ -1,0 +1,99 @@
+<svg width="1000" height="1000" viewBox="0 0 1000 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <rect width="1000" height="1000" fill="url(#bg)"/>
+  <rect width="1000" height="1000" fill="url(#grid)" opacity="0.25"/>
+
+  <!-- OUTER BOARD -->
+  <g filter="url(#shadow)">
+
+    <!-- MAIN TRACK -->
+    <g>
+
+      <!-- HORIZONTAL TRACK -->
+      <g>
+        <rect x="50" y="450" width="900" height="100" rx="8" fill="#D8DCE7"/>
+        <rect x="50" y="350" width="900" height="100" rx="8" fill="#D8DCE7"/>
+        <rect x="50" y="550" width="900" height="100" rx="8" fill="#D8DCE7"/>
+
+        <!-- CELLS -->
+        <g stroke="#9CA7C5" stroke-width="3">
+          <line x1="100" y1="450" x2="100" y2="550"/>
+          <line x1="150" y1="450" x2="150" y2="550"/>
+          <line x1="200" y1="450" x2="200" y2="550"/>
+          <line x1="250" y1="450" x2="250" y2="550"/>
+          <line x1="300" y1="450" x2="300" y2="550"/>
+          <line x1="350" y1="450" x2="350" y2="550"/>
+          <line x1="400" y1="450" x2="400" y2="550"/>
+          <line x1="450" y1="450" x2="450" y2="550"/>
+          <line x1="500" y1="450" x2="500" y2="550"/>
+          <line x1="550" y1="450" x2="550" y2="550"/>
+          <line x1="600" y1="450" x2="600" y2="550"/>
+          <line x1="650" y1="450" x2="650" y2="550"/>
+          <line x1="700" y1="450" x2="700" y2="550"/>
+          <line x1="750" y1="450" x2="750" y2="550"/>
+          <line x1="800" y1="450" x2="800" y2="550"/>
+          <line x1="850" y1="450" x2="850" y2="550"/>
+          <line x1="900" y1="450" x2="900" y2="550"/>
+
+          <line x1="100" y1="450" x2="100" y2="650"/>
+          <line x1="150" y1="450" x2="150" y2="650"/>
+          <line x1="200" y1="450" x2="200" y2="650"/>
+          <line x1="250" y1="450" x2="250" y2="650"/>
+          <line x1="300" y1="450" x2="300" y2="650"/>
+          <line x1="350" y1="450" x2="350" y2="650"/>
+          <line x1="400" y1="450" x2="400" y2="650"/>
+          <line x1="450" y1="450" x2="450" y2="650"/>
+          <line x1="500" y1="450" x2="500" y2="650"/>
+          <line x1="550" y1="450" x2="550" y2="650"/>
+          <line x1="600" y1="450" x2="600" y2="650"/>
+          <line x1="650" y1="450" x2="650" y2="650"/>
+          <line x1="700" y1="450" x2="700" y2="650"/>
+          <line x1="750" y1="450" x2="750" y2="650"/>
+          <line x1="800" y1="450" x2="800" y2="650"/>
+          <line x1="850" y1="450" x2="850" y2="650"/>
+          <line x1="900" y1="450" x2="900" y2="650"/>
+        </g>
+      </g>
+
+      <!-- VERTICAL TRACK -->
+      <g>
+        <rect x="450" y="50" width="100" height="900" rx="8" fill="#D8DCE7"/>
+        <rect x="350" y="50" width="100" height="900" rx="8" fill="#D8DCE7"/>
+        <rect x="550" y="50" width="100" height="900" rx="8" fill="#D8DCE7"/>
+
+        <g stroke="#9CA7C5" stroke-width="3">
+          <line x1="450" y1="100" x2="550" y2="100"/>
+          <line x1="450" y1="150" x2="550" y2="150"/>
+          <line x1="450" y1="200" x2="550" y2="200"/>
+          <line x1="450" y1="250" x2="550" y2="250"/>
+          <line x1="450" y1="300" x2="550" y2="300"/>
+          <line x1="450" y1="350" x2="550" y2="350"/>
+          <line x1="450" y1="400" x2="550" y2="400"/>
+          <line x1="450" y1="450" x2="550" y2="450"/>
+          <line x1="450" y1="550" x2="550" y2="550"/>
+          <line x1="450" y1="600" x2="550" y2="600"/>
+          <line x1="450" y1="650" x2="550" y2="650"/>
+          <line x1="450" y1="700" x2="550" y2="700"/>
+          <line x1="450" y1="750" x2="550" y2="750"/>
+          <line x1="450" y1="800" x2="550" y2="800"/>
+          <line x1="450" y1="850" x2="550" y2="850"/>
+          <line x1="450" y1="900" x2="550" y2="900"/>
+        </g>
+      </g>
+
+    </g>
+
+    <!-- COLORED HOME LANES -->
+    <rect x="450" y="100" width="100" height="300" fill="#2BDA8E" opacity="0.85"/>
+    <rect x="600" y="450" width="300" height="100" fill="#9A4CFF" opacity="0.85"/>
+    <rect x="450" y="600" width="100" height="300" fill="#29BFFF" opacity="0.85"/>
+    <rect x="100" y="450" width="300" height="100" fill="#FF4D97" opacity="0.85"/>
+
+    <!-- CENTER -->
+    <g filter="url(#glowPink)">
+      <text x="500" y="472" text-anchor="middle" fill="#FFFFFF" font-size="30" font-family="Inter, Arial" font-weight="700">
+      </text>
+    </g>
+
+  </g>
+</svg>

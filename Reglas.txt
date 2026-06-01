@@ -1,6 +1,7 @@
 Reglas parchís:
 - Cada jugador tiene 4 fichas y debe llevarlas desde su casa hasta la meta.
-- Se juega con un dado. -Para sacar una ficha de casa necesitas un 5. 
+- Se juega con un dado. 
+- Para sacar una ficha de casa necesitas un 5. 
 - Si caes en una casilla ocupada por un rival (no segura), lo comes y lo mandas a casa. 
 - Las casillas seguras protegen a las fichas: no pueden ser comidas. 
 - No pueden haber más de 2 fichas en una casilla (formando una barrera). 

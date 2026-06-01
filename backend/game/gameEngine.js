@@ -23,18 +23,8 @@ const {
 	startTurnTimer
 } = require('./turnTimer');
 
-function rollDice(game, userId)
+function rollDice()
 {
-	console.log(
-		'ROLL REQUEST',
-		{
-			userId,
-			status: game.status,
-			turn: game.turn,
-			dice: game.dice
-		}
-	);
-
 	return Math.floor(Math.random() * 6) + 1;
 }
 

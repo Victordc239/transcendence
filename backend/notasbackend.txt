@@ -611,6 +611,90 @@ exports.getGame = async (req, res) => {
 };
 
 /* =============================
+JOIN GAME SORAYA
+============================= */
+/*
+exports.joinGame = async (req, res) => {
+	try
+	{
+		const game = await getGame(req.params.id);
+		const userId = req.user.id;
+
+		// 🔴 NUEVO: deviceId desde frontend
+		const { deviceId } = req.body;
+
+		if (!deviceId) {
+		return res.status(400).json({
+			error: "deviceId requerido"
+		});
+		}
+
+		if (!game)
+		return res.status(404).json({
+			error: 'Game not found'
+		});
+
+		const check = canJoinGame(game, userId);
+
+		if (!check.ok)
+		return res.status(400).json({
+			error: check.error
+		});
+
+		// 🔴 BLOQUEO POR DISPOSITIVO (NUEVO)
+		const sameDevice = game.players.find(
+		p => p.deviceId === deviceId
+		);
+
+		if (sameDevice) {
+		return res.status(400).json({
+			error: "Ya hay un jugador desde este dispositivo"
+		});
+		}
+
+		const colors = ["red", "blue", "green", "yellow"];
+
+		game.players.push({
+		id: userId,
+		deviceId, // 🔴 NUEVO CAMPO GUARDADO
+		color: colors[game.players.length],
+		pieces: [
+			{ position: "base" },
+			{ position: "base" },
+			{ position: "base" },
+			{ position: "base" }
+		]
+		});
+
+		if (game.players.length >= 2) {
+		game.status = "playing";
+		}
+
+		await saveGame(game);
+
+		const io = getIO();
+
+		io.to(game.id).emit(
+		"game:update",
+		game
+		);
+
+		res.json(game);
+
+	}
+	catch (error)
+	{
+
+		console.error(error);
+
+		res.status(500).json({
+		error: 'Server error joining game'
+		});
+	}
+};
+*/ 
+
+/* =============================
 JOIN GAME
 ============================= */
 exports.joinGame = async (req, res) => {
@@ -662,14 +746,6 @@ exports.joinGame = async (req, res) => {
 								game,
 								userId
 							);
-							
-						console.log(
-							'PLAYERS AFTER JOIN',
-							game.players.map(p => ({
-								id: p.id,
-								color: p.color
-							}))
-						);
 
 						if (
 							addResult &&
@@ -776,63 +852,15 @@ exports.rollDice = async (req, res) => {
 						};
 					}
 
-					game.dice = rollDice(game, userId);
+					game.dice = rollDice();
 
 					const availableMoves =
 						getAvailableMoves(game, userId);
 
 					if (availableMoves.length === 0)
 					{
-						game.lastDice = game.dice;
-
+						game.dice = null;
 						nextTurn(game);
-
-						setTimeout(async () => {
-
-							try
-							{
-								await withGameLock(
-									gameId,
-									async (lockedGame) => {
-
-										if (!lockedGame)
-										{
-											return {
-												error: 'Game not found'
-											};
-										}
-
-										lockedGame.dice = null;
-
-										return {
-											ok: true
-										};
-									}
-								);
-
-								const refreshed =
-									await getGameById(
-										gameId
-									);
-
-								if (refreshed)
-								{
-									getIO()
-										.to(gameId)
-										.emit(
-											'game:update',
-											normalizeGame(
-												refreshed
-											)
-										);
-								}
-							}
-							catch (err)
-							{
-								console.error(err);
-							}
-
-						}, 1500);
 					}
 
 					game.updatedAt = Date.now();
@@ -2023,25 +2051,12 @@ const {
 	startTurnTimer
 } = require('./turnTimer');
 
-function rollDice(game, userId)
+function rollDice()
 {
-	console.log(
-		'ROLL REQUEST',
-		{
-			userId,
-			status: game.status,
-			turn: game.turn,
-			dice: game.dice
-		}
-	);
-
 	return Math.floor(Math.random() * 6) + 1;
 }
 
-function addPlayerToGame(
-	game,
-	userId
-)
+function addPlayerToGame(game,userId)
 {
 	if (game.players.length >= 4)
 	{
@@ -2087,6 +2102,14 @@ function addPlayerToGame(
 	console.log(
 		'PLAYERS NOW',
 		game.players.map(p => p.id)
+	);
+
+	console.log(
+		'BEFORE START CHECK',
+		{
+			players: game.players.length,
+			status: game.status
+		}
 	);
 
 	/*

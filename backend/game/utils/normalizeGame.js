@@ -1,3 +1,5 @@
+const getBoardCoordinates = require('./getBoardCoordinates');
+
 function normalizeGame(game)
 {
 	if (!game)
@@ -21,15 +23,24 @@ function normalizeGame(game)
 			connected: player.connected,
 			abandoned: player.abandoned,
 
-			pieces: player.pieces.map(piece => ({
-				id: piece.id,
-				state: piece.state,
+			pieces: player.pieces.map(piece => {
 
-				/*
-				🔥 EL FRONTEND NECESITA ESTO
-				*/
-				position: piece.position
-			}))
+				let coords = null;
+
+				if (piece.state !== 'base')
+				{
+					coords = getBoardCoordinates(piece.position);
+				}
+
+				return {
+					id: piece.id,
+					state: piece.state,
+					position: piece.position,
+
+					// 🔥 NUEVO: para frontend
+					coords
+				};
+			})
 		}))
 	};
 }

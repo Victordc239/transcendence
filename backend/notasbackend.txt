@@ -1082,6 +1082,8 @@ module.exports = createPieces;
 ==============================
 FILE: ./game/utils/normalizeGame.js
 ==============================
+const getBoardCoordinates = require('./getBoardCoordinates');
+
 function normalizeGame(game)
 {
 	if (!game)
@@ -1105,20 +1107,126 @@ function normalizeGame(game)
 			connected: player.connected,
 			abandoned: player.abandoned,
 
-			pieces: player.pieces.map(piece => ({
-				id: piece.id,
-				state: piece.state,
+			pieces: player.pieces.map(piece => {
 
-				/*
-				🔥 EL FRONTEND NECESITA ESTO
-				*/
-				position: piece.position
-			}))
+				let coords = null;
+
+				if (piece.state !== 'base')
+				{
+					coords = getBoardCoordinates(piece.position);
+				}
+
+				return {
+					id: piece.id,
+					state: piece.state,
+					position: piece.position,
+
+					// 🔥 NUEVO: para frontend
+					coords
+				};
+			})
 		}))
 	};
 }
 
 module.exports = normalizeGame;
+==============================
+FILE: ./game/utils/boardMap.js
+==============================
+// Coordenadas reales de un tablero de parchís 68 casillas
+// (simplificado pero funcional)
+
+const BOARD_MAP = [
+  { x: 6, y: 1 },  // 0
+  { x: 6, y: 2 },
+  { x: 6, y: 3 },
+  { x: 6, y: 4 },
+  { x: 6, y: 5 },
+  { x: 5, y: 6 },  // 5
+  { x: 4, y: 6 },
+  { x: 3, y: 6 },
+  { x: 2, y: 6 },
+  { x: 1, y: 6 },
+  { x: 0, y: 6 },  // 10
+
+  { x: 0, y: 7 },
+  { x: 0, y: 8 },
+  { x: 1, y: 8 },
+  { x: 2, y: 8 },
+  { x: 3, y: 8 },
+  { x: 4, y: 8 },
+  { x: 5, y: 8 },
+  { x: 6, y: 8 },  // 17
+
+  { x: 6, y: 9 },
+  { x: 6, y: 10 },
+  { x: 6, y: 11 },
+  { x: 6, y: 12 },
+
+  { x: 5, y: 12 },
+  { x: 4, y: 12 },
+  { x: 3, y: 12 },
+  { x: 2, y: 12 },
+  { x: 1, y: 12 },
+  { x: 0, y: 12 }, // 29
+
+  { x: 0, y: 11 },
+  { x: 0, y: 10 },
+  { x: 0, y: 9 },
+
+  { x: 1, y: 9 },
+  { x: 2, y: 9 },
+  { x: 3, y: 9 },
+  { x: 4, y: 9 },
+  { x: 5, y: 9 },
+  { x: 6, y: 9 },  // 39
+
+  { x: 7, y: 9 },
+  { x: 8, y: 9 },
+  { x: 9, y: 9 },
+  { x: 10, y: 9 },
+
+  { x: 10, y: 8 },
+  { x: 10, y: 7 },
+  { x: 10, y: 6 },
+  { x: 10, y: 5 },
+  { x: 10, y: 4 },
+  { x: 10, y: 3 }, // 51
+
+  { x: 9, y: 3 },
+  { x: 8, y: 3 },
+  { x: 7, y: 3 },
+  { x: 6, y: 3 },
+
+  { x: 6, y: 2 },
+  { x: 6, y: 1 },
+  { x: 6, y: 0 },
+  { x: 5, y: 0 },
+  { x: 4, y: 0 },
+  { x: 3, y: 0 }, // 63
+
+  { x: 2, y: 0 },
+  { x: 1, y: 0 },
+  { x: 0, y: 0 }  // 67
+];
+
+module.exports = BOARD_MAP;
+==============================
+FILE: ./game/utils/getBoardCoordinates.js
+==============================
+const BOARD_MAP = require('./boardMap');
+
+function getBoardCoordinates(globalPosition)
+{
+	if (globalPosition < 0 || globalPosition >= BOARD_MAP.length)
+	{
+		return null;
+	}
+
+	return BOARD_MAP[globalPosition];
+}
+
+module.exports = getBoardCoordinates;
 ==============================
 FILE: ./game/validators/validateTurn.js
 ==============================

@@ -64,7 +64,10 @@ function startTurnTimer(gameId)
 
 			getIO()
 				.to(gameId)
-				.emit( "game:update", locked.game );
+				.emit(
+					"game:update",
+					normalizeGame(locked.game)
+				);
 		}
 		catch (err)
 		{

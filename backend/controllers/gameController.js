@@ -272,7 +272,6 @@ exports.rollDice = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
-
 		const gameId = req.params.id;
 
 		const locked =
@@ -281,38 +280,27 @@ exports.rollDice = async (req, res) => {
 				async (game) => {
 
 					const validation =
-						canRollDice(
-							game,
-							userId
-						);
+						canRollDice(game, userId);
 
 					if (!validation.ok)
 					{
 						return {
-							error:
-								validation.error
+							error: validation.error
 						};
 					}
 
-					game.dice =
-						rollDice();
+					game.dice = rollDice();
 
 					const availableMoves =
-						getAvailableMoves(
-							game,
-							userId
-						);
+						getAvailableMoves(game, userId);
 
-					if (
-						availableMoves.length === 0
-					)
+					if (availableMoves.length === 0)
 					{
 						game.dice = null;
 						nextTurn(game);
 					}
 
-					game.updatedAt =
-						Date.now();
+					game.updatedAt = Date.now();
 
 					return {
 						ok: true,
@@ -323,40 +311,29 @@ exports.rollDice = async (req, res) => {
 
 		if (!locked)
 		{
-			return res.status(404).json({
-				error:
-					'Game not found'
-			});
+			return res.status(404).json({ error: 'Game not found' });
 		}
 
 		if (locked.result.error)
 		{
-			return res.status(400).json({
-				error:
-					locked.result.error
-			});
+			return res.status(400).json({ error: locked.result.error });
 		}
+
+		// 🔥 FIX: SIEMPRE NORMALIZADO
+		const normalized = normalizeGame(locked.game);
 
 		getIO()
 			.to(gameId)
-			.emit(
-				'game:update',
-				locked.game
-			);
+			.emit('game:update', normalized);
 
 		return res.json({
-			dice:
-				locked.result.dice
+			dice: locked.result.dice
 		});
 	}
 	catch (error)
 	{
 		console.error(error);
-
-		return res.status(500).json({
-			error:
-				'Server error'
-		});
+		return res.status(500).json({ error: 'Server error' });
 	}
 };
 
@@ -413,11 +390,13 @@ exports.movePiece = async (req, res) => {
 			});
 		}
 
+		const normalizeGame = require('../game/utils/normalizeGame');
+
 		getIO()
 			.to(gameId)
 			.emit(
 				'game:update',
-				locked.game
+				normalizeGame(locked.game)
 			);
 
 		return res.json(

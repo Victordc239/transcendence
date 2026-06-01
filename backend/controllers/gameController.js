@@ -1,41 +1,19 @@
 const getAvailableMoves = require('../game/rules/getAvailableMoves');
 const nextTurn = require('../game/rules/nextTurn');
-
 const { createNewGame } = require('../game/gameState');
-
-const {
-	rollDice,
-	addPlayerToGame,
-	executeMove
-} = require('../game/gameEngine');
-
-/*
-🔥 IMPORTANTE:
-LOS VALIDATORS VIENEN DE validators/
-NO de gameEngine
-*/
-const canJoinGame =
-	require('../game/validators/canJoinGame');
-
-const canRollDice =
-	require('../game/validators/canRollDice');
-
-const {
-	getGame: getGameById,
-	createGame: createGameInDB
-} = require('../game/gameManager');
-
+const { rollDice, addPlayerToGame, executeMove} = require('../game/gameEngine');
+const canJoinGame = require('../game/validators/canJoinGame');
+const canRollDice = require('../game/validators/canRollDice');
+const { getGame: getGameById, createGame: createGameInDB} = require('../game/gameManager');
 const withGameLock = require('../game/withGameLock');
-
 const { getIO } = require('../socket');
-
-const normalizeGame =
-	require('../game/utils/normalizeGame');
+const normalizeGame = require('../game/utils/normalizeGame');
 
 /* =============================
 CREATE GAME
 ============================= */
 exports.createGame = async (req, res) => {
+
 	try
 	{
 		const userId = Number(req.user.id);
@@ -63,8 +41,7 @@ exports.createGame = async (req, res) => {
 			});
 		}
 
-		const normalized =
-			normalizeGame(game);
+		const normalized = normalizeGame(game);
 
 		try
 		{
@@ -105,18 +82,16 @@ exports.createGame = async (req, res) => {
 GET GAME
 ============================= */
 exports.getGame = async (req, res) => {
+
 	try
 	{
-		const game =
-			await getGameById(req.params.id);
-
+		const game = await getGameById(req.params.id);
 		if (!game)
 		{
 			return res.status(404).json({
 				error: 'Game not found'
 			});
 		}
-
 		return res.json(
 			normalizeGame(game)
 		);
@@ -221,17 +196,13 @@ JOIN GAME
 exports.joinGame = async (req, res) => {
 	try
 	{
-		const userId =
-			Number(req.user.id);
-
-		const gameId =
-			String(req.params.id);
+		const userId = Number(req.user.id);
+		const gameId = String(req.params.id);
 
 		const locked =
 			await withGameLock(
 				gameId,
 				async (game) => {
-
 					if (!game)
 					{
 						return {
@@ -240,14 +211,20 @@ exports.joinGame = async (req, res) => {
 						};
 					}
 
+					console.log(
+						'JOIN REQUEST',
+						{
+							gameId,
+							userId,
+							status: game.status,
+							players: game.players.map(p => p.id)
+						}
+					);
+
 					/*
 					🔥 VALIDAR JOIN
 					*/
-					const validation =
-						canJoinGame(
-							game,
-							userId
-						);
+					const validation = canJoinGame(game, userId);
 
 					if (!validation.ok)
 					{
@@ -268,10 +245,15 @@ exports.joinGame = async (req, res) => {
 								userId
 							);
 
-						if (
-							addResult &&
-							addResult.error
-						)
+						console.log(
+							'PLAYERS AFTER JOIN',
+							game.players.map(p => ({
+								id: p.id,
+								color: p.color
+							}))
+						);
+
+						if (addResult && addResult.error)
 						{
 							return {
 								error:
@@ -280,8 +262,7 @@ exports.joinGame = async (req, res) => {
 						}
 					}
 
-					game.updatedAt =
-						Date.now();
+					game.updatedAt = Date.now();
 
 					return {
 						ok: true
@@ -319,6 +300,7 @@ exports.joinGame = async (req, res) => {
 					)
 				);
 		}
+
 		catch (socketError)
 		{
 			console.error(
@@ -353,18 +335,17 @@ exports.joinGame = async (req, res) => {
 ROLL DICE
 ============================= */
 exports.rollDice = async (req, res) => {
+
 	try
 	{
 		const userId = req.user.id;
 		const gameId = req.params.id;
-
 		const locked =
 			await withGameLock(
 				gameId,
 				async (game) => {
 
-					const validation =
-						canRollDice(game, userId);
+					const validation = canRollDice(game, userId);
 
 					if (!validation.ok)
 					{
@@ -375,13 +356,58 @@ exports.rollDice = async (req, res) => {
 
 					game.dice = rollDice();
 
-					const availableMoves =
-						getAvailableMoves(game, userId);
+					const availableMoves = getAvailableMoves(game, userId);
 
 					if (availableMoves.length === 0)
 					{
-						game.dice = null;
+						game.lastDice = game.dice;
+
 						nextTurn(game);
+
+						setTimeout(async () => {
+
+							try
+							{
+								await withGameLock(
+									gameId,
+									async (lockedGame) => {
+										if (!lockedGame)
+										{
+											return {
+												error: 'Game not found'
+											};
+										}
+
+										lockedGame.dice = null;
+
+										return {
+											ok: true
+										};
+									}
+								);
+
+								const refreshed =
+									await getGameById(
+										gameId
+									);
+
+								if (refreshed)
+								{
+									getIO()
+										.to(gameId)
+										.emit(
+											'game:update',
+											normalizeGame(
+												refreshed
+											)
+										);
+								}
+							}
+							catch (err)
+							{
+								console.error(err);
+							}
+						}, 1500);
 					}
 
 					game.updatedAt = Date.now();
@@ -398,9 +424,11 @@ exports.rollDice = async (req, res) => {
 			return res.status(404).json({ error: 'Game not found' });
 		}
 
-		if (locked.result.error)
+		if (locked.result?.error)
 		{
-			return res.status(400).json({ error: locked.result.error });
+			return res.status(400).json({
+				error: locked.result.error
+			});
 		}
 
 		// 🔥 FIX: SIEMPRE NORMALIZADO
@@ -428,11 +456,8 @@ exports.movePiece = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
-
 		const gameId = req.params.id;
-
-		const { pieceIndex } =
-			req.body;
+		const { pieceIndex } = req.body;
 
 		const locked =
 			await withGameLock(
@@ -466,11 +491,10 @@ exports.movePiece = async (req, res) => {
 			});
 		}
 
-		if (!locked.result.ok)
+		if (!locked.result?.ok)
 		{
 			return res.status(400).json({
-				error:
-					locked.result.error
+				error: locked.result?.error || 'Move failed'
 			});
 		}
 
@@ -492,10 +516,10 @@ exports.movePiece = async (req, res) => {
 	catch (error)
 	{
 		console.error(error);
-
 		return res.status(500).json({
 			error:
 				'Server error'
 		});
 	}
+
 };

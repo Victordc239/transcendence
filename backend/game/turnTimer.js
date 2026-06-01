@@ -2,6 +2,7 @@ const {TURN_TIMEOUT, GAME_STATUS} = require('./constants');
 const nextTurn = require('./rules/nextTurn');
 const withGameLock = require('./withGameLock');
 const { getIO } = require('../socket');
+const normalizeGame = require('./utils/normalizeGame');
 
 /* =============================
    ACTIVE TIMERS

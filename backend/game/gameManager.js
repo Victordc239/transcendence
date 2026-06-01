@@ -49,8 +49,22 @@ async function getGame(gameId) {
 
 		if (!state) return null;
 
-		if (typeof state === 'string') {
-			return JSON.parse(state);
+		if (typeof state === 'string')
+		{
+			try
+			{
+				return JSON.parse(state);
+			}
+			catch (err)
+			{
+				console.error(
+					'❌ Corrupted game state:',
+					gameId,
+					err
+				);
+
+				return null;
+			}
 		}
 
 		// JSONB ya parseado

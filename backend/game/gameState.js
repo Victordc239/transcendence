@@ -18,6 +18,7 @@ function createNewGame(hostId)
 
 		turn: hostId,
 		dice: null,
+		lastDice: null,
 		winner: null,
 		status: GAME_STATUS.WAITING,
 		createdAt: Date.now(),

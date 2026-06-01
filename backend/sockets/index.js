@@ -1,8 +1,8 @@
 const { Server } = require('socket.io');
 const authSocket = require('./authSocket');
 const registerGameSocket = require('./gameSocket');
-const {addUserSocket, removeUserSocket} = require('./presence');
 const { setIO } = require('../socket');
+const {addUserSocket, removeUserSocket, isUserOnline} = require('./presence');
 
 function initSockets(httpServer)
 {
@@ -23,8 +23,21 @@ function initSockets(httpServer)
 		io.emit('presence:update', {userId, online: true});
 		registerGameSocket(io, socket);
 		socket.on('disconnect', () => {
-			removeUserSocket(userId, socket.id);
-			io.emit('presence:update', {userId, online: false});
+			removeUserSocket(
+				userId,
+				socket.id
+			);
+
+			if (!isUserOnline(userId))
+			{
+				io.emit(
+					'presence:update',
+					{
+						userId,
+						online: false
+					}
+				);
+			}
 		});
 	});
 }

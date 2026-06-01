@@ -23,17 +23,22 @@ const {
 	startTurnTimer
 } = require('./turnTimer');
 
-function rollDice()
+function rollDice(game, userId)
 {
-	return Math.floor(
-		Math.random() * 6
-	) + 1;
+	console.log(
+		'ROLL REQUEST',
+		{
+			userId,
+			status: game.status,
+			turn: game.turn,
+			dice: game.dice
+		}
+	);
+
+	return Math.floor(Math.random() * 6) + 1;
 }
 
-function addPlayerToGame(
-	game,
-	userId
-)
+function addPlayerToGame(game,userId)
 {
 	if (game.players.length >= 4)
 	{
@@ -59,6 +64,13 @@ function addPlayerToGame(
 		COLORS[
 			game.players.length
 		];
+	
+	console.log(
+		'ADDING PLAYER',
+		userId,
+		'CURRENT PLAYERS',
+		game.players.map(p => p.id)
+	);
 
 	game.players.push({
 		id: userId,
@@ -68,6 +80,19 @@ function addPlayerToGame(
 		abandoned: false,
 		pieces: createPieces()
 	});
+
+	console.log(
+		'PLAYERS NOW',
+		game.players.map(p => p.id)
+	);
+
+	console.log(
+		'BEFORE START CHECK',
+		{
+			players: game.players.length,
+			status: game.status
+		}
+	);
 
 	/*
 	🔥 INICIAR CON 2 JUGADORES

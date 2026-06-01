@@ -10,6 +10,7 @@ function normalizeGame(game)
 		status: game.status,
 		turn: game.turn,
 		dice: game.dice,
+		lastDice: game.lastDice,
 		winner: game.winner,
 		createdAt: game.createdAt,
 		updatedAt: game.updatedAt,

@@ -5,6 +5,15 @@ function checkPausedState(game)
 {
 	const disconnectedPlayers = game.players.filter(player => !player.connected && !player.abandoned);
 
+	console.log(
+		'CHECK PAUSED',
+		game.players.map(p => ({
+			id: p.id,
+			connected: p.connected,
+			abandoned: p.abandoned
+		}))
+	);
+
 	// Pausar partida
 	if (disconnectedPlayers.length > 0)
 	{

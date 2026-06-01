@@ -20,6 +20,7 @@ export type Piece = {
 
 export type Player = {
   id: number;
+  deviceId?: string;
   color: "pink" | "purple" | "green" | "blue";
   pieces: Piece[];
 };

@@ -42,10 +42,24 @@ export async function getGame(token: string, id: string) {
   return safeFetch(res);
 }
 
+/*export async function joinGame(token: string, id: string) {
+  const res = await fetch(`${API_URL}/games/${id}/join`, {
+    method: "POST",
+    headers: getAuthHeader(token),
+  });
+
+  return safeFetch(res);
+}*/
+
+import { getDeviceId } from "../auth/device";
+
 export async function joinGame(token: string, id: string) {
   const res = await fetch(`${API_URL}/games/${id}/join`, {
     method: "POST",
     headers: getAuthHeader(token),
+    body: JSON.stringify({
+      deviceId: getDeviceId(),
+    }),
   });
 
   return safeFetch(res);

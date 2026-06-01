@@ -353,6 +353,17 @@ exports.rollDice = async (req, res) => {
 							error: validation.error
 						};
 					}
+					if (validation.startGame)
+					{
+						game.status = 'playing';
+
+						game.turn = game.players[0].id;
+
+						const { startTurnTimer } =
+							require('../game/turnTimer');
+
+						startTurnTimer(game.id);
+					}
 
 					game.dice = rollDice();
 

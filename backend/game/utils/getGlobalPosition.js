@@ -1,11 +1,18 @@
-const { START_POSITIONS, BOARD_SIZE} = require('../constants');
+const {
+	START_POSITIONS,
+	MAIN_TRACK_SIZE
+} = require('../constants');
 
-//Convierte posición relativa a posición global del tablero.
-
-function getGlobalPosition(color, relativePosition)
+function getGlobalPosition(
+	color,
+	relativePosition
+)
 {
-
-	return (START_POSITIONS[color] + relativePosition) % BOARD_SIZE;
+	return (
+		START_POSITIONS[color] +
+		relativePosition
+	) % MAIN_TRACK_SIZE;
 }
 
-module.exports = getGlobalPosition;
+module.exports =
+	getGlobalPosition;

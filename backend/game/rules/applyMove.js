@@ -1,9 +1,13 @@
-const { BOARD_SIZE } = require('../constants');
+const {
+	FINAL_POSITION,
+	FINAL_STRETCH_START
+} = require('../constants');
 
-const BASE_POSITION = -1;
-const FINISHED_POSITION = 999;
-
-function applyMove(game, playerId, pieceIndex)
+function applyMove(
+	game,
+	playerId,
+	pieceIndex
+)
 {
 	const player =
 		game.players.find(
@@ -24,8 +28,11 @@ function applyMove(game, playerId, pieceIndex)
 	}
 
 	/*
-	🔥 SACAR DE BASE
+	|--------------------------------------------------------------------------
+	| SALIR DE CASA
+	|--------------------------------------------------------------------------
 	*/
+
 	if (
 		piece.state === 'base' &&
 		game.dice === 5
@@ -37,22 +44,61 @@ function applyMove(game, playerId, pieceIndex)
 	}
 
 	/*
-	🔥 MOVER EN TABLERO
+	|--------------------------------------------------------------------------
+	| MOVER
+	|--------------------------------------------------------------------------
 	*/
-	if (piece.state === 'track')
+
+	if (
+		piece.state === 'track'
+	)
 	{
-		piece.position += game.dice;
+		const target =
+			piece.position +
+			game.dice;
 
 		/*
-		🔥 LLEGAR A META
+		| No puede pasarse
 		*/
-		if (piece.position >= BOARD_SIZE)
+
+		if (
+			target >
+			FINAL_POSITION
+		)
 		{
-			piece.state = 'finished';
-			piece.position =
-				FINISHED_POSITION;
+			return;
+		}
+
+		piece.position =
+			target;
+
+		/*
+		| Entra al pasillo final
+		*/
+
+		if (
+			piece.position >=
+			FINAL_STRETCH_START
+		)
+		{
+			piece.state =
+				'final';
+		}
+
+		/*
+		| Llegó a meta
+		*/
+
+		if (
+			piece.position ===
+			FINAL_POSITION
+		)
+		{
+			piece.state =
+				'finished';
 		}
 	}
 }
 
-module.exports = applyMove;
+module.exports =
+	applyMove;

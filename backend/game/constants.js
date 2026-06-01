@@ -1,4 +1,9 @@
-const COLORS = ["pink", "purple", "green", "blue"];
+const COLORS = [
+	"pink",
+	"purple",
+	"green",
+	"blue"
+];
 
 const GAME_STATUS = {
 	WAITING: "waiting",
@@ -7,7 +12,25 @@ const GAME_STATUS = {
 	FINISHED: "finished"
 };
 
-const BOARD_SIZE = 68;
+/*
+|--------------------------------------------------------------------------
+| PARCHÍS REAL
+|--------------------------------------------------------------------------
+*/
+
+const MAIN_TRACK_SIZE = 68;
+
+const FINAL_STRETCH_SIZE = 7;
+
+const FINAL_POSITION =
+	MAIN_TRACK_SIZE +
+	FINAL_STRETCH_SIZE;
+
+/*
+|--------------------------------------------------------------------------
+| Salidas reales
+|--------------------------------------------------------------------------
+*/
 
 const START_POSITIONS = {
 	pink: 0,
@@ -16,19 +39,57 @@ const START_POSITIONS = {
 	blue: 51
 };
 
+/*
+|--------------------------------------------------------------------------
+| Casillas seguras
+|--------------------------------------------------------------------------
+*/
+
 const SAFE_CELLS = [
-	0,5,12,17,22,29,34,39,46,51,56,63
+	0,
+	5,
+	12,
+	17,
+	22,
+	29,
+	34,
+	39,
+	46,
+	51,
+	56,
+	63
 ];
 
+/*
+|--------------------------------------------------------------------------
+| Posiciones especiales
+|--------------------------------------------------------------------------
+*/
+
+const BASE_POSITION = -1;
+
+const FINAL_STRETCH_START =
+	MAIN_TRACK_SIZE;
+
 const DISCONNECT_TIMEOUT = 60000;
+
 const TURN_TIMEOUT = 30000;
 
 module.exports = {
 	COLORS,
 	GAME_STATUS,
-	BOARD_SIZE,
+
+	MAIN_TRACK_SIZE,
+	FINAL_STRETCH_SIZE,
+
+	FINAL_POSITION,
+	FINAL_STRETCH_START,
+
+	BASE_POSITION,
+
 	START_POSITIONS,
 	SAFE_CELLS,
+
 	DISCONNECT_TIMEOUT,
 	TURN_TIMEOUT
 };

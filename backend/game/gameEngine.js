@@ -28,7 +28,7 @@ function rollDice()
 	return Math.floor(Math.random() * 6) + 1;
 }
 
-function addPlayerToGame(game,userId)
+function addPlayerToGame(game, userId)
 {
 	if (game.players.length >= 4)
 	{
@@ -39,8 +39,7 @@ function addPlayerToGame(game,userId)
 
 	const alreadyInGame =
 		game.players.find(
-			player =>
-				player.id === userId
+			player => player.id === userId
 		);
 
 	if (alreadyInGame)
@@ -54,13 +53,6 @@ function addPlayerToGame(game,userId)
 		COLORS[
 			game.players.length
 		];
-	
-	console.log(
-		'ADDING PLAYER',
-		userId,
-		'CURRENT PLAYERS',
-		game.players.map(p => p.id)
-	);
 
 	game.players.push({
 		id: userId,
@@ -71,36 +63,7 @@ function addPlayerToGame(game,userId)
 		pieces: createPieces()
 	});
 
-	console.log(
-		'PLAYERS NOW',
-		game.players.map(p => p.id)
-	);
-
-	console.log(
-		'BEFORE START CHECK',
-		{
-			players: game.players.length,
-			status: game.status
-		}
-	);
-
-	/*
-	🔥 INICIAR CON 2 JUGADORES
-	*/
-	if (
-		game.players.length >= 2 &&
-		game.status ===
-			GAME_STATUS.WAITING
-	)
-	{
-		game.status =
-			GAME_STATUS.PLAYING;
-
-		game.turn =
-			game.players[0].id;
-
-		startTurnTimer(game.id);
-	}
+	game.updatedAt = Date.now();
 
 	return {
 		ok: true

@@ -38,3 +38,236 @@ find . -type f \
   done
 ' sh {} + > notas-frontend.txt
 
+
+
+
+
+
+problemas:
+No, tu backend no implementa un parchís clásico de 4 jugadores correctamente. Viendo el código completo, el problema de que "las fichas no se mueven correctamente" no parece un bug aislado del frontend, sino que el motor del juego está simplificado y le faltan varias reglas fundamentales del parchís.
+
+Problema 1: El tablero no es un parchís real
+
+Tienes:
+
+const BOARD_SIZE = 68;
+
+y
+
+const START_POSITIONS = {
+	pink: 0,
+	purple: 17,
+	green: 34,
+	blue: 51
+};
+
+Eso representa un circuito circular de 68 casillas dividido entre 4 jugadores.
+
+Hasta aquí parece correcto.
+
+El problema es que después haces:
+
+piece.position += game.dice;
+
+if (piece.position >= BOARD_SIZE)
+{
+	piece.state = 'finished';
+	piece.position = 999;
+}
+
+Tu ficha gana cuando llega a:
+
+position >= 68
+
+Pero en parchís real:
+
+hay recorrido común
+hay entrada al pasillo final
+hay pasillo final individual
+hay casilla de llegada
+hay que entrar exacto
+
+Nada de eso existe.
+
+Problema 2: No existe pasillo final
+
+Buscando en tu backend:
+
+FINAL_STRETCH_START
+
+aparece en varios sitios:
+
+if (piece.position >= FINAL_STRETCH_START)
+
+pero en:
+
+constants.js
+
+NO existe:
+
+const FINAL_STRETCH_START
+
+Tampoco existe:
+
+FINAL_POSITION
+
+Sin embargo haces:
+
+const { FINAL_POSITION } = require('../constants');
+
+en:
+
+checkWin.js
+
+Eso significa que:
+
+FINAL_POSITION === undefined
+
+y entonces:
+
+piece.position === FINAL_POSITION
+
+nunca será cierto.
+
+Problema 3: checkWin nunca funciona
+
+Tienes:
+
+return player.pieces.every(
+	piece => piece.position === FINAL_POSITION
+);
+
+Pero tus fichas terminadas son:
+
+piece.position = 999;
+
+Así que:
+
+999 === undefined
+
+es falso.
+
+Resultado:
+
+checkWin()
+
+nunca devuelve true.
+
+Problema 4: Capturas incorrectas
+
+Usas:
+
+const currentGlobal =
+	getGlobalPosition(
+		currentPlayer.color,
+		piece.position
+	);
+
+y:
+
+enemyGlobal === currentGlobal
+
+para capturar.
+
+Pero no controlas:
+
+entrada a meta
+pasillo final
+llegada exacta
+rebotes
+
+Por lo tanto una ficha puede:
+
+65 + 6 = 71
+
+y automáticamente ganar.
+
+Eso no existe en parchís.
+
+Problema 5: No controlas bloqueos al mover
+
+Tienes:
+
+getBlockades()
+
+e
+
+isBlockade()
+
+pero jamás se usan en:
+
+applyMove()
+
+ni en:
+
+canMovePiece()
+
+Por lo tanto una ficha puede atravesar bloqueos.
+
+En parchís real NO puede.
+
+Problema 6: Salida de casa incorrecta
+
+Tienes:
+
+if (
+	piece.state === 'base' &&
+	game.dice === 5
+)
+{
+	piece.position = 0;
+}
+
+Eso está bien.
+
+Pero no compruebas si la salida está bloqueada.
+
+Ejemplo:
+
+tengo dos fichas en salida
+hago 5
+
+Tu backend permite sacar otra.
+
+En parchís real depende del bloqueo.
+
+Problema 7: Falta la regla de entrada al pasillo final
+
+En parchís real:
+
+Cada color tiene:
+
+Rojo  -> entra por una casilla
+Azul  -> otra
+Verde -> otra
+Amarillo -> otra
+
+Tu backend nunca calcula:
+
+entradaMeta(color)
+
+Simplemente hace:
+
+position += dado
+
+hasta 68.
+
+Problema 8: No hay llegada exacta
+
+Actualmente:
+
+66 + 6
+
+produce:
+
+72
+
+y ganas.
+
+En parchís real:
+
+66 + 6
+
+no es válido.
+
+O rebota según la variante.

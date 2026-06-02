@@ -3,6 +3,8 @@ const getPiece = require('../utils/getPiece');
 const {FINAL_POSITION, MAIN_TRACK_SIZE} = require('../constants');
 const isEnteringHomeStretch = require('../utils/isEnteringHomeStretch');
 const getDistanceToHomeEntry = require('../utils/getDistanceToHomeEntry');
+const getRealBoardPosition = require('../utils/getRealBoardPosition');
+const isPositionBlocked = require('../rules/isPositionBlocked');
 
 function canMovePiece(game, playerId, pieceIndex)
 {
@@ -40,6 +42,7 @@ function canMovePiece(game, playerId, pieceIndex)
 		};
 	}
 
+	// SALIR DE CASA
 	if (piece.state === 'base')
 	{
 		return {
@@ -51,12 +54,12 @@ function canMovePiece(game, playerId, pieceIndex)
 		};
 	}
 
+	// FICHA TERMINADA
 	if (piece.state === 'finished')
 	{
 		return {
 			ok: false,
-			error:
-				'Piece already finished'
+			error: 'Piece already finished'
 		};
 	}
 
@@ -67,8 +70,7 @@ function canMovePiece(game, playerId, pieceIndex)
 		{
 			return {
 				ok: false,
-				error:
-					'Exact roll required'
+				error: 'Exact roll required'
 			};
 		}
 
@@ -77,20 +79,57 @@ function canMovePiece(game, playerId, pieceIndex)
 		};
 	}
 
-	// ENTRADA A PASILLO
+	// POSICIÓN ACTUAL
+	const startPosition = getRealBoardPosition(player.color, piece.steps);
+
+	// VALIDAR RECORRIDO
+	for (let step = 1; step <= game.dice; step++)
+	{
+		if (isEnteringHomeStretch(player.color, piece.steps, step))
+		{
+			break;
+		}
+
+		const futureSteps = piece.steps + step;
+		const globalPosition = getRealBoardPosition(player.color, futureSteps);
+
+		if (isPositionBlocked(game, globalPosition, startPosition))
+		{
+			return {
+				ok: false,
+				error: 'Blockade in path'
+			};
+		}
+	}
+
+	// ENTRADA AL PASILLO FINAL
 	if (isEnteringHomeStretch(player.color, piece.steps, game.dice))
 	{
 		const distanceToEntry = getDistanceToHomeEntry(player.color, piece.steps);
 		const overshoot = game.dice - distanceToEntry - 1;
 		const target = MAIN_TRACK_SIZE + overshoot;
+
 		if (target > FINAL_POSITION)
 		{
 			return {
 				ok: false,
-				error:
-					'Exact roll required'
+				error: 'Exact roll required'
 			};
 		}
+
+		return {
+			ok: true
+		};
+	}
+
+	const targetSteps = piece.steps + game.dice;
+	const targetPosition = getRealBoardPosition(player.color, targetSteps);
+	if (isPositionBlocked(game, targetPosition, startPosition))
+	{
+		return {
+			ok: false,
+			error: 'Destination blocked by blockade'
+		};
 	}
 
 	return {

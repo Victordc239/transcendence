@@ -1,5 +1,4 @@
 import { createContext, useContext, useState } from "react";
-import { getDeviceId } from "../auth/device";
 
 type User = {
   id: number;
@@ -24,8 +23,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("token", newToken);
     setToken(newToken);
     setUser(user);
-  
-    localStorage.setItem("device_id", getDeviceId());
   };
 
   const logout = () => {

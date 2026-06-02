@@ -1,4 +1,4 @@
-import { create } from "zustand";
+/*import { create } from "zustand";
 
 export type PieceState =
   | "base"
@@ -52,4 +52,28 @@ export const useGameStore = create<GameStore>((set) => ({
   game: null,
   setGame: (game) => set({ game }),
   clear: () => set({ game: null }),
-}));
+}));*/
+
+import { create } from "zustand";
+import type { Game } from "../types/game";
+
+type GameStore = {
+  game: Game | null;
+
+  setGame: (
+    game: Game
+  ) => void;
+
+  clear: () => void;
+};
+
+export const useGameStore =
+  create<GameStore>((set) => ({
+    game: null,
+
+    setGame: (game) =>
+      set({ game }),
+
+    clear: () =>
+      set({ game: null }),
+  }));

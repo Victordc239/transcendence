@@ -44,7 +44,11 @@ export default function PlayersPanel({ game }: any) {
               </div>
 
               <div className="text-xs text-white/50">
-                {isTurn ? "Your Turn" : "Waiting"}
+                {p.abandoned
+                  ? "Abandoned"
+                  : p.connected
+                  ? "Connected"
+                  : "Disconnected"}
               </div>
             </div>
           </div>

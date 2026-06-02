@@ -106,7 +106,8 @@ export default function GamePieces({
   );
 }*/
 
-import { bases, mainTrack, CENTER } from "../board/boardCoordinates";
+//import { bases, mainTrack, CENTER } from "../board/boardCoordinates";
+import type { Game } from "../../types/game";
 
 const pieceImages: Record<string, string> = {
   pink: "/pieces/pink-piece.png",
@@ -115,7 +116,8 @@ const pieceImages: Record<string, string> = {
   green: "/pieces/green-piece.png",
 };
 
-export default function GamePieces({ game }: any) {
+//export default function GamePieces({ game }: any) {
+export default function GamePieces({ game, }: { game: Game;}) {
   return (
     <svg
       viewBox="0 0 1600 1600"
@@ -129,35 +131,30 @@ export default function GamePieces({ game }: any) {
       "
       preserveAspectRatio="xMidYMid meet"
     >
-      {game.players?.map((player: any) =>
-        player.pieces?.map((piece: any, i: number) => {
-          let pos: any = null;
-
-          /* =========================
-             BASE
-          ========================= */
+      {game.players.map((player) =>
+        player.pieces.map((piece, i) => {
+          /*let pos: any = null;
 
           if (piece.state === "base") {
             pos = bases[player.color]?.[i];
           }
 
-          /* =========================
-             TRACK
-          ========================= */
-
           if (piece.state === "track") {
             pos = mainTrack[piece.trackIndex];
           }
-
-          /* =========================
-             HOME
-          ========================= */
 
           if (piece.state === "home") {
             pos = CENTER;
           }
 
-          if (!pos) return null;
+          if (!pos) return null;*/
+
+          const pos = piece.coords;
+
+          if (!pos)
+          {
+            return null;
+          }
 
           return (
             <g

@@ -274,10 +274,13 @@ import GamePieces from "../game/pieces/GamePieces";*/
   );
 }*/
 
-import { API_URL } from "../api/config";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useGameRealtime } from "../game/realtime/useGameRealtime";
+
+//import { API_URL } from "../api/config";
+//import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { socket, connectSocket } from "../socket/socket";
+//import { socket, connectSocket } from "../socket/socket";
 import { useAuth } from "../context/AuthContext";
 import { useGameStore } from "../store/gameStore";
 import { rollDice, movePiece } from "../api/game.api";
@@ -288,12 +291,22 @@ export default function GamePage() {
   const { id } = useParams();
   const { token } = useAuth();
 
+  /*if (id && token)
+  {
+    useGameRealtime(
+      id,
+      token
+    );
+  }*/
+
   const game = useGameStore((s) => s.game);
-  const setGame = useGameStore((s) => s.setGame);
+  //const setGame = useGameStore((s) => s.setGame);
 
   const [rolling, setRolling] = useState(false);
 
-  useEffect(() => {
+  useGameRealtime(id ?? "", token ?? "");
+
+  /*useEffect(() => {
     if (!token || !id) return;
 
     const init = async () => {
@@ -312,7 +325,7 @@ export default function GamePage() {
         setGame(state);
       });
 
-      socket.emit("game:state", { gameId: id });
+      //socket.emit("game:state", { gameId: id });
     };
 
     init();
@@ -320,7 +333,7 @@ export default function GamePage() {
     return () => {
       socket.off("game:update");
     };
-  }, [id, token]);
+  }, [id, token]);*/
 
   const handleRoll = async () => {
     if (!token || !id) return;
@@ -346,12 +359,10 @@ export default function GamePage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white flex">
       
-      {/* LEFT: BOARD */}
       <div className="flex-1 flex items-center justify-center">
         <GameScene game={game} />
       </div>
 
-      {/* RIGHT: HUD */}
       <div className="w-80 p-4 space-y-4 bg-black/20 backdrop-blur-xl">
         
         <h1 className="text-xl font-bold">

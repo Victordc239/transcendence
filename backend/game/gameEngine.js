@@ -1,27 +1,11 @@
-const { COLORS, GAME_STATUS } =
-	require('./constants');
-
-const canMovePiece =
-	require('./validators/canMovePiece');
-
-const applyMove =
-	require('./rules/applyMove');
-
-const nextTurn =
-	require('./rules/nextTurn');
-
-const checkCapture =
-	require('./rules/checkCapture');
-
-const checkWin =
-	require('./rules/checkWin');
-
-const createPieces =
-	require('./utils/createPieces');
-
-const {
-	startTurnTimer
-} = require('./turnTimer');
+const { COLORS, GAME_STATUS } =require('./constants');
+const canMovePiece = require('./validators/canMovePiece');
+const applyMove = require('./rules/applyMove');
+const nextTurn = require('./rules/nextTurn');
+const checkCapture = require('./rules/checkCapture');
+const checkWin = require('./rules/checkWin');
+const createPieces = require('./utils/createPieces');
+const {startTurnTimer, clearTurnTimer} = require('./turnTimer');
 
 function rollDice()
 {
@@ -37,11 +21,7 @@ function addPlayerToGame(game, userId)
 		};
 	}
 
-	const alreadyInGame =
-		game.players.find(
-			player => player.id === userId
-		);
-
+	const alreadyInGame = game.players.find(player => player.id === userId);
 	if (alreadyInGame)
 	{
 		return {
@@ -49,10 +29,7 @@ function addPlayerToGame(game, userId)
 		};
 	}
 
-	const color =
-		COLORS[
-			game.players.length
-		];
+	const color =COLORS[game.players.length];
 
 	game.players.push({
 		id: userId,
@@ -70,55 +47,23 @@ function addPlayerToGame(game, userId)
 	};
 }
 
-function executeMove(
-	game,
-	playerId,
-	pieceIndex
-)
+function executeMove(game, playerId, pieceIndex)
 {
-	const validation =
-		canMovePiece(
-			game,
-			playerId,
-			pieceIndex
-		);
-
+	const validation = canMovePiece(game, playerId, pieceIndex);
 	if (!validation.ok)
 	{
 		return validation;
 	}
 
-	applyMove(
-		game,
-		playerId,
-		pieceIndex
-	);
+	applyMove(game, playerId, pieceIndex);
+	checkCapture(game, playerId);
 
-	checkCapture(
-		game,
-		playerId
-	);
-
-	const won =
-		checkWin(
-			game,
-			playerId
-		);
-
+	const won = checkWin(game, playerId);
 	if (won)
 	{
-		const {
-			clearTurnTimer
-		} =
-			require('./turnTimer');
-
 		clearTurnTimer(game.id);
-
-		game.status =
-			GAME_STATUS.FINISHED;
-
-		game.winner =
-			playerId;
+		game.status = GAME_STATUS.FINISHED;
+		game.winner =playerId;
 
 		return {
 			ok: true,
@@ -132,12 +77,9 @@ function executeMove(
 	}
 
 	game.dice = null;
-
-	game.updatedAt =
-		Date.now();
+	game.updatedAt = Date.now();
 
 	startTurnTimer(game.id);
-
 	return {
 		ok: true
 	};

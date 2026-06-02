@@ -946,7 +946,8 @@ module.exports = pool;
 ==============================
 FILE: ./game/utils/getPlayer.js
 ==============================
-function getPlayer(game, playerId) {
+function getPlayer(game, playerId)
+{
 	return game.players.find(p => p.id === playerId);
 }
 
@@ -954,7 +955,8 @@ module.exports = getPlayer;
 ==============================
 FILE: ./game/utils/getPiece.js
 ==============================
-function getPiece(player, pieceIndex) {
+function getPiece(player, pieceIndex)
+{
 	return player.pieces[pieceIndex];
 }
 
@@ -962,24 +964,14 @@ module.exports = getPiece;
 ==============================
 FILE: ./game/utils/getGlobalPosition.js
 ==============================
-const {
-	START_POSITIONS,
-	MAIN_TRACK_SIZE
-} = require('../constants');
+const {START_POSITIONS, MAIN_TRACK_SIZE} = require('../constants');
 
-function getGlobalPosition(
-	color,
-	relativePosition
-)
+function getGlobalPosition(color, relativePosition)
 {
-	return (
-		START_POSITIONS[color] +
-		relativePosition
-	) % MAIN_TRACK_SIZE;
+	return (START_POSITIONS[color] + relativePosition) % MAIN_TRACK_SIZE;
 }
 
-module.exports =
-	getGlobalPosition;
+module.exports = getGlobalPosition;
 ==============================
 FILE: ./game/utils/createPieces.js
 ==============================
@@ -988,9 +980,10 @@ function createPieces()
 	return Array.from({ length: 4 }).map((_, index) => ({
 		id: index,
 		state: 'base',
-
-		// 🔥 EL FRONTEND USA ESTO
-		position: -1
+		/*| -1 = casa
+		| 0..67 = recorrido exterior
+		| 68..74 = pasillo final*/
+		steps: -1
 	}));
 }
 
@@ -999,6 +992,7 @@ module.exports = createPieces;
 FILE: ./game/utils/normalizeGame.js
 ==============================
 const getBoardCoordinates = require('./getBoardCoordinates');
+const getRealBoardPosition = require('./getRealBoardPosition');
 
 function normalizeGame(game)
 {
@@ -1024,20 +1018,22 @@ function normalizeGame(game)
 			abandoned: player.abandoned,
 
 			pieces: player.pieces.map(piece => {
-
+				let position = -1;
 				let coords = null;
-
-				if (piece.state !== 'base')
+				if (piece.steps >= 0)
 				{
-					coords = getBoardCoordinates(piece.position);
+					if (piece.steps < 68)
+					{
+						position = getRealBoardPosition(player.color, piece.steps);
+						coords = getBoardCoordinates(position);
+					}
 				}
 
 				return {
 					id: piece.id,
 					state: piece.state,
-					position: piece.position,
-
-					// 🔥 NUEVO: para frontend
+					steps: piece.steps,
+					position,
 					coords
 				};
 			})
@@ -1144,6 +1140,69 @@ function getBoardCoordinates(globalPosition)
 
 module.exports = getBoardCoordinates;
 ==============================
+FILE: ./game/utils/getRealBoardPosition.js
+==============================
+const {START_POSITIONS, MAIN_TRACK_SIZE} = require('../constants');
+
+function getRealBoardPosition(color, steps)
+{
+	if (steps < 0)
+	{
+		return -1;
+	}
+	return (START_POSITIONS[color] + steps) % MAIN_TRACK_SIZE;
+}
+
+module.exports = getRealBoardPosition;
+==============================
+FILE: ./game/utils/isEnteringHomeStretch.js
+==============================
+const {
+	HOME_ENTRIES,
+	MAIN_TRACK_SIZE
+} = require('../constants');
+
+const getRealBoardPosition =
+	require('./getRealBoardPosition');
+
+function isEnteringHomeStretch(
+	color,
+	currentSteps,
+	dice
+)
+{
+	const entry =
+		HOME_ENTRIES[color];
+
+	const currentPosition =
+		getRealBoardPosition(
+			color,
+			currentSteps
+		);
+
+	for (
+		let i = 1;
+		i <= dice;
+		i++
+	)
+	{
+		const next =
+			(currentPosition + i)
+			%
+			MAIN_TRACK_SIZE;
+
+		if (next === entry)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+module.exports =
+	isEnteringHomeStretch;
+==============================
 FILE: ./game/validators/validateTurn.js
 ==============================
 function validateTurn(game, userId)
@@ -1169,12 +1228,7 @@ const { GAME_STATUS } = require('../constants');
 
 function canRollDice(game, userId)
 {
-	/*
-	|--------------------------------------------------------------------------
-	| INICIAR PARTIDA
-	|--------------------------------------------------------------------------
-	*/
-
+	// INICIAR PARTIDA
 	if (game.status === GAME_STATUS.WAITING)
 	{
 		if (game.players.length < 2)
@@ -1294,6 +1348,14 @@ const getPlayer =
 const getPiece =
 	require('../utils/getPiece');
 
+const {
+	FINAL_POSITION,
+	MAIN_TRACK_SIZE
+} = require('../constants');
+
+const isEnteringHomeStretch =
+	require('../utils/isEnteringHomeStretch');
+
 function canMovePiece(
 	game,
 	playerId,
@@ -1309,7 +1371,10 @@ function canMovePiece(
 	}
 
 	const player =
-		getPlayer(game, playerId);
+		getPlayer(
+			game,
+			playerId
+		);
 
 	if (!player)
 	{
@@ -1320,7 +1385,10 @@ function canMovePiece(
 	}
 
 	const piece =
-		getPiece(player, pieceIndex);
+		getPiece(
+			player,
+			pieceIndex
+		);
 
 	if (!piece)
 	{
@@ -1338,28 +1406,18 @@ function canMovePiece(
 		};
 	}
 
-	/*
-	🔥 SI ESTÁ EN BASE
-	NECESITA 5
-	*/
-	if (
-		piece.state === 'base' &&
-		game.dice !== 5
-	)
+	if (piece.state === 'base')
 	{
 		return {
-			ok: false,
+			ok: game.dice === 5,
 			error:
-				'Need 5 to leave base'
+				game.dice === 5
+					? null
+					: 'Need 5 to leave base'
 		};
 	}
 
-	/*
-	🔥 YA TERMINADA
-	*/
-	if (
-		piece.state === 'finished'
-	)
+	if (piece.state === 'finished')
 	{
 		return {
 			ok: false,
@@ -1368,13 +1426,76 @@ function canMovePiece(
 		};
 	}
 
+	/*
+	=====================================
+	PASILLO FINAL
+	=====================================
+	*/
+
+	if (piece.steps >= MAIN_TRACK_SIZE)
+	{
+		if (
+			piece.steps + game.dice >
+			FINAL_POSITION
+		)
+		{
+			return {
+				ok: false,
+				error:
+					'Exact roll required'
+			};
+		}
+
+		return {
+			ok: true
+		};
+	}
+
+	/*
+	=====================================
+	ENTRADA A PASILLO
+	=====================================
+	*/
+
+	if (
+		isEnteringHomeStretch(
+			player.color,
+			piece.steps,
+			game.dice
+		)
+	)
+	{
+		const remaining =
+			MAIN_TRACK_SIZE -
+			piece.steps;
+
+		const overshoot =
+			game.dice -
+			remaining;
+
+		const target =
+			MAIN_TRACK_SIZE +
+			overshoot;
+
+		if (
+			target >
+			FINAL_POSITION
+		)
+		{
+			return {
+				ok: false,
+				error:
+					'Exact roll required'
+			};
+		}
+	}
+
 	return {
 		ok: true
 	};
 }
 
-module.exports =
-	canMovePiece;
+module.exports = canMovePiece;
 ==============================
 FILE: ./game/rules/nextTurn.js
 ==============================
@@ -1391,47 +1512,42 @@ module.exports = nextTurn;
 ==============================
 FILE: ./game/rules/checkCapture.js
 ==============================
-const {SAFE_CELLS, BASE_POSITION, FINAL_STRETCH_START} = require('../constants');
+const {SAFE_CELLS, MAIN_TRACK_SIZE} = require('../constants');
 
-const getGlobalPosition = require('../utils/getGlobalPosition');
-const getBlockades = require('./getBlockades');
+const getRealBoardPosition = require('../utils/getRealBoardPosition');
 
 function checkCapture(game, currentPlayerId)
 {
 	const currentPlayer = game.players.find(p => p.id === currentPlayerId);
+
 	if (!currentPlayer)
 	{
 		return;
 	}
-
-	// Obtener bloqueos actuales
-	const blockades = getBlockades(game);
-
 	for (const piece of currentPlayer.pieces)
 	{
-		//Ignorar base
-		if (piece.position === BASE_POSITION)
+		// Ignorar casa
+		if (piece.steps < 0)
 		{
 			continue;
 		}
 
 		// Ignorar pasillo final
-		if (piece.position >= FINAL_STRETCH_START)
+		if (piece.steps >= MAIN_TRACK_SIZE)
 		{
 			continue;
 		}
 
-		const currentGlobal = getGlobalPosition(currentPlayer.color, piece.position);
+		const currentPosition = getRealBoardPosition(currentPlayer.color, piece.steps);
 
 		// Casilla segura
-		if (SAFE_CELLS.includes(currentGlobal))
+		if (SAFE_CELLS.includes(currentPosition))
 		{
 			continue;
 		}
 
 		for (const enemy of game.players)
 		{
-			// Ignorar jugador actual
 			if (enemy.id === currentPlayerId)
 			{
 				continue;
@@ -1439,32 +1555,21 @@ function checkCapture(game, currentPlayerId)
 
 			for (const enemyPiece of enemy.pieces)
 			{
-				// Ignorar base
-				if (enemyPiece.position === BASE_POSITION)
+				if (enemyPiece.steps < 0)
 				{
 					continue;
 				}
 
-				// Ignorar pasillo final
-				if(enemyPiece.position >= FINAL_STRETCH_START)
+				if (enemyPiece.steps >= MAIN_TRACK_SIZE)
 				{
 					continue;
 				}
 
-				const enemyGlobal = getGlobalPosition(enemy.color, enemyPiece.position);
-
-				// Misma casilla
-				if (enemyGlobal === currentGlobal)
+				const enemyPosition = getRealBoardPosition(enemy.color, enemyPiece.steps);
+				if (enemyPosition === currentPosition)
 				{
-					// No se puede comer un bloqueo
-					const isEnemyBlockade = blockades.find(blockade => blockade.position === enemyGlobal);
-					if (isEnemyBlockade)
-					{
-						continue;
-					}
-
-					// Comer ficha
-					enemyPiece.position = BASE_POSITION;
+					enemyPiece.steps = -1;
+					enemyPiece.state = 'base';
 				}
 			}
 		}
@@ -1475,34 +1580,21 @@ module.exports = checkCapture;
 ==============================
 FILE: ./game/rules/checkWin.js
 ==============================
-const {
-	FINAL_POSITION
-} = require('../constants');
+const {FINAL_POSITION} = require('../constants');
 
-function checkWin(
-	game,
-	playerId
-)
+function checkWin(game, playerId)
 {
-	const player =
-		game.players.find(
-			p => p.id === playerId
-		);
+	const player = game.players.find(p => p.id === playerId);
 
 	if (!player)
 	{
 		return false;
 	}
 
-	return player.pieces.every(
-		piece =>
-			piece.position ===
-			FINAL_POSITION
-	);
+	return player.pieces.every(piece => piece.steps === FINAL_POSITION);
 }
 
-module.exports =
-	checkWin;
+module.exports = checkWin;
 ==============================
 FILE: ./game/rules/getAvailableMoves.js
 ==============================
@@ -1510,19 +1602,17 @@ const canMovePiece = require('../validators/canMovePiece');
 
 function getAvailableMoves(game, playerId)
 {
-	const availableMoves = [];
+	const moves = [];
 
 	for (let i = 0; i < 4; i++)
 	{
-		const validation = canMovePiece(game, playerId, i);
-
+		const validation = canMovePiece(game, playerId, i)
 		if (validation.ok)
 		{
-			availableMoves.push(i);
+			moves.push(i);
 		}
 	}
-
-	return availableMoves;
+	return moves;
 }
 
 module.exports = getAvailableMoves;
@@ -1562,81 +1652,83 @@ module.exports = setPlayerConnection;
 ==============================
 FILE: ./game/rules/isBlockade.js
 ==============================
-const { BASE_POSITION, FINAL_STRETCH_START} = require('../constants');
-const getGlobalPosition = require('../utils/getGlobalPosition');
+const {MAIN_TRACK_SIZE} = require('../constants');
+const getRealBoardPosition = require('../utils/getRealBoardPosition');
 
 function isBlockade(game, color, globalPosition)
 {
 	const player = game.players.find(p => p.color === color);
-
 	if (!player)
 	{
 		return false;
 	}
 
-	let piecesInCell = 0;
+	let count = 0;
 
 	for (const piece of player.pieces)
 	{
-		// Ignorar base
-		if (piece.position === BASE_POSITION)
+		if (piece.steps < 0)
+		{
+			continue;
+		}
+		if (piece.steps >= MAIN_TRACK_SIZE)
 		{
 			continue;
 		}
 
-		// Ignorar pasillo final
-		if (piece.position >= FINAL_STRETCH_START)
+		const position = getRealBoardPosition(color, piece.steps);
+		if (position === globalPosition)
 		{
-			continue;
-		}
-
-		const pieceGlobal = getGlobalPosition(player.color, piece.position);
-		if (pieceGlobal === globalPosition)
-		{
-			piecesInCell++;
+			count++;
 		}
 	}
 
-	return piecesInCell >= 2;
+	return count >= 2;
 }
 
 module.exports = isBlockade;
 ==============================
 FILE: ./game/rules/getBlockades.js
 ==============================
-const { BASE_POSITION, FINAL_STRETCH_START } = require('../constants');
-const getGlobalPosition = require('../utils/getGlobalPosition');
+const {
+	MAIN_TRACK_SIZE
+} = require('../constants');
+
+const getRealBoardPosition =
+	require('../utils/getRealBoardPosition');
 
 function getBlockades(game)
 {
-
 	const blockades = [];
 
 	for (const player of game.players)
 	{
-		const positionsCount = {};
+		const count = {};
 
 		for (const piece of player.pieces)
 		{
-			if (piece.position === BASE_POSITION)
+			if (piece.steps < 0)
 			{
 				continue;
 			}
 
-			if (piece.position >= FINAL_STRETCH_START)
+			if (piece.steps >= MAIN_TRACK_SIZE)
 			{
 				continue;
 			}
 
-			const globalPosition = getGlobalPosition(player.color, piece.position);
-			positionsCount[globalPosition] = (positionsCount[globalPosition] || 0) + 1;
+			const position = getRealBoardPosition(player.color, piece.steps);
+
+			count[position] = (count[position] || 0) + 1;
 		}
-
-		for (const position in positionsCount)
+		for (const position in count)
 		{
-			if (positionsCount[position] >= 2)
+			if (count[position] >= 2)
 			{
-				blockades.push({ color: player.color, position: Number(position)});
+				blockades.push({
+					color: player.color,
+					position: Number(position)
+				});
 			}
 		}
 	}
@@ -1688,15 +1780,14 @@ module.exports = checkPausedState;
 FILE: ./game/rules/applyMove.js
 ==============================
 const {
-	FINAL_POSITION,
-	FINAL_STRETCH_START
+	MAIN_TRACK_SIZE,
+	FINAL_POSITION
 } = require('../constants');
 
-function applyMove(
-	game,
-	playerId,
-	pieceIndex
-)
+const isEnteringHomeStretch =
+	require('../utils/isEnteringHomeStretch');
+
+function applyMove(game, playerId, pieceIndex)
 {
 	const player =
 		game.players.find(
@@ -1716,11 +1807,9 @@ function applyMove(
 		return;
 	}
 
-	/*
-	|--------------------------------------------------------------------------
-	| SALIR DE CASA
-	|--------------------------------------------------------------------------
-	*/
+	/* =====================================
+	   SALIR DE CASA
+	===================================== */
 
 	if (
 		piece.state === 'base' &&
@@ -1728,69 +1817,66 @@ function applyMove(
 	)
 	{
 		piece.state = 'track';
-		piece.position = 0;
+		piece.steps = 0;
 		return;
 	}
 
-	/*
-	|--------------------------------------------------------------------------
-	| MOVER
-	|--------------------------------------------------------------------------
-	*/
+	/* =====================================
+	   YA EN PASILLO FINAL
+	===================================== */
+
+	if (piece.steps >= MAIN_TRACK_SIZE)
+	{
+		piece.steps += game.dice;
+
+		if (piece.steps === FINAL_POSITION)
+		{
+			piece.state = 'finished';
+		}
+
+		return;
+	}
+
+	/* =====================================
+	   RECORRIDO EXTERIOR
+	===================================== */
 
 	if (
-		piece.state === 'track'
+		isEnteringHomeStretch(
+			player.color,
+			piece.steps,
+			game.dice
+		)
 	)
 	{
-		const target =
-			piece.position +
-			game.dice;
+		const remainingToEntry =
+			MAIN_TRACK_SIZE -
+			piece.steps;
 
-		/*
-		| No puede pasarse
-		*/
+		const overshoot =
+			game.dice -
+			remainingToEntry;
 
-		if (
-			target >
-			FINAL_POSITION
-		)
-		{
-			return;
-		}
+		piece.steps =
+			MAIN_TRACK_SIZE +
+			overshoot;
 
-		piece.position =
-			target;
-
-		/*
-		| Entra al pasillo final
-		*/
+		piece.state = 'final';
 
 		if (
-			piece.position >=
-			FINAL_STRETCH_START
+			piece.steps === FINAL_POSITION
 		)
 		{
-			piece.state =
-				'final';
+			piece.state = 'finished';
 		}
 
-		/*
-		| Llegó a meta
-		*/
-
-		if (
-			piece.position ===
-			FINAL_POSITION
-		)
-		{
-			piece.state =
-				'finished';
-		}
+		return;
 	}
+
+	piece.steps += game.dice;
 }
 
-module.exports =
-	applyMove;
+module.exports = applyMove;
 ==============================
 FILE: ./game/constants.js
 ==============================
@@ -1808,25 +1894,14 @@ const GAME_STATUS = {
 	FINISHED: "finished"
 };
 
-/*
-|--------------------------------------------------------------------------
-| PARCHÍS REAL
-|--------------------------------------------------------------------------
-*/
-
+// PARCHÍS REAL
 const MAIN_TRACK_SIZE = 68;
 
 const FINAL_STRETCH_SIZE = 7;
 
-const FINAL_POSITION =
-	MAIN_TRACK_SIZE +
-	FINAL_STRETCH_SIZE;
+const FINAL_POSITION = MAIN_TRACK_SIZE + FINAL_STRETCH_SIZE;
 
-/*
-|--------------------------------------------------------------------------
-| Salidas reales
-|--------------------------------------------------------------------------
-*/
+// Salidas reales
 
 const START_POSITIONS = {
 	pink: 0,
@@ -1835,12 +1910,7 @@ const START_POSITIONS = {
 	blue: 51
 };
 
-/*
-|--------------------------------------------------------------------------
-| Casillas seguras
-|--------------------------------------------------------------------------
-*/
-
+// Casillas seguras
 const SAFE_CELLS = [
 	0,
 	5,
@@ -1856,11 +1926,7 @@ const SAFE_CELLS = [
 	63
 ];
 
-/*
-|--------------------------------------------------------------------------
-| Posiciones especiales
-|--------------------------------------------------------------------------
-*/
+// Posiciones especiales
 
 const BASE_POSITION = -1;
 
@@ -1871,21 +1937,24 @@ const DISCONNECT_TIMEOUT = 60000;
 
 const TURN_TIMEOUT = 30000;
 
+const HOME_ENTRIES = {
+	pink: 67,
+	purple: 16,
+	green: 33,
+	blue: 50
+};
+
 module.exports = {
 	COLORS,
 	GAME_STATUS,
-
 	MAIN_TRACK_SIZE,
 	FINAL_STRETCH_SIZE,
-
 	FINAL_POSITION,
 	FINAL_STRETCH_START,
-
 	BASE_POSITION,
-
 	START_POSITIONS,
 	SAFE_CELLS,
-
+	HOME_ENTRIES,
 	DISCONNECT_TIMEOUT,
 	TURN_TIMEOUT
 };
@@ -2249,30 +2318,15 @@ module.exports = withGameLock;
 ==============================
 FILE: ./game/gameEngine.js
 ==============================
-const { COLORS, GAME_STATUS } =
-	require('./constants');
+const { COLORS, GAME_STATUS } =require('./constants');
+const canMovePiece = require('./validators/canMovePiece');
+const applyMove = require('./rules/applyMove');
+const nextTurn = require('./rules/nextTurn');
+const checkCapture = require('./rules/checkCapture');
+const checkWin = require('./rules/checkWin');
+const createPieces = require('./utils/createPieces');
+const {startTurnTimer, clearTurnTimer} = require('./turnTimer');
 
-const canMovePiece =
-	require('./validators/canMovePiece');
-
-const applyMove =
-	require('./rules/applyMove');
-
-const nextTurn =
-	require('./rules/nextTurn');
-
-const checkCapture =
-	require('./rules/checkCapture');
-
-const checkWin =
-	require('./rules/checkWin');
-
-const createPieces =
-	require('./utils/createPieces');
-
-const {
-	startTurnTimer
-} = require('./turnTimer');
 
 function rollDice()
 {
@@ -2288,11 +2342,7 @@ function addPlayerToGame(game, userId)
 		};
 	}
 
-	const alreadyInGame =
-		game.players.find(
-			player => player.id === userId
-		);
-
+	const alreadyInGame = game.players.find(player => player.id === userId);
 	if (alreadyInGame)
 	{
 		return {
@@ -2300,10 +2350,7 @@ function addPlayerToGame(game, userId)
 		};
 	}
 
-	const color =
-		COLORS[
-			game.players.length
-		];
+	const color =COLORS[game.players.length];
 
 	game.players.push({
 		id: userId,
@@ -2321,55 +2368,23 @@ function addPlayerToGame(game, userId)
 	};
 }
 
-function executeMove(
-	game,
-	playerId,
-	pieceIndex
-)
+function executeMove(game, playerId, pieceIndex)
 {
-	const validation =
-		canMovePiece(
-			game,
-			playerId,
-			pieceIndex
-		);
-
+	const validation = canMovePiece(game, playerId, pieceIndex);
 	if (!validation.ok)
 	{
 		return validation;
 	}
 
-	applyMove(
-		game,
-		playerId,
-		pieceIndex
-	);
+	applyMove(game, playerId, pieceIndex);
+	checkCapture(game, playerId);
 
-	checkCapture(
-		game,
-		playerId
-	);
-
-	const won =
-		checkWin(
-			game,
-			playerId
-		);
-
+	const won = checkWin(game, playerId);
 	if (won)
 	{
-		const {
-			clearTurnTimer
-		} =
-			require('./turnTimer');
-
 		clearTurnTimer(game.id);
-
-		game.status =
-			GAME_STATUS.FINISHED;
-
-		game.winner =
-			playerId;
+		game.status = GAME_STATUS.FINISHED;
+		game.winner =playerId;
 
 		return {
 			ok: true,
@@ -2383,12 +2398,9 @@ function executeMove(
 	}
 
 	game.dice = null;
-
-	game.updatedAt =
-		Date.now();
+	game.updatedAt = Date.now();
 
 	startTurnTimer(game.id);
-
 	return {
 		ok: true
 	};
@@ -2426,10 +2438,7 @@ function setDisconnectTimer(gameId, userId, timer)
 {
 	clearDisconnectTimer(gameId, userId);
 
-	timers.set(
-		getKey(gameId, userId),
-		timer
-	);
+	timers.set(getKey(gameId, userId), timer);
 }
 
 module.exports = {

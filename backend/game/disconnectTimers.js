@@ -22,10 +22,7 @@ function setDisconnectTimer(gameId, userId, timer)
 {
 	clearDisconnectTimer(gameId, userId);
 
-	timers.set(
-		getKey(gameId, userId),
-		timer
-	);
+	timers.set(getKey(gameId, userId), timer);
 }
 
 module.exports = {

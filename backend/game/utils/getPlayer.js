@@ -1,4 +1,5 @@
-function getPlayer(game, playerId) {
+function getPlayer(game, playerId)
+{
 	return game.players.find(p => p.id === playerId);
 }
 

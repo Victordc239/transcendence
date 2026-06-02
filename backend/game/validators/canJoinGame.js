@@ -6,10 +6,7 @@ function canJoinGame(game, userId)
 		player => player.id === userId
 	);
 
-	/*
-	🔥 SI YA ESTÁ EN LA PARTIDA
-	PERMITIR REJOIN
-	*/
+	// 🔥 SI YA ESTÁ EN LA PARTIDA PERMITIR REJOIN
 	if (alreadyInGame)
 	{
 		return {
@@ -25,10 +22,7 @@ function canJoinGame(game, userId)
 		};
 	}
 
-	/*
-	🔥 SOLO bloquear si ya empezó
-	Y no pertenece a la partida
-	*/
+	// 🔥 SOLO bloquear si ya empezó Y no pertenece a la partida
 	if (game.status === GAME_STATUS.PLAYING || game.status === GAME_STATUS.PAUSED || game.status === GAME_STATUS.FINISHED)
 	{
 		return {

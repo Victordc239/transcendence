@@ -1,44 +1,39 @@
-const {SAFE_CELLS, BASE_POSITION, FINAL_STRETCH_START} = require('../constants');
+const {SAFE_CELLS, MAIN_TRACK_SIZE} = require('../constants');
 
-const getGlobalPosition = require('../utils/getGlobalPosition');
-const getBlockades = require('./getBlockades');
+const getRealBoardPosition = require('../utils/getRealBoardPosition');
 
 function checkCapture(game, currentPlayerId)
 {
 	const currentPlayer = game.players.find(p => p.id === currentPlayerId);
+
 	if (!currentPlayer)
 	{
 		return;
 	}
-
-	// Obtener bloqueos actuales
-	const blockades = getBlockades(game);
-
 	for (const piece of currentPlayer.pieces)
 	{
-		//Ignorar base
-		if (piece.position === BASE_POSITION)
+		// Ignorar casa
+		if (piece.steps < 0)
 		{
 			continue;
 		}
 
 		// Ignorar pasillo final
-		if (piece.position >= FINAL_STRETCH_START)
+		if (piece.steps >= MAIN_TRACK_SIZE)
 		{
 			continue;
 		}
 
-		const currentGlobal = getGlobalPosition(currentPlayer.color, piece.position);
+		const currentPosition = getRealBoardPosition(currentPlayer.color, piece.steps);
 
 		// Casilla segura
-		if (SAFE_CELLS.includes(currentGlobal))
+		if (SAFE_CELLS.includes(currentPosition))
 		{
 			continue;
 		}
 
 		for (const enemy of game.players)
 		{
-			// Ignorar jugador actual
 			if (enemy.id === currentPlayerId)
 			{
 				continue;
@@ -46,32 +41,21 @@ function checkCapture(game, currentPlayerId)
 
 			for (const enemyPiece of enemy.pieces)
 			{
-				// Ignorar base
-				if (enemyPiece.position === BASE_POSITION)
+				if (enemyPiece.steps < 0)
 				{
 					continue;
 				}
 
-				// Ignorar pasillo final
-				if(enemyPiece.position >= FINAL_STRETCH_START)
+				if (enemyPiece.steps >= MAIN_TRACK_SIZE)
 				{
 					continue;
 				}
 
-				const enemyGlobal = getGlobalPosition(enemy.color, enemyPiece.position);
-
-				// Misma casilla
-				if (enemyGlobal === currentGlobal)
+				const enemyPosition = getRealBoardPosition(enemy.color, enemyPiece.steps);
+				if (enemyPosition === currentPosition)
 				{
-					// No se puede comer un bloqueo
-					const isEnemyBlockade = blockades.find(blockade => blockade.position === enemyGlobal);
-					if (isEnemyBlockade)
-					{
-						continue;
-					}
-
-					// Comer ficha
-					enemyPiece.position = BASE_POSITION;
+					enemyPiece.steps = -1;
+					enemyPiece.state = 'base';
 				}
 			}
 		}

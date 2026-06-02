@@ -1,104 +1,58 @@
-const {
-	FINAL_POSITION,
-	FINAL_STRETCH_START
-} = require('../constants');
+const {MAIN_TRACK_SIZE, FINAL_POSITION} = require('../constants');
+const isEnteringHomeStretch = require('../utils/isEnteringHomeStretch');
+const getDistanceToHomeEntry = require('../utils/getDistanceToHomeEntry');
 
-function applyMove(
-	game,
-	playerId,
-	pieceIndex
-)
+function applyMove(game, playerId, pieceIndex)
 {
-	const player =
-		game.players.find(
-			p => p.id === playerId
-		);
-
+	const player =game.players.find(p => p.id === playerId);
 	if (!player)
 	{
 		return;
 	}
 
-	const piece =
-		player.pieces[pieceIndex];
-
+	const piece = player.pieces[pieceIndex];
 	if (!piece)
 	{
 		return;
 	}
 
-	/*
-	|--------------------------------------------------------------------------
-	| SALIR DE CASA
-	|--------------------------------------------------------------------------
-	*/
-
-	if (
-		piece.state === 'base' &&
-		game.dice === 5
-	)
+	// SALIR DE CASA
+	if (piece.state === 'base' && game.dice === 5)
 	{
 		piece.state = 'track';
-		piece.position = 0;
+		piece.steps = 0;
 		return;
 	}
 
-	/*
-	|--------------------------------------------------------------------------
-	| MOVER
-	|--------------------------------------------------------------------------
-	*/
-
-	if (
-		piece.state === 'track'
-	)
+	//YA EN PASILLO FINAL
+	if (piece.steps >= MAIN_TRACK_SIZE)
 	{
-		const target =
-			piece.position +
-			game.dice;
-
-		/*
-		| No puede pasarse
-		*/
-
-		if (
-			target >
-			FINAL_POSITION
-		)
+		piece.steps += game.dice;
+		if (piece.steps === FINAL_POSITION)
 		{
-			return;
+			piece.state = 'finished';
 		}
-
-		piece.position =
-			target;
-
-		/*
-		| Entra al pasillo final
-		*/
-
-		if (
-			piece.position >=
-			FINAL_STRETCH_START
-		)
-		{
-			piece.state =
-				'final';
-		}
-
-		/*
-		| Llegó a meta
-		*/
-
-		if (
-			piece.position ===
-			FINAL_POSITION
-		)
-		{
-			piece.state =
-				'finished';
-		}
+		return;
 	}
+
+	// ENTRADA AL PASILLO FINAL
+	if (isEnteringHomeStretch(player.color, piece.steps, game.dice))
+	{
+		const distanceToEntry = getDistanceToHomeEntry(player.color, piece.steps);
+
+		const overshoot = game.dice - distanceToEntry - 1;
+
+		piece.steps = MAIN_TRACK_SIZE + overshoot;
+		piece.state = 'final';
+		if (piece.steps === FINAL_POSITION)
+		{
+			piece.state = 'finished';
+		}
+		return;
+	}
+
+	//RECORRIDO EXTERIOR NORMAL
+	piece.steps += game.dice;
 }
 
-module.exports =
-	applyMove;
+module.exports = applyMove;

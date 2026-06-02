@@ -2,19 +2,17 @@ const canMovePiece = require('../validators/canMovePiece');
 
 function getAvailableMoves(game, playerId)
 {
-	const availableMoves = [];
+	const moves = [];
 
 	for (let i = 0; i < 4; i++)
 	{
-		const validation = canMovePiece(game, playerId, i);
-
+		const validation = canMovePiece(game, playerId, i)
 		if (validation.ok)
 		{
-			availableMoves.push(i);
+			moves.push(i);
 		}
 	}
-
-	return availableMoves;
+	return moves;
 }
 
 module.exports = getAvailableMoves;

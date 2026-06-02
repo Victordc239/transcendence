@@ -1,39 +1,35 @@
-const { BASE_POSITION, FINAL_STRETCH_START} = require('../constants');
-const getGlobalPosition = require('../utils/getGlobalPosition');
+const {MAIN_TRACK_SIZE} = require('../constants');
+const getRealBoardPosition = require('../utils/getRealBoardPosition');
 
 function isBlockade(game, color, globalPosition)
 {
 	const player = game.players.find(p => p.color === color);
-
 	if (!player)
 	{
 		return false;
 	}
 
-	let piecesInCell = 0;
+	let count = 0;
 
 	for (const piece of player.pieces)
 	{
-		// Ignorar base
-		if (piece.position === BASE_POSITION)
+		if (piece.steps < 0)
+		{
+			continue;
+		}
+		if (piece.steps >= MAIN_TRACK_SIZE)
 		{
 			continue;
 		}
 
-		// Ignorar pasillo final
-		if (piece.position >= FINAL_STRETCH_START)
+		const position = getRealBoardPosition(color, piece.steps);
+		if (position === globalPosition)
 		{
-			continue;
-		}
-
-		const pieceGlobal = getGlobalPosition(player.color, piece.position);
-		if (pieceGlobal === globalPosition)
-		{
-			piecesInCell++;
+			count++;
 		}
 	}
 
-	return piecesInCell >= 2;
+	return count >= 2;
 }
 
 module.exports = isBlockade;

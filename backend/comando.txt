@@ -39,3 +39,9 @@ find . -type f \
 ' sh {} + > notas-frontend.txt
 
 
+
+
+docker logs -f transcendence_backend
+
+
+

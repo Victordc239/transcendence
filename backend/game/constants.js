@@ -12,25 +12,14 @@ const GAME_STATUS = {
 	FINISHED: "finished"
 };
 
-/*
-|--------------------------------------------------------------------------
-| PARCHÍS REAL
-|--------------------------------------------------------------------------
-*/
-
+// PARCHÍS REAL
 const MAIN_TRACK_SIZE = 68;
 
 const FINAL_STRETCH_SIZE = 7;
 
-const FINAL_POSITION =
-	MAIN_TRACK_SIZE +
-	FINAL_STRETCH_SIZE;
+const FINAL_POSITION = MAIN_TRACK_SIZE + FINAL_STRETCH_SIZE;
 
-/*
-|--------------------------------------------------------------------------
-| Salidas reales
-|--------------------------------------------------------------------------
-*/
+// Salidas reales
 
 const START_POSITIONS = {
 	pink: 0,
@@ -39,12 +28,7 @@ const START_POSITIONS = {
 	blue: 51
 };
 
-/*
-|--------------------------------------------------------------------------
-| Casillas seguras
-|--------------------------------------------------------------------------
-*/
-
+// Casillas seguras
 const SAFE_CELLS = [
 	0,
 	5,
@@ -60,11 +44,7 @@ const SAFE_CELLS = [
 	63
 ];
 
-/*
-|--------------------------------------------------------------------------
-| Posiciones especiales
-|--------------------------------------------------------------------------
-*/
+// Posiciones especiales
 
 const BASE_POSITION = -1;
 
@@ -75,21 +55,24 @@ const DISCONNECT_TIMEOUT = 60000;
 
 const TURN_TIMEOUT = 30000;
 
+const HOME_ENTRIES = {
+	pink: 67,
+	purple: 16,
+	green: 33,
+	blue: 50
+};
+
 module.exports = {
 	COLORS,
 	GAME_STATUS,
-
 	MAIN_TRACK_SIZE,
 	FINAL_STRETCH_SIZE,
-
 	FINAL_POSITION,
 	FINAL_STRETCH_START,
-
 	BASE_POSITION,
-
 	START_POSITIONS,
 	SAFE_CELLS,
-
+	HOME_ENTRIES,
 	DISCONNECT_TIMEOUT,
 	TURN_TIMEOUT
 };

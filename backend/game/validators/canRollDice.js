@@ -2,12 +2,7 @@ const { GAME_STATUS } = require('../constants');
 
 function canRollDice(game, userId)
 {
-	/*
-	|--------------------------------------------------------------------------
-	| INICIAR PARTIDA
-	|--------------------------------------------------------------------------
-	*/
-
+	// INICIAR PARTIDA
 	if (game.status === GAME_STATUS.WAITING)
 	{
 		if (game.players.length < 2)

@@ -1,4 +1,5 @@
 const getBoardCoordinates = require('./getBoardCoordinates');
+const getRealBoardPosition = require('./getRealBoardPosition');
 
 function normalizeGame(game)
 {
@@ -24,20 +25,22 @@ function normalizeGame(game)
 			abandoned: player.abandoned,
 
 			pieces: player.pieces.map(piece => {
-
+				let position = -1;
 				let coords = null;
-
-				if (piece.state !== 'base')
+				if (piece.steps >= 0)
 				{
-					coords = getBoardCoordinates(piece.position);
+					if (piece.steps < 68)
+					{
+						position = getRealBoardPosition(player.color, piece.steps);
+						coords = getBoardCoordinates(position);
+					}
 				}
 
 				return {
 					id: piece.id,
 					state: piece.state,
-					position: piece.position,
-
-					// 🔥 NUEVO: para frontend
+					steps: piece.steps,
+					position,
 					coords
 				};
 			})

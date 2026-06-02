@@ -107,90 +107,6 @@ exports.getGame = async (req, res) => {
 };
 
 /* =============================
-JOIN GAME SORAYA
-============================= */
-/*
-exports.joinGame = async (req, res) => {
-	try
-	{
-		const game = await getGame(req.params.id);
-		const userId = req.user.id;
-
-		// 🔴 NUEVO: deviceId desde frontend
-		const { deviceId } = req.body;
-
-		if (!deviceId) {
-		return res.status(400).json({
-			error: "deviceId requerido"
-		});
-		}
-
-		if (!game)
-		return res.status(404).json({
-			error: 'Game not found'
-		});
-
-		const check = canJoinGame(game, userId);
-
-		if (!check.ok)
-		return res.status(400).json({
-			error: check.error
-		});
-
-		// 🔴 BLOQUEO POR DISPOSITIVO (NUEVO)
-		const sameDevice = game.players.find(
-		p => p.deviceId === deviceId
-		);
-
-		if (sameDevice) {
-		return res.status(400).json({
-			error: "Ya hay un jugador desde este dispositivo"
-		});
-		}
-
-		const colors = ["red", "blue", "green", "yellow"];
-
-		game.players.push({
-		id: userId,
-		deviceId, // 🔴 NUEVO CAMPO GUARDADO
-		color: colors[game.players.length],
-		pieces: [
-			{ position: "base" },
-			{ position: "base" },
-			{ position: "base" },
-			{ position: "base" }
-		]
-		});
-
-		if (game.players.length >= 2) {
-		game.status = "playing";
-		}
-
-		await saveGame(game);
-
-		const io = getIO();
-
-		io.to(game.id).emit(
-		"game:update",
-		game
-		);
-
-		res.json(game);
-
-	}
-	catch (error)
-	{
-
-		console.error(error);
-
-		res.status(500).json({
-		error: 'Server error joining game'
-		});
-	}
-};
-*/ 
-
-/* =============================
 JOIN GAME
 ============================= */
 exports.joinGame = async (req, res) => {
@@ -199,76 +115,57 @@ exports.joinGame = async (req, res) => {
 		const userId = Number(req.user.id);
 		const gameId = String(req.params.id);
 
-		const locked =
-			await withGameLock(
-				gameId,
-				async (game) => {
-					if (!game)
-					{
-						return {
-							error:
-								'Game not found'
-						};
-					}
-
-					console.log(
-						'JOIN REQUEST',
-						{
-							gameId,
-							userId,
-							status: game.status,
-							players: game.players.map(p => p.id)
-						}
-					);
-
-					/*
-					🔥 VALIDAR JOIN
-					*/
-					const validation = canJoinGame(game, userId);
-
-					if (!validation.ok)
-					{
-						return {
-							error:
-								validation.error
-						};
-					}
-
-					/*
-					🔥 AÑADIR JUGADOR
-					*/
-					if (!validation.rejoin)
-					{
-						const addResult =
-							addPlayerToGame(
-								game,
-								userId
-							);
-
-						console.log(
-							'PLAYERS AFTER JOIN',
-							game.players.map(p => ({
-								id: p.id,
-								color: p.color
-							}))
-						);
-
-						if (addResult && addResult.error)
-						{
-							return {
-								error:
-									addResult.error
-							};
-						}
-					}
-
-					game.updatedAt = Date.now();
-
+		const locked =await withGameLock(gameId,
+			async (game) => {
+				if (!game)
+				{
 					return {
-						ok: true
+						error:
+							'Game not found'
 					};
 				}
-			);
+
+				console.log('JOIN REQUEST',
+					{
+						gameId,
+						userId,
+						status: game.status,
+						players: game.players.map(p => p.id)
+					});
+
+				// 🔥 VALIDAR JOIN
+				const validation = canJoinGame(game, userId);
+				if (!validation.ok)
+				{
+					return {
+						error:
+							validation.error
+					};
+				}
+
+				// 🔥 AÑADIR JUGADOR
+				if (!validation.rejoin)
+				{
+					const addResult = addPlayerToGame(game, userId);
+
+					console.log('PLAYERS AFTER JOIN', game.players.map(p => ({
+							id: p.id,
+							color: p.color
+						})));
+
+					if (addResult && addResult.error)
+					{
+						return {
+							error:
+								addResult.error
+						};
+					}
+				}
+				game.updatedAt = Date.now();
+				return {
+					ok: true
+				};
+			});
 
 		if (!locked)
 		{
@@ -286,9 +183,7 @@ exports.joinGame = async (req, res) => {
 			});
 		}
 
-		/*
-		🔥 SOCKET UPDATE
-		*/
+		// 🔥 SOCKET UPDATE
 		try
 		{
 			getIO()
@@ -300,27 +195,15 @@ exports.joinGame = async (req, res) => {
 					)
 				);
 		}
-
 		catch (socketError)
 		{
-			console.error(
-				'SOCKET ERROR:',
-				socketError
-			);
+			console.error('SOCKET ERROR:', socketError);
 		}
-
-		return res.json(
-			normalizeGame(
-				locked.game
-			)
-		);
+		return res.json(normalizeGame(locked.game));
 	}
 	catch (error)
 	{
-		console.error(
-			'JOIN GAME ERROR:',
-			error
-		);
+		console.error('JOIN GAME ERROR:', error);
 
 		return res.status(500).json({
 			error:
@@ -515,14 +398,9 @@ exports.movePiece = async (req, res) => {
 			.to(gameId)
 			.emit(
 				'game:update',
-				normalizeGame(locked.game)
-			);
+				normalizeGame(locked.game));
 
-		return res.json(
-			normalizeGame(
-				locked.game
-			)
-		);
+		return res.json(normalizeGame(locked.game));
 	}
 	catch (error)
 	{

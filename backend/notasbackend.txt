@@ -594,76 +594,57 @@ exports.joinGame = async (req, res) => {
 		const userId = Number(req.user.id);
 		const gameId = String(req.params.id);
 
-		const locked =
-			await withGameLock(
-				gameId,
-				async (game) => {
-					if (!game)
-					{
-						return {
-							error:
-								'Game not found'
-						};
-					}
-
-					console.log(
-						'JOIN REQUEST',
-						{
-							gameId,
-							userId,
-							status: game.status,
-							players: game.players.map(p => p.id)
-						}
-					);
-
-					/*
-					🔥 VALIDAR JOIN
-					*/
-					const validation = canJoinGame(game, userId);
-
-					if (!validation.ok)
-					{
-						return {
-							error:
-								validation.error
-						};
-					}
-
-					/*
-					🔥 AÑADIR JUGADOR
-					*/
-					if (!validation.rejoin)
-					{
-						const addResult =
-							addPlayerToGame(
-								game,
-								userId
-							);
-
-						console.log(
-							'PLAYERS AFTER JOIN',
-							game.players.map(p => ({
-								id: p.id,
-								color: p.color
-							}))
-						);
-
-						if (addResult && addResult.error)
-						{
-							return {
-								error:
-									addResult.error
-							};
-						}
-					}
-
-					game.updatedAt = Date.now();
-
+		const locked =await withGameLock(gameId,
+			async (game) => {
+				if (!game)
+				{
 					return {
-						ok: true
+						error:
+							'Game not found'
 					};
 				}
-			);
+
+				console.log('JOIN REQUEST',
+					{
+						gameId,
+						userId,
+						status: game.status,
+						players: game.players.map(p => p.id)
+					});
+
+				// 🔥 VALIDAR JOIN
+				const validation = canJoinGame(game, userId);
+				if (!validation.ok)
+				{
+					return {
+						error:
+							validation.error
+					};
+				}
+
+				// 🔥 AÑADIR JUGADOR
+				if (!validation.rejoin)
+				{
+					const addResult = addPlayerToGame(game, userId);
+
+					console.log('PLAYERS AFTER JOIN', game.players.map(p => ({
+							id: p.id,
+							color: p.color
+						})));
+
+					if (addResult && addResult.error)
+					{
+						return {
+							error:
+								addResult.error
+						};
+					}
+				}
+				game.updatedAt = Date.now();
+				return {
+					ok: true
+				};
+			});
 
 		if (!locked)
 		{
@@ -681,9 +662,7 @@ exports.joinGame = async (req, res) => {
 			});
 		}
 
-		/*
-		🔥 SOCKET UPDATE
-		*/
+		// 🔥 SOCKET UPDATE
 		try
 		{
 			getIO()
@@ -695,27 +674,15 @@ exports.joinGame = async (req, res) => {
 					)
 				);
 		}
-
 		catch (socketError)
 		{
-			console.error(
-				'SOCKET ERROR:',
-				socketError
-			);
+			console.error('SOCKET ERROR:', socketError);
 		}
-
-		return res.json(
-			normalizeGame(
-				locked.game
-			)
-		);
+		return res.json(normalizeGame(locked.game));
 	}
 	catch (error)
 	{
-		console.error(
-			'JOIN GAME ERROR:',
-			error
-		);
+		console.error('JOIN GAME ERROR:', error);
 
 		return res.status(500).json({
 			error:
@@ -910,14 +877,9 @@ exports.movePiece = async (req, res) => {
 			.to(gameId)
 			.emit(
 				'game:update',
-				normalizeGame(locked.game)
-			);
+				normalizeGame(locked.game));
 
-		return res.json(
-			normalizeGame(
-				locked.game
-			)
-		);
+		return res.json(normalizeGame(locked.game));
 	}
 	catch (error)
 	{
@@ -943,105 +905,6 @@ const pool = new Pool({
 });
 
 module.exports = pool;
-==============================
-FILE: ./game/utils/getPlayer.js
-==============================
-function getPlayer(game, playerId)
-{
-	return game.players.find(p => p.id === playerId);
-}
-
-module.exports = getPlayer;
-==============================
-FILE: ./game/utils/getPiece.js
-==============================
-function getPiece(player, pieceIndex)
-{
-	return player.pieces[pieceIndex];
-}
-
-module.exports = getPiece;
-==============================
-FILE: ./game/utils/getGlobalPosition.js
-==============================
-const {START_POSITIONS, MAIN_TRACK_SIZE} = require('../constants');
-
-function getGlobalPosition(color, relativePosition)
-{
-	return (START_POSITIONS[color] + relativePosition) % MAIN_TRACK_SIZE;
-}
-
-module.exports = getGlobalPosition;
-==============================
-FILE: ./game/utils/createPieces.js
-==============================
-function createPieces()
-{
-	return Array.from({ length: 4 }).map((_, index) => ({
-		id: index,
-		state: 'base',
-		/*| -1 = casa
-		| 0..67 = recorrido exterior
-		| 68..74 = pasillo final*/
-		steps: -1
-	}));
-}
-
-module.exports = createPieces;
-==============================
-FILE: ./game/utils/normalizeGame.js
-==============================
-const getBoardCoordinates = require('./getBoardCoordinates');
-const getRealBoardPosition = require('./getRealBoardPosition');
-
-function normalizeGame(game)
-{
-	if (!game)
-	{
-		return game;
-	}
-
-	return {
-		id: game.id,
-		status: game.status,
-		turn: game.turn,
-		dice: game.dice,
-		lastDice: game.lastDice,
-		winner: game.winner,
-		createdAt: game.createdAt,
-		updatedAt: game.updatedAt,
-
-		players: game.players.map(player => ({
-			id: player.id,
-			color: player.color,
-			connected: player.connected,
-			abandoned: player.abandoned,
-
-			pieces: player.pieces.map(piece => {
-				let position = -1;
-				let coords = null;
-				if (piece.steps >= 0)
-				{
-					if (piece.steps < 68)
-					{
-						position = getRealBoardPosition(player.color, piece.steps);
-						coords = getBoardCoordinates(position);
-					}
-				}
-
-				return {
-					id: piece.id,
-					state: piece.state,
-					steps: piece.steps,
-					position,
-					coords
-				};
-			})
-		}))
-	};
-}
-
-module.exports = normalizeGame;
 ==============================
 FILE: ./game/utils/boardMap.js
 ==============================
@@ -1140,6 +1003,71 @@ function getBoardCoordinates(globalPosition)
 
 module.exports = getBoardCoordinates;
 ==============================
+FILE: ./game/utils/createPieces.js
+==============================
+function createPieces()
+{
+	return Array.from({ length: 4 }).map((_, index) => ({
+		id: index,
+		state: 'base',
+		/*| -1 = casa
+		| 0..67 = recorrido exterior
+		| 68..74 = pasillo final*/
+		steps: -1
+	}));
+}
+
+module.exports = createPieces;
+==============================
+FILE: ./game/utils/getDistanceToHomeEntry.js
+==============================
+const {HOME_ENTRIES, MAIN_TRACK_SIZE} = require('../constants');
+const getRealBoardPosition = require('./getRealBoardPosition');
+
+function getDistanceToHomeEntry(color, steps)
+{
+	const current = getRealBoardPosition(color, steps);
+	const entry = HOME_ENTRIES[color];
+
+	if (current <= entry)
+	{
+		return entry - current;
+	}
+
+	return (MAIN_TRACK_SIZE - current + entry);
+}
+
+module.exports = getDistanceToHomeEntry;
+==============================
+FILE: ./game/utils/getGlobalPosition.js
+==============================
+const {START_POSITIONS, MAIN_TRACK_SIZE} = require('../constants');
+
+function getGlobalPosition(color, relativePosition)
+{
+	return (START_POSITIONS[color] + relativePosition) % MAIN_TRACK_SIZE;
+}
+
+module.exports = getGlobalPosition;
+==============================
+FILE: ./game/utils/getPiece.js
+==============================
+function getPiece(player, pieceIndex)
+{
+	return player.pieces[pieceIndex];
+}
+
+module.exports = getPiece;
+==============================
+FILE: ./game/utils/getPlayer.js
+==============================
+function getPlayer(game, playerId)
+{
+	return game.players.find(p => p.id === playerId);
+}
+
+module.exports = getPlayer;
+==============================
 FILE: ./game/utils/getRealBoardPosition.js
 ==============================
 const {START_POSITIONS, MAIN_TRACK_SIZE} = require('../constants');
@@ -1157,51 +1085,69 @@ module.exports = getRealBoardPosition;
 ==============================
 FILE: ./game/utils/isEnteringHomeStretch.js
 ==============================
-const {
-	HOME_ENTRIES,
-	MAIN_TRACK_SIZE
-} = require('../constants');
+const getDistanceToHomeEntry = require('./getDistanceToHomeEntry');
 
-const getRealBoardPosition =
-	require('./getRealBoardPosition');
-
-function isEnteringHomeStretch(
-	color,
-	currentSteps,
-	dice
-)
+function isEnteringHomeStretch(color, currentSteps, dice)
 {
-	const entry =
-		HOME_ENTRIES[color];
-
-	const currentPosition =
-		getRealBoardPosition(
-			color,
-			currentSteps
-		);
-
-	for (
-		let i = 1;
-		i <= dice;
-		i++
-	)
-	{
-		const next =
-			(currentPosition + i)
-			%
-			MAIN_TRACK_SIZE;
-
-		if (next === entry)
-		{
-			return true;
-		}
-	}
-
-	return false;
+	const distance = getDistanceToHomeEntry(color, currentSteps);
+	return dice > distance;
 }
 
-module.exports =
-	isEnteringHomeStretch;
+module.exports = isEnteringHomeStretch;
+==============================
+FILE: ./game/utils/normalizeGame.js
+==============================
+const getBoardCoordinates = require('./getBoardCoordinates');
+const getRealBoardPosition = require('./getRealBoardPosition');
+
+function normalizeGame(game)
+{
+	if (!game)
+	{
+		return game;
+	}
+
+	return {
+		id: game.id,
+		status: game.status,
+		turn: game.turn,
+		dice: game.dice,
+		lastDice: game.lastDice,
+		winner: game.winner,
+		createdAt: game.createdAt,
+		updatedAt: game.updatedAt,
+
+		players: game.players.map(player => ({
+			id: player.id,
+			color: player.color,
+			connected: player.connected,
+			abandoned: player.abandoned,
+
+			pieces: player.pieces.map(piece => {
+				let position = -1;
+				let coords = null;
+				if (piece.steps >= 0)
+				{
+					if (piece.steps < 68)
+					{
+						position = getRealBoardPosition(player.color, piece.steps);
+						coords = getBoardCoordinates(position);
+					}
+				}
+
+				return {
+					id: piece.id,
+					state: piece.state,
+					steps: piece.steps,
+					position,
+					coords
+				};
+			})
+		}))
+	};
+}
+
+module.exports = normalizeGame;
 ==============================
 FILE: ./game/validators/validateTurn.js
 ==============================
@@ -1221,6 +1167,160 @@ function validateTurn(game, userId)
 }
 
 module.exports = validateTurn;
+==============================
+FILE: ./game/validators/canJoinGame.js
+==============================
+const { GAME_STATUS } = require('../constants');
+
+function canJoinGame(game, userId)
+{
+	const alreadyInGame = game.players.find(
+		player => player.id === userId
+	);
+
+	// 🔥 SI YA ESTÁ EN LA PARTIDA PERMITIR REJOIN
+	if (alreadyInGame)
+	{
+		return {
+			ok: true,
+			rejoin: true
+		};
+	}
+
+	if (game.status === GAME_STATUS.WAITING)
+	{
+		return {
+			ok: true
+		};
+	}
+
+	// 🔥 SOLO bloquear si ya empezó Y no pertenece a la partida
+	if (game.status === GAME_STATUS.PLAYING || game.status === GAME_STATUS.PAUSED || game.status === GAME_STATUS.FINISHED)
+	{
+		return {
+			ok: false,
+			error: 'Game already started'
+		};
+	}
+
+	if (game.players.length >= 4)
+	{
+		return {
+			ok: false,
+			error: 'Game full'
+		};
+	}
+
+	return {
+		ok: true
+	};
+}
+
+module.exports = canJoinGame;
+==============================
+FILE: ./game/validators/canMovePiece.js
+==============================
+const getPlayer = require('../utils/getPlayer');
+const getPiece = require('../utils/getPiece');
+const {FINAL_POSITION, MAIN_TRACK_SIZE} = require('../constants');
+const isEnteringHomeStretch = require('../utils/isEnteringHomeStretch');
+const getDistanceToHomeEntry = require('../utils/getDistanceToHomeEntry');
+
+function canMovePiece(game, playerId, pieceIndex)
+{
+	if (game.turn !== playerId)
+	{
+		return {
+			ok: false,
+			error: 'Not your turn'
+		};
+	}
+
+	const player = getPlayer(game, playerId);
+	if (!player)
+	{
+		return {
+			ok: false,
+			error: 'Player not found'
+		};
+	}
+
+	const piece = getPiece(player, pieceIndex);
+	if (!piece)
+	{
+		return {
+			ok: false,
+			error: 'Piece not found'
+		};
+	}
+
+	if (game.dice === null)
+	{
+		return {
+			ok: false,
+			error: 'Roll dice first'
+		};
+	}
+
+	if (piece.state === 'base')
+	{
+		return {
+			ok: game.dice === 5,
+			error:
+				game.dice === 5
+					? null
+					: 'Need 5 to leave base'
+		};
+	}
+
+	if (piece.state === 'finished')
+	{
+		return {
+			ok: false,
+			error:
+				'Piece already finished'
+		};
+	}
+
+	// PASILLO FINAL
+	if (piece.steps >= MAIN_TRACK_SIZE)
+	{
+		if (piece.steps + game.dice > FINAL_POSITION)
+		{
+			return {
+				ok: false,
+				error:
+					'Exact roll required'
+			};
+		}
+
+		return {
+			ok: true
+		};
+	}
+
+	// ENTRADA A PASILLO
+	if (isEnteringHomeStretch(player.color, piece.steps, game.dice))
+	{
+		const distanceToEntry = getDistanceToHomeEntry(player.color, piece.steps);
+		const overshoot = game.dice - distanceToEntry - 1;
+		const target = MAIN_TRACK_SIZE + overshoot;
+		if (target > FINAL_POSITION)
+		{
+			return {
+				ok: false,
+				error:
+					'Exact roll required'
+			};
+		}
+	}
+
+	return {
+		ok: true
+	};
+}
+
+module.exports = canMovePiece;
 ==============================
 FILE: ./game/validators/canRollDice.js
 ==============================
@@ -1284,219 +1384,6 @@ function canRollDice(game, userId)
 
 module.exports = canRollDice;
 ==============================
-FILE: ./game/validators/canJoinGame.js
-==============================
-const { GAME_STATUS } = require('../constants');
-
-function canJoinGame(game, userId)
-{
-	const alreadyInGame = game.players.find(
-		player => player.id === userId
-	);
-
-	/*
-	🔥 SI YA ESTÁ EN LA PARTIDA
-	PERMITIR REJOIN
-	*/
-	if (alreadyInGame)
-	{
-		return {
-			ok: true,
-			rejoin: true
-		};
-	}
-
-	if (game.status === GAME_STATUS.WAITING)
-	{
-		return {
-			ok: true
-		};
-	}
-
-	/*
-	🔥 SOLO bloquear si ya empezó
-	Y no pertenece a la partida
-	*/
-	if (game.status === GAME_STATUS.PLAYING || game.status === GAME_STATUS.PAUSED || game.status === GAME_STATUS.FINISHED)
-	{
-		return {
-			ok: false,
-			error: 'Game already started'
-		};
-	}
-
-	if (game.players.length >= 4)
-	{
-		return {
-			ok: false,
-			error: 'Game full'
-		};
-	}
-
-	return {
-		ok: true
-	};
-}
-
-module.exports = canJoinGame;
-==============================
-FILE: ./game/validators/canMovePiece.js
-==============================
-const getPlayer =
-	require('../utils/getPlayer');
-
-const getPiece =
-	require('../utils/getPiece');
-
-const {
-	FINAL_POSITION,
-	MAIN_TRACK_SIZE
-} = require('../constants');
-
-const isEnteringHomeStretch =
-	require('../utils/isEnteringHomeStretch');
-
-function canMovePiece(
-	game,
-	playerId,
-	pieceIndex
-)
-{
-	if (game.turn !== playerId)
-	{
-		return {
-			ok: false,
-			error: 'Not your turn'
-		};
-	}
-
-	const player =
-		getPlayer(
-			game,
-			playerId
-		);
-
-	if (!player)
-	{
-		return {
-			ok: false,
-			error: 'Player not found'
-		};
-	}
-
-	const piece =
-		getPiece(
-			player,
-			pieceIndex
-		);
-
-	if (!piece)
-	{
-		return {
-			ok: false,
-			error: 'Piece not found'
-		};
-	}
-
-	if (game.dice === null)
-	{
-		return {
-			ok: false,
-			error: 'Roll dice first'
-		};
-	}
-
-	if (piece.state === 'base')
-	{
-		return {
-			ok: game.dice === 5,
-			error:
-				game.dice === 5
-					? null
-					: 'Need 5 to leave base'
-		};
-	}
-
-	if (piece.state === 'finished')
-	{
-		return {
-			ok: false,
-			error:
-				'Piece already finished'
-		};
-	}
-
-	/*
-	=====================================
-	PASILLO FINAL
-	=====================================
-	*/
-
-	if (piece.steps >= MAIN_TRACK_SIZE)
-	{
-		if (
-			piece.steps + game.dice >
-			FINAL_POSITION
-		)
-		{
-			return {
-				ok: false,
-				error:
-					'Exact roll required'
-			};
-		}
-
-		return {
-			ok: true
-		};
-	}
-
-	/*
-	=====================================
-	ENTRADA A PASILLO
-	=====================================
-	*/
-
-	if (
-		isEnteringHomeStretch(
-			player.color,
-			piece.steps,
-			game.dice
-		)
-	)
-	{
-		const remaining =
-			MAIN_TRACK_SIZE -
-			piece.steps;
-
-		const overshoot =
-			game.dice -
-			remaining;
-
-		const target =
-			MAIN_TRACK_SIZE +
-			overshoot;
-
-		if (
-			target >
-			FINAL_POSITION
-		)
-		{
-			return {
-				ok: false,
-				error:
-					'Exact roll required'
-			};
-		}
-	}
-
-	return {
-		ok: true
-	};
-}
-
-module.exports = canMovePiece;
-==============================
 FILE: ./game/rules/nextTurn.js
 ==============================
 function nextTurn(game)
@@ -1509,6 +1396,140 @@ function nextTurn(game)
 }
 
 module.exports = nextTurn;
+==============================
+FILE: ./game/rules/isGameAbandoned.js
+==============================
+function isGameAbandoned(game)
+{
+	return game.players.every(player => !player.connected);
+}
+
+module.exports = isGameAbandoned;
+==============================
+FILE: ./game/rules/setPlayerConnection.js
+==============================
+function setPlayerConnection(game, playerId, connected)
+{
+	const player = game.players.find(p => p.id === playerId);
+
+	if (!player)
+	{
+		return;
+	}
+
+	player.connected = connected;
+
+	if (connected)
+	{
+		player.disconnectedAt = null;
+		return;
+	}
+
+	player.disconnectedAt = Date.now();
+}
+
+module.exports = setPlayerConnection;
+==============================
+FILE: ./game/rules/checkPausedState.js
+==============================
+const { GAME_STATUS } = require('../constants');
+const { startTurnTimer, clearTurnTimer } = require('../turnTimer');
+
+function checkPausedState(game)
+{
+	const disconnectedPlayers = game.players.filter(player => !player.connected && !player.abandoned);
+
+	console.log(
+		'CHECK PAUSED',
+		game.players.map(p => ({
+			id: p.id,
+			connected: p.connected,
+			abandoned: p.abandoned
+		}))
+	);
+
+	// Pausar partida
+	if (disconnectedPlayers.length > 0)
+	{
+		game.status = GAME_STATUS.PAUSED;
+		clearTurnTimer(game.id);
+		return;
+	}
+
+	// Ya terminó
+	if (game.winner)
+	{
+		clearTurnTimer(game.id);
+		return;
+	}
+
+	// Reanudar partida
+	game.status = GAME_STATUS.PLAYING;
+	startTurnTimer(game.id);
+}
+
+module.exports = checkPausedState;
+==============================
+FILE: ./game/rules/applyMove.js
+==============================
+const {MAIN_TRACK_SIZE, FINAL_POSITION} = require('../constants');
+const isEnteringHomeStretch = require('../utils/isEnteringHomeStretch');
+const getDistanceToHomeEntry = require('../utils/getDistanceToHomeEntry');
+
+function applyMove(game, playerId, pieceIndex)
+{
+	const player =game.players.find(p => p.id === playerId);
+	if (!player)
+	{
+		return;
+	}
+
+	const piece = player.pieces[pieceIndex];
+	if (!piece)
+	{
+		return;
+	}
+
+	// SALIR DE CASA
+	if (piece.state === 'base' && game.dice === 5)
+	{
+		piece.state = 'track';
+		piece.steps = 0;
+		return;
+	}
+
+	//YA EN PASILLO FINAL
+	if (piece.steps >= MAIN_TRACK_SIZE)
+	{
+		piece.steps += game.dice;
+		if (piece.steps === FINAL_POSITION)
+		{
+			piece.state = 'finished';
+		}
+		return;
+	}
+
+	// ENTRADA AL PASILLO FINAL
+	if (isEnteringHomeStretch(player.color, piece.steps, game.dice))
+	{
+		const distanceToEntry = getDistanceToHomeEntry(player.color, piece.steps);
+
+		const overshoot = game.dice - distanceToEntry - 1;
+
+		piece.steps = MAIN_TRACK_SIZE + overshoot;
+		piece.state = 'final';
+		if (piece.steps === FINAL_POSITION)
+		{
+			piece.state = 'finished';
+		}
+		return;
+	}
+
+	//RECORRIDO EXTERIOR NORMAL
+	piece.steps += game.dice;
+}
+
+module.exports = applyMove;
 ==============================
 FILE: ./game/rules/checkCapture.js
 ==============================
@@ -1617,77 +1638,6 @@ function getAvailableMoves(game, playerId)
 
 module.exports = getAvailableMoves;
 ==============================
-FILE: ./game/rules/isGameAbandoned.js
-==============================
-function isGameAbandoned(game)
-{
-	return game.players.every(player => !player.connected);
-}
-
-module.exports = isGameAbandoned;
-==============================
-FILE: ./game/rules/setPlayerConnection.js
-==============================
-function setPlayerConnection(game, playerId, connected)
-{
-	const player = game.players.find(p => p.id === playerId);
-
-	if (!player)
-	{
-		return;
-	}
-
-	player.connected = connected;
-
-	if (connected)
-	{
-		player.disconnectedAt = null;
-		return;
-	}
-
-	player.disconnectedAt = Date.now();
-}
-
-module.exports = setPlayerConnection;
-==============================
-FILE: ./game/rules/isBlockade.js
-==============================
-const {MAIN_TRACK_SIZE} = require('../constants');
-const getRealBoardPosition = require('../utils/getRealBoardPosition');
-
-function isBlockade(game, color, globalPosition)
-{
-	const player = game.players.find(p => p.color === color);
-	if (!player)
-	{
-		return false;
-	}
-
-	let count = 0;
-
-	for (const piece of player.pieces)
-	{
-		if (piece.steps < 0)
-		{
-			continue;
-		}
-		if (piece.steps >= MAIN_TRACK_SIZE)
-		{
-			continue;
-		}
-
-		const position = getRealBoardPosition(color, piece.steps);
-		if (position === globalPosition)
-		{
-			count++;
-		}
-	}
-
-	return count >= 2;
-}
-
-module.exports = isBlockade;
-==============================
 FILE: ./game/rules/getBlockades.js
 ==============================
 const {
@@ -1737,227 +1687,43 @@ function getBlockades(game)
 
 module.exports = getBlockades;
 ==============================
-FILE: ./game/rules/checkPausedState.js
+FILE: ./game/rules/isBlockade.js
 ==============================
-const { GAME_STATUS } = require('../constants');
-const { startTurnTimer, clearTurnTimer } = require('../turnTimer');
+const {MAIN_TRACK_SIZE} = require('../constants');
+const getRealBoardPosition = require('../utils/getRealBoardPosition');
 
-function checkPausedState(game)
+function isBlockade(game, color, globalPosition)
 {
-	const disconnectedPlayers = game.players.filter(player => !player.connected && !player.abandoned);
-
-	console.log(
-		'CHECK PAUSED',
-		game.players.map(p => ({
-			id: p.id,
-			connected: p.connected,
-			abandoned: p.abandoned
-		}))
-	);
-
-	// Pausar partida
-	if (disconnectedPlayers.length > 0)
-	{
-		game.status = GAME_STATUS.PAUSED;
-		clearTurnTimer(game.id);
-		return;
-	}
-
-	// Ya terminó
-	if (game.winner)
-	{
-		clearTurnTimer(game.id);
-		return;
-	}
-
-	// Reanudar partida
-	game.status = GAME_STATUS.PLAYING;
-	startTurnTimer(game.id);
-}
-
-module.exports = checkPausedState;
-==============================
-FILE: ./game/rules/applyMove.js
-==============================
-const {
-	MAIN_TRACK_SIZE,
-	FINAL_POSITION
-} = require('../constants');
-
-const isEnteringHomeStretch =
-	require('../utils/isEnteringHomeStretch');
-
-function applyMove(game, playerId, pieceIndex)
-{
-	const player =
-		game.players.find(
-			p => p.id === playerId
-		);
-
+	const player = game.players.find(p => p.color === color);
 	if (!player)
 	{
-		return;
+		return false;
 	}
 
-	const piece =
-		player.pieces[pieceIndex];
+	let count = 0;
 
-	if (!piece)
+	for (const piece of player.pieces)
 	{
-		return;
-	}
-
-	/* =====================================
-	   SALIR DE CASA
-	===================================== */
-
-	if (
-		piece.state === 'base' &&
-		game.dice === 5
-	)
-	{
-		piece.state = 'track';
-		piece.steps = 0;
-		return;
-	}
-
-	/* =====================================
-	   YA EN PASILLO FINAL
-	===================================== */
-
-	if (piece.steps >= MAIN_TRACK_SIZE)
-	{
-		piece.steps += game.dice;
-
-		if (piece.steps === FINAL_POSITION)
+		if (piece.steps < 0)
 		{
-			piece.state = 'finished';
+			continue;
+		}
+		if (piece.steps >= MAIN_TRACK_SIZE)
+		{
+			continue;
 		}
 
-		return;
-	}
-
-	/* =====================================
-	   RECORRIDO EXTERIOR
-	===================================== */
-
-	if (
-		isEnteringHomeStretch(
-			player.color,
-			piece.steps,
-			game.dice
-		)
-	)
-	{
-		const remainingToEntry =
-			MAIN_TRACK_SIZE -
-			piece.steps;
-
-		const overshoot =
-			game.dice -
-			remainingToEntry;
-
-		piece.steps =
-			MAIN_TRACK_SIZE +
-			overshoot;
-
-		piece.state = 'final';
-
-		if (
-			piece.steps === FINAL_POSITION
-		)
+		const position = getRealBoardPosition(color, piece.steps);
+		if (position === globalPosition)
 		{
-			piece.state = 'finished';
+			count++;
 		}
-
-		return;
 	}
 
-	piece.steps += game.dice;
+	return count >= 2;
 }
 
-module.exports = applyMove;
-==============================
-FILE: ./game/constants.js
-==============================
-const COLORS = [
-	"pink",
-	"purple",
-	"green",
-	"blue"
-];
-
-const GAME_STATUS = {
-	WAITING: "waiting",
-	PLAYING: "playing",
-	PAUSED: "paused",
-	FINISHED: "finished"
-};
-
-// PARCHÍS REAL
-const MAIN_TRACK_SIZE = 68;
-
-const FINAL_STRETCH_SIZE = 7;
-
-const FINAL_POSITION = MAIN_TRACK_SIZE + FINAL_STRETCH_SIZE;
-
-// Salidas reales
-
-const START_POSITIONS = {
-	pink: 0,
-	purple: 17,
-	green: 34,
-	blue: 51
-};
-
-// Casillas seguras
-const SAFE_CELLS = [
-	0,
-	5,
-	12,
-	17,
-	22,
-	29,
-	34,
-	39,
-	46,
-	51,
-	56,
-	63
-];
-
-// Posiciones especiales
-
-const BASE_POSITION = -1;
-
-const FINAL_STRETCH_START =
-	MAIN_TRACK_SIZE;
-
-const DISCONNECT_TIMEOUT = 60000;
-
-const TURN_TIMEOUT = 30000;
-
-const HOME_ENTRIES = {
-	pink: 67,
-	purple: 16,
-	green: 33,
-	blue: 50
-};
-
-module.exports = {
-	COLORS,
-	GAME_STATUS,
-	MAIN_TRACK_SIZE,
-	FINAL_STRETCH_SIZE,
-	FINAL_POSITION,
-	FINAL_STRETCH_START,
-	BASE_POSITION,
-	START_POSITIONS,
-	SAFE_CELLS,
-	HOME_ENTRIES,
-	DISCONNECT_TIMEOUT,
-	TURN_TIMEOUT
-};
+module.exports = isBlockade;
 ==============================
 FILE: ./game/gameManager.js
 ==============================
@@ -2316,6 +2082,121 @@ async function withGameLock(gameId, callback) {
 
 module.exports = withGameLock;
 ==============================
+FILE: ./game/constants.js
+==============================
+const COLORS = [
+	"pink",
+	"purple",
+	"green",
+	"blue"
+];
+
+const GAME_STATUS = {
+	WAITING: "waiting",
+	PLAYING: "playing",
+	PAUSED: "paused",
+	FINISHED: "finished"
+};
+
+// PARCHÍS REAL
+const MAIN_TRACK_SIZE = 68;
+
+const FINAL_STRETCH_SIZE = 7;
+
+const FINAL_POSITION = MAIN_TRACK_SIZE + FINAL_STRETCH_SIZE;
+
+// Salidas reales
+
+const START_POSITIONS = {
+	pink: 0,
+	purple: 17,
+	green: 34,
+	blue: 51
+};
+
+// Casillas seguras
+const SAFE_CELLS = [
+	0,
+	5,
+	12,
+	17,
+	22,
+	29,
+	34,
+	39,
+	46,
+	51,
+	56,
+	63
+];
+
+// Posiciones especiales
+
+const BASE_POSITION = -1;
+
+const FINAL_STRETCH_START =
+	MAIN_TRACK_SIZE;
+
+const DISCONNECT_TIMEOUT = 60000;
+
+const TURN_TIMEOUT = 30000;
+
+const HOME_ENTRIES = {
+	pink: 67,
+	purple: 16,
+	green: 33,
+	blue: 50
+};
+
+module.exports = {
+	COLORS,
+	GAME_STATUS,
+	MAIN_TRACK_SIZE,
+	FINAL_STRETCH_SIZE,
+	FINAL_POSITION,
+	FINAL_STRETCH_START,
+	BASE_POSITION,
+	START_POSITIONS,
+	SAFE_CELLS,
+	HOME_ENTRIES,
+	DISCONNECT_TIMEOUT,
+	TURN_TIMEOUT
+};
+==============================
+FILE: ./game/disconnectTimers.js
+==============================
+const timers = new Map();
+
+function getKey(gameId, userId)
+{
+	return `${gameId}:${userId}`;
+}
+
+function clearDisconnectTimer(gameId, userId)
+{
+	const key = getKey(gameId, userId);
+
+	const timer = timers.get(key);
+
+	if (timer)
+	{
+		clearTimeout(timer);
+		timers.delete(key);
+	}
+}
+
+function setDisconnectTimer(gameId, userId, timer)
+{
+	clearDisconnectTimer(gameId, userId);
+
+	timers.set(getKey(gameId, userId), timer);
+}
+
+module.exports = {
+	clearDisconnectTimer,
+	setDisconnectTimer
+};
+==============================
 FILE: ./game/gameEngine.js
 ==============================
 const { COLORS, GAME_STATUS } =require('./constants');
@@ -2326,7 +2207,6 @@ const checkCapture = require('./rules/checkCapture');
 const checkWin = require('./rules/checkWin');
 const createPieces = require('./utils/createPieces');
 const {startTurnTimer, clearTurnTimer} = require('./turnTimer');
-
 
 function rollDice()
 {
@@ -2410,40 +2290,6 @@ module.exports = {
 	rollDice,
 	addPlayerToGame,
 	executeMove
-};
-==============================
-FILE: ./game/disconnectTimers.js
-==============================
-const timers = new Map();
-
-function getKey(gameId, userId)
-{
-	return `${gameId}:${userId}`;
-}
-
-function clearDisconnectTimer(gameId, userId)
-{
-	const key = getKey(gameId, userId);
-
-	const timer = timers.get(key);
-
-	if (timer)
-	{
-		clearTimeout(timer);
-		timers.delete(key);
-	}
-}
-
-function setDisconnectTimer(gameId, userId, timer)
-{
-	clearDisconnectTimer(gameId, userId);
-
-	timers.set(getKey(gameId, userId), timer);
-}
-
-module.exports = {
-	clearDisconnectTimer,
-	setDisconnectTimer
 };
 ==============================
 FILE: ./middleware/authMiddleware.js
@@ -2616,391 +2462,6 @@ function authSocket(socket, next)
 
 module.exports = authSocket;
 ==============================
-FILE: ./sockets/gameSocket.js
-==============================
-const {
-	getGame,
-	saveGame,
-	deleteGame
-} = require('../game/gameManager');
-
-const setPlayerConnection =
-	require('../game/rules/setPlayerConnection');
-
-const checkPausedState =
-	require('../game/rules/checkPausedState');
-
-const isGameAbandoned =
-	require('../game/rules/isGameAbandoned');
-
-const normalizeGame =
-	require('../game/utils/normalizeGame');
-
-const withGameLock =
-	require('../game/withGameLock');
-
-const {
-	clearDisconnectTimer,
-	setDisconnectTimer
-} = require('../game/disconnectTimers');
-
-const {
-	DISCONNECT_TIMEOUT
-} = require('../game/constants');
-
-function registerGameSocket(io, socket)
-{
-	socket.on(
-		'game:join',
-		async ({ gameId }) => {
-
-			try
-			{
-				socket.join(
-					String(gameId)
-				);
-
-				clearDisconnectTimer(
-					gameId,
-					socket.user.id
-				);
-
-				console.log(
-					'SOCKET JOIN',
-					gameId,
-					socket.user.id
-				);
-
-				const locked =
-					await withGameLock(
-						gameId,
-						async (game) => {
-
-							const player =
-								game.players.find(
-									p =>
-										p.id ===
-										socket.user.id
-								);
-							console.log(
-								'SOCKET PLAYER CHECK',
-								socket.user.id,
-								game.players.map(p => p.id)
-							);
-
-							if (!player)
-							{
-								return {
-									error:
-										'You are not part of this game'
-								};
-							}
-
-							setPlayerConnection(
-								game,
-								socket.user.id,
-								true
-							);
-
-							checkPausedState(
-								game
-							);
-
-							return {
-								ok: true
-							};
-						}
-					);
-
-				if (!locked)
-				{
-					return socket.emit(
-						'error',
-						{
-							message:
-								'Game not found'
-						}
-					);
-				}
-
-				if (locked.result.error)
-				{
-					return socket.emit(
-						'error',
-						{
-							message:
-								locked.result.error
-						}
-					);
-				}
-
-				const normalized =
-					normalizeGame(
-						locked.game
-					);
-
-				socket.emit(
-					'game:update',
-					normalized
-				);
-
-				io.to(
-					String(gameId)
-				).emit(
-					'game:player_reconnected',
-					{
-						userId:
-							socket.user.id
-					}
-				);
-
-				io.to(
-					String(gameId)
-				).emit(
-					'game:update',
-					normalized
-				);
-			}
-			catch (err)
-			{
-				console.error(
-					'game:join error:',
-					err
-				);
-
-				socket.emit(
-					'error',
-					{
-						message:
-							'Socket join error'
-					}
-				);
-			}
-		}
-	);
-
-	socket.on(
-		'game:state',
-		async ({ gameId }) => {
-
-			try
-			{
-				const game =
-					await getGame(
-						gameId
-					);
-
-				if (!game)
-				{
-					return socket.emit(
-						'error',
-						{
-							message:
-								'Game not found'
-						}
-					);
-				}
-
-				io.to(
-					String(gameId)
-				).emit(
-					'game:update',
-					normalizeGame(
-						game
-					)
-				);
-			}
-			catch (err)
-			{
-				console.error(
-					'game:state error:',
-					err
-				);
-			}
-		}
-	);
-
-	socket.on(
-		'disconnect',
-		async () => {
-
-			try
-			{
-				const joinedGames =
-					Array.from(
-						socket.rooms
-					).filter(
-						room =>
-							room !==
-							socket.id
-					);
-
-				for (const gameId of joinedGames)
-				{
-					const locked =
-						await withGameLock(
-							gameId,
-							async (game) => {
-
-								setPlayerConnection(
-									game,
-									socket.user.id,
-									false
-								);
-
-								checkPausedState(
-									game
-								);
-
-								return {
-									ok: true
-								};
-							}
-						);
-
-					if (!locked)
-					{
-						continue;
-					}
-
-					const normalized =
-						normalizeGame(
-							locked.game
-						);
-
-					io.to(
-						String(gameId)
-					).emit(
-						'game:update',
-						normalized
-					);
-
-					io.to(
-						String(gameId)
-					).emit(
-						'game:player_disconnected',
-						{
-							userId:
-								socket.user.id
-						}
-					);
-
-					const timer =
-						setTimeout(
-							async () => {
-
-								try
-								{
-									const updatedGame =
-										await getGame(
-											gameId
-										);
-
-									if (!updatedGame)
-									{
-										return;
-									}
-
-									const player =
-										updatedGame.players.find(
-											p =>
-												p.id ===
-												socket.user.id
-										);
-
-									if (!player)
-									{
-										return;
-									}
-
-									if (
-										player.connected
-									)
-									{
-										return;
-									}
-
-									player.abandoned =
-										true;
-
-									const abandoned =
-										isGameAbandoned(
-											updatedGame
-										);
-
-									if (
-										abandoned
-									)
-									{
-										await deleteGame(
-											gameId
-										);
-
-										return;
-									}
-
-									await saveGame(
-										updatedGame
-									);
-
-									io.to(
-										String(
-											gameId
-										)
-									).emit(
-										'game:player_abandoned',
-										{
-											userId:
-												socket.user.id
-										}
-									);
-
-									io.to(
-										String(
-											gameId
-										)
-									).emit(
-										'game:update',
-										normalizeGame(
-											updatedGame
-										)
-									);
-								}
-								catch (err)
-								{
-									console.error(
-										err
-									);
-								}
-							},
-							DISCONNECT_TIMEOUT
-						);
-					
-					console.log(
-						'SOCKET DISCONNECT',
-						socket.user.id
-					);
-
-					setDisconnectTimer(
-						gameId,
-						socket.user.id,
-						timer
-					);
-				}
-			}
-			catch (err)
-			{
-				console.error(
-					err
-				);
-			}
-		}
-	);
-}
-
-module.exports =
-	registerGameSocket;
-==============================
 FILE: ./sockets/index.js
 ==============================
 const { Server } = require('socket.io');
@@ -3048,6 +2509,253 @@ function initSockets(httpServer)
 }
 
 module.exports = initSockets;
+==============================
+FILE: ./sockets/gameSocket.js
+==============================
+const {getGame, saveGame, deleteGame} = require('../game/gameManager');
+const setPlayerConnection = require('../game/rules/setPlayerConnection');
+const checkPausedState = require('../game/rules/checkPausedState');
+const isGameAbandoned = require('../game/rules/isGameAbandoned');
+const normalizeGame = require('../game/utils/normalizeGame');
+const withGameLock = require('../game/withGameLock');
+const {clearDisconnectTimer, setDisconnectTimer} = require('../game/disconnectTimers');
+const {DISCONNECT_TIMEOUT} = require('../game/constants');
+
+function registerGameSocket(io, socket)
+{
+	socket.on(
+		'game:join',
+		async ({ gameId }) => {
+
+			try
+			{
+				socket.join(String(gameId));
+				clearDisconnectTimer(gameId, socket.user.id);
+				console.log('SOCKET JOIN', gameId,socket.user.id);
+
+				const locked = await withGameLock(gameId,
+					async (game) => {
+
+						const player = game.players.find(p => p.id === socket.user.id);
+						console.log('SOCKET PLAYER CHECK', socket.user.id, game.players.map(p => p.id));
+
+						if (!player)
+						{
+							return {
+								error:
+									'You are not part of this game'
+							};
+						}
+						setPlayerConnection(game, socket.user.id, true);
+						checkPausedState(game);
+
+						return {
+							ok: true
+						};
+					});
+
+				if (!locked)
+				{
+					return socket.emit(
+						'error',
+						{
+							message:
+								'Game not found'
+						}
+					);
+				}
+
+				if (locked.result.error)
+				{
+					return socket.emit(
+						'error',
+						{
+							message:
+								locked.result.error
+						}
+					);
+				}
+
+				const normalized = normalizeGame(locked.game);
+				socket.emit('game:update', normalized);
+
+				io.to(String(gameId)
+					).emit(
+						'game:player_reconnected',
+						{
+							userId:
+								socket.user.id
+						}
+					);
+
+				io.to(String(gameId)
+					).emit(
+						'game:update',
+						normalized
+					);
+			}
+			catch (err)
+			{
+				console.error('game:join error:', err);
+
+				socket.emit('error',
+				{
+					message:
+						'Socket join error'
+				});
+			}
+		}
+	);
+
+	socket.on('game:state',
+		async ({ gameId }) => {
+
+			try
+			{
+				const game = await getGame(gameId);
+				if (!game)
+				{
+					return socket.emit(
+						'error',
+						{
+							message:
+								'Game not found'
+						}
+					);
+				}
+
+				io.to(String(gameId)
+					).emit(
+						'game:update',
+						normalizeGame(
+							game
+						)
+					);
+			}
+			catch (err)
+			{
+				console.error('game:state error:', err);
+			}
+		}
+	);
+
+	socket.on('disconnect',
+		async () => {
+
+			try
+			{
+				const joinedGames =Array.from(socket.rooms).filter(room => room !== socket.id);
+				for (const gameId of joinedGames)
+				{
+					const locked = await withGameLock(gameId,
+						async (game) => {
+
+							setPlayerConnection(
+								game,
+								socket.user.id,
+								false
+							);
+
+							checkPausedState(
+								game
+							);
+
+							return {
+								ok: true
+							};
+						});
+
+					if (!locked)
+					{
+						continue;
+					}
+
+					const normalized = normalizeGame(locked.game);
+
+					io.to(String(gameId)
+						).emit(
+							'game:update',
+							normalized
+						);
+
+					io.to(String(gameId)
+						).emit(
+							'game:player_disconnected',
+							{
+								userId:
+									socket.user.id
+							}
+						);
+
+					const timer = setTimeout(
+						async () => {
+
+							try
+							{
+								const updatedGame = await getGame(gameId);
+								if (!updatedGame)
+								{
+									return;
+								}
+
+								const player = updatedGame.players.find(p => p.id === socket.user.id);
+								if (!player)
+								{
+									return;
+								}
+
+								if (player.connected)
+								{
+									return;
+								}
+
+								player.abandoned = true;
+
+								const abandoned = isGameAbandoned(updatedGame);
+								if (abandoned)
+								{
+									await deleteGame(gameId);
+									return;
+								}
+
+								await saveGame(updatedGame);
+
+								io.to(String(gameId)
+									).emit(
+										'game:player_abandoned',
+										{
+											userId:
+												socket.user.id
+										});
+
+								io.to(String(gameId)
+									).emit(
+										'game:update',
+										normalizeGame(
+											updatedGame
+										));
+							}
+							catch (err)
+							{
+								console.error(err);
+							}
+						},
+						DISCONNECT_TIMEOUT);
+					
+					console.log('SOCKET DISCONNECT', socket.user.id);
+
+					setDisconnectTimer(gameId, socket.user.id, timer);
+				}
+			}
+			catch (err)
+			{
+				console.error(err);
+			}
+		}
+	);
+}
+
+module.exports = registerGameSocket;
 ==============================
 FILE: ./socket.js
 ==============================

@@ -117,15 +117,13 @@ export default function GameBoard() {
         "
       />
 
-      {/* SAFE CELLS */}
-      <img
-        src="/board/board-safe.svg"
+        <img
+        src="/board/board-path.svg"
         className="
           absolute inset-0
           w-full h-full
           object-contain
           opacity-90
-          mix-blend-screen
           pointer-events-none
         "
       />

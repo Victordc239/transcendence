@@ -22,79 +22,103 @@
 <g filter="url(#softGlow)">
 
   <!-- LEFT SIDE -->
+  <rect x="15" y="472" width="55" height="55" rx="12"
+  fill="#ff3bd455" stroke="#ff3bd4" stroke-width="3"/>
+
   <rect x="70" y="472" width="55" height="55" rx="12"
   fill="#ff3bd455" stroke="#ff3bd4" stroke-width="3"/>
 
   <rect x="125" y="472" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#ff3bd4" stroke-width="2"/>
 
   <rect x="180" y="472" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#ff3bd4" stroke-width="2"/>
 
   <rect x="235" y="472" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#ff3bd4" stroke-width="2"/>
 
   <rect x="290" y="472" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#ff3bd4" stroke-width="2"/>
 
   <rect x="345" y="472" width="55" height="55" rx="12"
-  fill="#ff3bd422" stroke="#ff3bd4aa" stroke-width="2"/>
+  fill="#ff3bd422" stroke="#ff3bd4" stroke-width="2"/>
+
+   <rect x="400" y="472" width="55" height="55" rx="12"
+  fill="#ff3bd422" stroke="#ff3bd4" stroke-width="2"/>
 
   <!-- RIGHT SIDE -->
+  <rect x="545" y="472" width="55" height="55" rx="12"
+  fill="#c86cff22" stroke="#c86cff" stroke-width="2"/>
+
   <rect x="600" y="472" width="55" height="55" rx="12"
-  fill="#c86cff22" stroke="#c86cffaa" stroke-width="2"/>
+  fill="#c86cff22" stroke="#c86cff" stroke-width="2"/>
 
   <rect x="655" y="472" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#c86cff" stroke-width="2"/>
 
   <rect x="710" y="472" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#c86cff" stroke-width="2"/>
 
   <rect x="765" y="472" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#c86cff" stroke-width="2"/>
 
   <rect x="820" y="472" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#c86cff" stroke-width="2"/>
 
   <rect x="875" y="472" width="55" height="55" rx="12"
   fill="#c86cff55" stroke="#c86cff" stroke-width="3"/>
 
+  <rect x="930" y="472" width="55" height="55" rx="12"
+  fill="#c86cff55" stroke="#c86cff" stroke-width="3"/>
+
   <!-- TOP -->
+  <rect x="472" y="15" width="55" height="55" rx="12"
+  fill="#00ff9d55" stroke="#00ff9d" stroke-width="3"/>
+
   <rect x="472" y="70" width="55" height="55" rx="12"
   fill="#00ff9d55" stroke="#00ff9d" stroke-width="3"/>
 
   <rect x="472" y="125" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#00ff9d" stroke-width="2"/>
 
   <rect x="472" y="180" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#00ff9d" stroke-width="2"/>
 
   <rect x="472" y="235" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#00ff9d" stroke-width="2"/>
 
   <rect x="472" y="290" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#00ff9d" stroke-width="2"/>
 
   <rect x="472" y="345" width="55" height="55" rx="12"
-  fill="#00ff9d22" stroke="#00ff9daa" stroke-width="2"/>
+  fill="#00ff9d22" stroke="#00ff9d" stroke-width="2"/>
+
+  <rect x="472" y="400" width="55" height="55" rx="12"
+  fill="#00ff9d22" stroke="#00ff9d" stroke-width="2"/>
 
   <!-- BOTTOM -->
+  <rect x="472" y="545" width="55" height="55" rx="12"
+  fill="#00d9ff22" stroke="#00d9ff" stroke-width="2"/>
+
   <rect x="472" y="600" width="55" height="55" rx="12"
-  fill="#00d9ff22" stroke="#00d9ffaa" stroke-width="2"/>
+  fill="#00d9ff22" stroke="#00d9ff" stroke-width="2"/>
 
   <rect x="472" y="655" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#00d9ff" stroke-width="2"/>
 
   <rect x="472" y="710" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#00d9ff" stroke-width="2"/>
 
   <rect x="472" y="765" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#00d9ff" stroke-width="2"/>
 
   <rect x="472" y="820" width="55" height="55" rx="12"
-  fill="url(#cellFill)" stroke="#ffffff22" stroke-width="2"/>
+  fill="url(#cellFill)" stroke="#00d9ff" stroke-width="2"/>
 
   <rect x="472" y="875" width="55" height="55" rx="12"
+  fill="#00d9ff55" stroke="#00d9ff" stroke-width="3"/>
+
+  <rect x="472" y="930" width="55" height="55" rx="12"
   fill="#00d9ff55" stroke="#00d9ff" stroke-width="3"/>
 
 </g>

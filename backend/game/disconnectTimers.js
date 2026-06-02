@@ -8,9 +8,7 @@ function getKey(gameId, userId)
 function clearDisconnectTimer(gameId, userId)
 {
 	const key = getKey(gameId, userId);
-
 	const timer = timers.get(key);
-
 	if (timer)
 	{
 		clearTimeout(timer);
@@ -21,11 +19,7 @@ function clearDisconnectTimer(gameId, userId)
 function setDisconnectTimer(gameId, userId, timer)
 {
 	clearDisconnectTimer(gameId, userId);
-
 	timers.set(getKey(gameId, userId), timer);
 }
 
-module.exports = {
-	clearDisconnectTimer,
-	setDisconnectTimer
-};
+module.exports = {clearDisconnectTimer, setDisconnectTimer};

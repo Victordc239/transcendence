@@ -46,7 +46,6 @@ function checkCapture(game, currentPlayerId)
 			{
 				continue;
 			}
-
 			for (const enemyPiece of enemy.pieces)
 			{
 				// Casa
@@ -54,7 +53,6 @@ function checkCapture(game, currentPlayerId)
 				{
 					continue;
 				}
-
 				// Pasillo final
 				if (enemyPiece.steps >= MAIN_TRACK_SIZE)
 				{

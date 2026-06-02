@@ -18,7 +18,6 @@ function removeUserSocket(userId, socketId)
 
 	const sockets = onlineUsers.get(userId);
 	sockets.delete(socketId);
-
 	if (sockets.size === 0)
 	{
 		onlineUsers.delete(userId);
@@ -35,9 +34,4 @@ function getOnlineUsers()
 	return Array.from(onlineUsers.keys());
 }
 
-module.exports = {
-  addUserSocket,
-  removeUserSocket,
-  isUserOnline,
-  getOnlineUsers
-};
+module.exports = {addUserSocket, removeUserSocket, isUserOnline, getOnlineUsers};

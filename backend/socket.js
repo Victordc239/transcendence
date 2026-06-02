@@ -22,7 +22,4 @@ function getIO()
 	return io;
 }
 
-module.exports = {
-setIO,
-getIO
-};
+module.exports = {setIO, getIO};

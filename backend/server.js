@@ -48,7 +48,6 @@ initDB()
 		});
 	})
 	.catch((err) => {
-
 		console.error('DB init failed:', err);
 		process.exit(1);
 	});

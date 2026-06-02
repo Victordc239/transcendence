@@ -31,8 +31,7 @@ function startTurnTimer(gameId)
 	const timeout = setTimeout(async () => {
 		try
 		{
-			const locked = await withGameLock(
-				gameId,
+			const locked = await withGameLock(gameId,
 				async (game) => {
 
 					if (game.status !== GAME_STATUS.PLAYING)
@@ -43,8 +42,7 @@ function startTurnTimer(gameId)
 					nextTurn(game);
 					game.updatedAt = Date.now();
 					return { ok: true };
-				}
-			);
+				});
 
 			if (!locked)
 			{
@@ -65,22 +63,15 @@ function startTurnTimer(gameId)
 
 			getIO()
 				.to(gameId)
-				.emit(
-					"game:update",
-					normalizeGame(locked.game)
-				);
+				.emit("game:update", normalizeGame(locked.game));
 		}
 		catch (err)
 		{
 			console.error(err);
 		}
-
 	}, TURN_TIMEOUT);
 
 	turnTimers.set(gameId, timeout);
 }
 
-module.exports = {
-	startTurnTimer,
-	clearTurnTimer
-};
+module.exports = {startTurnTimer, clearTurnTimer};

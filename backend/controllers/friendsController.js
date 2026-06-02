@@ -6,7 +6,6 @@ exports.sendRequest = async (req, res) => {
 	{
 		const requesterId = req.user.id;
 		const addresseeId = parseInt(req.params.id, 10);
-
 		if (requesterId === addresseeId)
 		{
 			return res.status(400).json({error: 'No puedes agregarte'});

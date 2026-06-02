@@ -29,7 +29,7 @@ function addPlayerToGame(game, userId)
 		};
 	}
 
-	const color =COLORS[game.players.length];
+	const color = COLORS[game.players.length];
 
 	game.players.push({
 		id: userId,
@@ -85,8 +85,4 @@ function executeMove(game, playerId, pieceIndex)
 	};
 }
 
-module.exports = {
-	rollDice,
-	addPlayerToGame,
-	executeMove
-};
+module.exports = {rollDice, addPlayerToGame, executeMove};

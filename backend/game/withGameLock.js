@@ -1,29 +1,35 @@
 const pool = require('../db');
 
-function safeParse(state) {
-	if (!state) return null;
+function safeParse(state)
+{
+	if (!state)
+		return null;
 
 	// PostgreSQL JSONB ya puede venir como objeto
-	if (typeof state === 'object') return state;
+	if (typeof state === 'object')
+		return state;
 
-	if (typeof state === 'string') {
-		try {
+	if (typeof state === 'string')
+	{
+		try
+		{
 			return JSON.parse(state);
-		} catch (e) {
+		}
+		catch (e)
+		{
 			console.error('❌ JSON parse error:', e);
 			return null;
 		}
 	}
-
 	return null;
 }
 
-async function withGameLock(gameId, callback) {
+async function withGameLock(gameId, callback)
+{
 	const client = await pool.connect();
-
-	try {
+	try
+	{
 		await client.query('BEGIN');
-
 		const result = await client.query(
 			`
 			SELECT state
@@ -34,14 +40,16 @@ async function withGameLock(gameId, callback) {
 			[gameId]
 		);
 
-		if (result.rows.length === 0) {
+		if (result.rows.length === 0)
+		{
 			await client.query('ROLLBACK');
 			return null;
 		}
 
 		const game = safeParse(result.rows[0].state);
 
-		if (!game || !Array.isArray(game.players)) {
+		if (!game || !Array.isArray(game.players))
+		{
 			console.error('❌ Invalid game state:', game);
 			await client.query('ROLLBACK');
 			return null;
@@ -49,12 +57,14 @@ async function withGameLock(gameId, callback) {
 
 		const callbackResult = await callback(game, client);
 
-		if (!callbackResult) {
+		if (!callbackResult)
+		{
 			await client.query('ROLLBACK');
 			return null;
 		}
 
-		if (callbackResult.error) {
+		if (callbackResult.error)
+		{
 			await client.query('ROLLBACK');
 			return { game, result: callbackResult };
 		}
@@ -73,17 +83,17 @@ async function withGameLock(gameId, callback) {
 				game.id
 			]
 		);
-
 		await client.query('COMMIT');
-
 		return { game, result: callbackResult };
 	}
-	catch (error) {
+	catch (error)
+	{
 		await client.query('ROLLBACK');
 		console.error('withGameLock error:', error);
 		throw error;
 	}
-	finally {
+	finally
+	{
 		client.release();
 	}
 }

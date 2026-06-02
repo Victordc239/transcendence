@@ -36,7 +36,7 @@ export interface Game {
 export type PieceState =
   | "base"
   | "track"
-  | "home"
+  | "final"
   | "finished";
 
 export interface PieceCoords {

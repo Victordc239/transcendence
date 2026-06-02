@@ -22,10 +22,10 @@ const FINAL_POSITION = MAIN_TRACK_SIZE + FINAL_STRETCH_SIZE;
 // Salidas reales
 
 const START_POSITIONS = {
-	pink: 0,
-	purple: 17,
-	green: 34,
-	blue: 51
+	pink: 39,
+	purple: 5,
+	green: 29,
+	blue: 63
 };
 
 // Casillas seguras
@@ -48,17 +48,16 @@ const SAFE_CELLS = [
 
 const BASE_POSITION = -1;
 
-const FINAL_STRETCH_START =
-	MAIN_TRACK_SIZE;
+const FINAL_STRETCH_START = MAIN_TRACK_SIZE;
 
 const DISCONNECT_TIMEOUT = 60000;
 
 const TURN_TIMEOUT = 30000;
 
 const HOME_ENTRIES = {
-	pink: 67,
-	purple: 16,
-	green: 33,
+	pink: 33,
+	purple: 67,
+	green: 16,
 	blue: 50
 };
 

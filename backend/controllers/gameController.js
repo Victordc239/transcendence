@@ -8,6 +8,7 @@ const { getGame: getGameById, createGame: createGameInDB} = require('../game/gam
 const withGameLock = require('../game/withGameLock');
 const { getIO } = require('../socket');
 const normalizeGame = require('../game/utils/normalizeGame');
+const { startTurnTimer } = require('../game/turnTimer');
 
 /* =============================
 CREATE GAME
@@ -17,7 +18,6 @@ exports.createGame = async (req, res) => {
 	try
 	{
 		const userId = Number(req.user.id);
-
 		if (!userId)
 		{
 			return res.status(401).json({
@@ -27,12 +27,7 @@ exports.createGame = async (req, res) => {
 
 		const game = createNewGame(userId);
 
-		const created =
-			await createGameInDB(
-				game,
-				userId
-			);
-
+		const created = await createGameInDB(game, userId);
 		if (!created)
 		{
 			return res.status(500).json({
@@ -65,11 +60,7 @@ exports.createGame = async (req, res) => {
 	}
 	catch (error)
 	{
-		console.error(
-			'CREATE GAME ERROR:',
-			error
-		);
-
+		console.error('CREATE GAME ERROR:', error);
 		return res.status(500).json({
 			error:
 				'Server error creating game',
@@ -92,14 +83,11 @@ exports.getGame = async (req, res) => {
 				error: 'Game not found'
 			});
 		}
-		return res.json(
-			normalizeGame(game)
-		);
+		return res.json(normalizeGame(game));
 	}
 	catch (error)
 	{
 		console.error(error);
-
 		return res.status(500).json({
 			error: 'Server error'
 		});
@@ -190,10 +178,7 @@ exports.joinGame = async (req, res) => {
 				.to(gameId)
 				.emit(
 					'game:update',
-					normalizeGame(
-						locked.game
-					)
-				);
+					normalizeGame(locked.game));
 		}
 		catch (socketError)
 		{
@@ -223,95 +208,64 @@ exports.rollDice = async (req, res) => {
 	{
 		const userId = req.user.id;
 		const gameId = req.params.id;
-		const locked =
-			await withGameLock(
-				gameId,
-				async (game) => {
-
-					const validation = canRollDice(game, userId);
-
-					if (!validation.ok)
-					{
-						return {
-							error: validation.error
-						};
-					}
-					if (validation.startGame)
-					{
-						game.status = 'playing';
-
-						game.turn = game.players[0].id;
-
-						const { startTurnTimer } =
-							require('../game/turnTimer');
-
-						startTurnTimer(game.id);
-					}
-
-					game.dice = rollDice();
-
-					const availableMoves = getAvailableMoves(game, userId);
-
-					if (availableMoves.length === 0)
-					{
-						game.lastDice = game.dice;
-
-						nextTurn(game);
-
-						setTimeout(async () => {
-
-							try
-							{
-								await withGameLock(
-									gameId,
-									async (lockedGame) => {
-										if (!lockedGame)
-										{
-											return {
-												error: 'Game not found'
-											};
-										}
-
-										lockedGame.dice = null;
-
-										return {
-											ok: true
-										};
-									}
-								);
-
-								const refreshed =
-									await getGameById(
-										gameId
-									);
-
-								if (refreshed)
-								{
-									getIO()
-										.to(gameId)
-										.emit(
-											'game:update',
-											normalizeGame(
-												refreshed
-											)
-										);
-								}
-							}
-							catch (err)
-							{
-								console.error(err);
-							}
-						}, 1500);
-					}
-
-					game.updatedAt = Date.now();
-
+		const locked = await withGameLock(gameId,
+			async (game) => {
+				const validation = canRollDice(game, userId);
+				if (!validation.ok)
+				{
 					return {
-						ok: true,
-						dice: game.dice
+						error: validation.error
 					};
 				}
-			);
+				if (validation.startGame)
+				{
+					game.status = 'playing';
+					game.turn = game.players[0].id;
+					startTurnTimer(game.id);
+				}
+				game.dice = rollDice();
+				const availableMoves = getAvailableMoves(game, userId);
+				if (availableMoves.length === 0)
+				{
+					game.lastDice = game.dice;
+					nextTurn(game);
+					setTimeout(async () => {
+						try
+						{
+							await withGameLock(gameId,
+								async (lockedGame) => {
+									if (!lockedGame)
+									{
+										return {
+											error: 'Game not found'
+										};
+									}
+									lockedGame.dice = null;
+									return {
+										ok: true
+									};
+								});
+
+							const refreshed = await getGameById(gameId);
+							if (refreshed)
+							{
+								getIO()
+									.to(gameId)
+									.emit('game:update', normalizeGame(refreshed));
+							}
+						}
+						catch (err)
+						{
+							console.error(err);
+						}
+					}, 1500);
+				}
+				game.updatedAt = Date.now();
+				return {
+					ok: true,
+					dice: game.dice
+				};
+			});
 
 		if (!locked)
 		{
@@ -327,7 +281,6 @@ exports.rollDice = async (req, res) => {
 
 		// 🔥 FIX: SIEMPRE NORMALIZADO
 		const normalized = normalizeGame(locked.game);
-
 		getIO()
 			.to(gameId)
 			.emit('game:update', normalized);
@@ -352,30 +305,16 @@ exports.movePiece = async (req, res) => {
 		const userId = req.user.id;
 		const gameId = req.params.id;
 		const { pieceIndex } = req.body;
-
-		const locked =
-			await withGameLock(
-				gameId,
-				async (game) => {
-
-					const result =
-						executeMove(
-							game,
-							userId,
-							pieceIndex
-						);
-
-					if (!result.ok)
-					{
-						return result;
-					}
-
-					game.updatedAt =
-						Date.now();
-
+		const locked = await withGameLock(gameId,
+			async (game) => {
+				const result = executeMove(game, userId, pieceIndex);
+				if (!result.ok)
+				{
 					return result;
 				}
-			);
+				game.updatedAt = Date.now();
+				return result;
+			});
 
 		if (!locked)
 		{
@@ -396,9 +335,7 @@ exports.movePiece = async (req, res) => {
 
 		getIO()
 			.to(gameId)
-			.emit(
-				'game:update',
-				normalizeGame(locked.game));
+			.emit('game:update', normalizeGame(locked.game));
 
 		return res.json(normalizeGame(locked.game));
 	}

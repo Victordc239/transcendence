@@ -9,10 +9,8 @@ const {DISCONNECT_TIMEOUT} = require('../game/constants');
 
 function registerGameSocket(io, socket)
 {
-	socket.on(
-		'game:join',
+	socket.on('game:join',
 		async ({ gameId }) => {
-
 			try
 			{
 				socket.join(String(gameId));
@@ -47,19 +45,16 @@ function registerGameSocket(io, socket)
 						{
 							message:
 								'Game not found'
-						}
-					);
+						});
 				}
 
 				if (locked.result.error)
 				{
-					return socket.emit(
-						'error',
+					return socket.emit('error',
 						{
 							message:
 								locked.result.error
-						}
-					);
+						});
 				}
 
 				const normalized = normalizeGame(locked.game);
@@ -75,15 +70,11 @@ function registerGameSocket(io, socket)
 					);
 
 				io.to(String(gameId)
-					).emit(
-						'game:update',
-						normalized
-					);
+					).emit('game:update', normalized);
 			}
 			catch (err)
 			{
 				console.error('game:join error:', err);
-
 				socket.emit('error',
 				{
 					message:
@@ -95,7 +86,6 @@ function registerGameSocket(io, socket)
 
 	socket.on('game:state',
 		async ({ gameId }) => {
-
 			try
 			{
 				const game = await getGame(gameId);
@@ -127,7 +117,6 @@ function registerGameSocket(io, socket)
 
 	socket.on('disconnect',
 		async () => {
-
 			try
 			{
 				const joinedGames =Array.from(socket.rooms).filter(room => room !== socket.id);
@@ -135,21 +124,11 @@ function registerGameSocket(io, socket)
 				{
 					const locked = await withGameLock(gameId,
 						async (game) => {
-
-							setPlayerConnection(
-								game,
-								socket.user.id,
-								false
-							);
-
-							checkPausedState(
-								game
-							);
-
+							setPlayerConnection(game, socket.user.id, false);
+							checkPausedState(game);
 							return {
 								ok: true
-							};
-						});
+							};});
 
 					if (!locked)
 					{
@@ -159,77 +138,61 @@ function registerGameSocket(io, socket)
 					const normalized = normalizeGame(locked.game);
 
 					io.to(String(gameId)
-						).emit(
-							'game:update',
-							normalized
-						);
+						).emit('game:update', normalized);
 
 					io.to(String(gameId)
-						).emit(
-							'game:player_disconnected',
+						).emit('game:player_disconnected',
 							{
 								userId:
 									socket.user.id
-							}
-						);
+							});
 
-					const timer = setTimeout(
-						async () => {
-
-							try
+					const timer = setTimeout(async () => {
+						try
+						{
+							const updatedGame = await getGame(gameId);
+							if (!updatedGame)
 							{
-								const updatedGame = await getGame(gameId);
-								if (!updatedGame)
-								{
-									return;
-								}
-
-								const player = updatedGame.players.find(p => p.id === socket.user.id);
-								if (!player)
-								{
-									return;
-								}
-
-								if (player.connected)
-								{
-									return;
-								}
-
-								player.abandoned = true;
-
-								const abandoned = isGameAbandoned(updatedGame);
-								if (abandoned)
-								{
-									await deleteGame(gameId);
-									return;
-								}
-
-								await saveGame(updatedGame);
-
-								io.to(String(gameId)
-									).emit(
-										'game:player_abandoned',
-										{
-											userId:
-												socket.user.id
-										});
-
-								io.to(String(gameId)
-									).emit(
-										'game:update',
-										normalizeGame(
-											updatedGame
-										));
+								return;
 							}
-							catch (err)
+
+							const player = updatedGame.players.find(p => p.id === socket.user.id);
+							if (!player)
 							{
-								console.error(err);
+								return;
 							}
-						},
-						DISCONNECT_TIMEOUT);
+
+							if (player.connected)
+							{
+								return;
+							}
+
+							player.abandoned = true;
+							const abandoned = isGameAbandoned(updatedGame);
+							if (abandoned)
+							{
+								await deleteGame(gameId);
+								return;
+							}
+
+							await saveGame(updatedGame);
+							io.to(String(gameId)
+								).emit('game:player_abandoned',
+									{
+										userId:
+											socket.user.id
+									});
+
+							io.to(String(gameId)
+								).emit('game:update', normalizeGame(updatedGame));
+						}
+						catch (err)
+						{
+							console.error(err);
+						}
+					},DISCONNECT_TIMEOUT);
 					
 					console.log('SOCKET DISCONNECT', socket.user.id);
-
 					setDisconnectTimer(gameId, socket.user.id, timer);
 				}
 			}

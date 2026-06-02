@@ -12,38 +12,38 @@
 
 <rect x="10" y="10" width="712" height="712" rx="22" fill="none" stroke="#ffe9a0" stroke-width="2" opacity="0.5" filter="url(#glow)"/>
 
-<rect x="348" y="636" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="600" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="564" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="528" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="492" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="456" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="420" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="636" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="600" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="564" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="528" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="492" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="456" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="420" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
 
-<rect x="60" y="348" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="96" y="348" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="132" y="348" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="168" y="348" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="204" y="348" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="240" y="348" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="276" y="348" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="60" y="348" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="96" y="348" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="132" y="348" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="168" y="348" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="204" y="348" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="240" y="348" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="276" y="348" width="36" height="36" fill="url(#gBlue)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
 
-<rect x="348" y="60" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="96" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="132" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="168" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="204" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="240" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="348" y="276" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="60" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="96" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="132" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="168" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="204" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="240" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="348" y="276" width="36" height="36" fill="url(#gPink)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
 
-<rect x="636" y="348" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="600" y="348" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="564" y="348" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="528" y="348" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="492" y="348" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="456" y="348" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<rect x="420" y="348" width="36" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
-<g filter="url(#glow)"><polygon points="312,312 366.0,366.0 312,420" fill="url(#gPink)"/><polygon points="312,312 366.0,366.0 420,312" fill="url(#gGreen)"/><polygon points="420,312 366.0,366.0 420,420" fill="url(#gPurple)"/><polygon points="312,420 366.0,366.0 420,420" fill="url(#gBlue)"/></g>
+<rect x="636" y="348" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="600" y="348" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="564" y="348" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="528" y="348" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="492" y="348" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="456" y="348" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<rect x="420" y="348" width="36" height="36" fill="url(#gGreen)" opacity="0.3" stroke="#ffe9a0" stroke-width="0.5"/>
+<g filter="url(#glow)"><polygon points="312,312 366.0,366.0 312,420" fill="url(#gBlue)"/><polygon points="312,312 366.0,366.0 420,312" fill="url(#gPink)"/><polygon points="420,312 366.0,366.0 420,420" fill="url(#gGreen)"/><polygon points="312,420 366.0,366.0 420,420" fill="url(#gPurple)"/></g>
 <rect x="293" y="672" width="55" height="36" rx="4" fill="#ffffffff" stroke="#ffe9a0" stroke-width="1" opacity="0.9"/>
 <text x="330.0" y="690.0" font-size="13" font-weight="bold" fill="#000000ff" text-anchor="middle" dominant-baseline="central">67</text>
 <rect x="293" y="636" width="55" height="36" rx="4" fill="#ffffffff" stroke="#ffe9a0" stroke-width="1" opacity="0.9"/>

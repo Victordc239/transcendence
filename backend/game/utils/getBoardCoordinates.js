@@ -1,13 +1,12 @@
-const BOARD_MAP = require('./boardMap');
+const BOARD_MAP = require("./boardMap");
 
-function getBoardCoordinates(globalPosition)
+function getBoardCoordinates(position)
 {
-	if (globalPosition < 0 || globalPosition >= BOARD_MAP.length)
+	if (position < 0 || position >= BOARD_MAP.length)
 	{
 		return null;
 	}
-
-	return BOARD_MAP[globalPosition];
+	return BOARD_MAP[position];
 }
 
 module.exports = getBoardCoordinates;

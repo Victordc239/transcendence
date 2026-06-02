@@ -17,21 +17,15 @@ function initSockets(httpServer)
 	setIO(io);
 	io.use(authSocket);
 	io.on('connection', (socket) => {
-
 		const userId = socket.user.id;
 		addUserSocket(userId, socket.id);
 		io.emit('presence:update', {userId, online: true});
 		registerGameSocket(io, socket);
 		socket.on('disconnect', () => {
-			removeUserSocket(
-				userId,
-				socket.id
-			);
-
+			removeUserSocket(userId, socket.id);
 			if (!isUserOnline(userId))
 			{
-				io.emit(
-					'presence:update',
+				io.emit('presence:update',
 					{
 						userId,
 						online: false

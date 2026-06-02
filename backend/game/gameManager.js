@@ -33,21 +33,22 @@ async function createGame(game, hostId)
    GET GAME
 ============================= */
 async function getGame(gameId) {
-	try {
+	try
+	{
 		const result = await pool.query(
 			`
 			SELECT state
 			FROM games
 			WHERE id = $1
 			`,
-			[gameId]
-		);
+			[gameId]);
 
-		if (result.rows.length === 0) return null;
+		if (result.rows.length === 0)
+			return null;
 
 		const state = result.rows[0].state;
-
-		if (!state) return null;
+		if (!state)
+			return null;
 
 		if (typeof state === 'string')
 		{
@@ -57,20 +58,14 @@ async function getGame(gameId) {
 			}
 			catch (err)
 			{
-				console.error(
-					'❌ Corrupted game state:',
-					gameId,
-					err
-				);
-
+				console.error('❌ Corrupted game state:', gameId, err);
 				return null;
 			}
 		}
-
-		// JSONB ya parseado
 		return state;
 	}
-	catch (err) {
+	catch (err)
+	{
 		console.error('getGame error:', err);
 		return null;
 	}
@@ -97,7 +92,6 @@ async function saveGame(game)
 				game.id
 			]
 		);
-
 		return true;
 	}
 	catch (err)
@@ -121,7 +115,6 @@ async function deleteGame(gameId)
 			`,
 			[gameId]
 		);
-
 		return true;
 	}
 	catch (err)
@@ -131,9 +124,4 @@ async function deleteGame(gameId)
 	}
 }
 
-module.exports = {
-	createGame,
-	getGame,
-	saveGame,
-	deleteGame
-};
+module.exports = {createGame, getGame, saveGame, deleteGame};

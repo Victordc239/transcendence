@@ -1,9 +1,5 @@
-const {
-	MAIN_TRACK_SIZE
-} = require('../constants');
-
-const getRealBoardPosition =
-	require('../utils/getRealBoardPosition');
+const {MAIN_TRACK_SIZE} = require('../constants');
+const getRealBoardPosition = require('../utils/getRealBoardPosition');
 
 function getBlockades(game)
 {
@@ -24,9 +20,7 @@ function getBlockades(game)
 			{
 				continue;
 			}
-
 			const position = getRealBoardPosition(player.color, piece.steps);
-
 			count[position] = (count[position] || 0) + 1;
 		}
 		for (const position in count)

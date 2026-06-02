@@ -5,7 +5,6 @@ exports.getMe = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
-
 		const result = await pool.query(
 			`
 			SELECT
@@ -44,7 +43,6 @@ exports.updateMe = async (req, res) => {
 	{
 		const userId = req.user.id;
 		const { username, avatar_url } = req.body;
-
 		if (!username && !avatar_url)
 		{
 			return res.status(400).json({error: 'No hay datos para actualizar'});
@@ -138,7 +136,6 @@ exports.searchUsers = async (req, res) => {
 	try
 	{
 		const query = req.query.q;
-
 		if (!query || query.trim().length === 0)
 		{
 			return res.json({users: []});

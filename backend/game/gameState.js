@@ -26,4 +26,4 @@ function createNewGame(hostId)
 	};
 }
 
-module.exports = { createNewGame };
+module.exports = {createNewGame};

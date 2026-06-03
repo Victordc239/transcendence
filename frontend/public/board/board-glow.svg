@@ -12,19 +12,19 @@
 
 <g filter="url(#glow)" opacity="0.9">
 
-<rect x="30" y="30" width="350" height="350" rx="40"
+<rect x="30" y="30" width="340" height="340" rx="40"
 stroke="#ff3bd4"
 stroke-width="10"/>
 
-<rect x="610" y="30" width="350" height="350" rx="40"
+<rect x="630" y="30" width="340" height="340" rx="40"
 stroke="#00ff9d"
 stroke-width="10"/>
 
-<rect x="30" y="610" width="350" height="350" rx="40"
+<rect x="30" y="630" width="340" height="340" rx="40"
 stroke="#00d9ff"
 stroke-width="10"/>
 
-<rect x="610" y="610" width="350" height="350" rx="40"
+<rect x="630" y="630" width="340" height="340" rx="40"
 stroke="#c86cff"
 stroke-width="10"/>
 

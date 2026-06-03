@@ -5,6 +5,7 @@ const isEnteringHomeStretch = require('../utils/isEnteringHomeStretch');
 const getDistanceToHomeEntry = require('../utils/getDistanceToHomeEntry');
 const getRealBoardPosition = require('../utils/getRealBoardPosition');
 const isPositionBlocked = require('../rules/isPositionBlocked');
+const isDestinationBlocked = require('../rules/isDestinationBlocked');
 
 function canMovePiece(game, playerId, pieceIndex)
 {
@@ -137,7 +138,8 @@ function canMovePiece(game, playerId, pieceIndex)
 
 	const targetSteps = piece.steps + game.dice;
 	const targetPosition = getRealBoardPosition(player.color, targetSteps);
-	if (isPositionBlocked(game, targetPosition, startPosition))
+	// NO se puede terminar encima de una barrera
+	if (isDestinationBlocked(game, targetPosition))
 	{
 		return {
 			ok: false,

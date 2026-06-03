@@ -65,6 +65,23 @@ function checkCapture(game, currentPlayerId)
 					continue;
 				}
 
+				const enemyPiecesOnCell = enemy.pieces.filter(p => {
+					if (p.steps < 0)
+					{
+						return false;
+					}
+					if (p.steps >= MAIN_TRACK_SIZE)
+					{
+						return false;
+					}
+					const pos = getRealBoardPosition(enemy.color, p.steps);
+					return pos === currentPosition;});
+				// Si hay más de una ficha enemiga significa barrera enemiga. No se puede capturar.
+				if (enemyPiecesOnCell.length >= 2)
+				{
+					continue;
+				}
+				// Captura normal
 				enemyPiece.steps = -1;
 				enemyPiece.state = 'base';
 				return;

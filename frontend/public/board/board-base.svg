@@ -27,41 +27,41 @@
 
 <!-- PLAYER ZONES -->
 
-<rect x="30" y="30" width="360" height="360" rx="40"
+<rect x="30" y="30" width="350" height="350" rx="40"
 fill="#1a1028"
 stroke="#ff3bd4"
 stroke-width="10"/>
 
-<rect x="610" y="30" width="360" height="360" rx="40"
+<rect x="610" y="30" width="350" height="350" rx="40"
 fill="#0f241d"
 stroke="#00ff9d"
 stroke-width="10"/>
 
-<rect x="30" y="610" width="360" height="360" rx="40"
+<rect x="30" y="610" width="350" height="350" rx="40"
 fill="#071f2d"
 stroke="#00d9ff"
 stroke-width="10"/>
 
-<rect x="610" y="610" width="360" height="360" rx="40"
+<rect x="610" y="610" width="350" height="350" rx="40"
 fill="#22142c"
 stroke="#c86cff"
 stroke-width="10"/>
 
 <!-- INNER HOMES -->
 
-<rect x="105" y="105" width="210" height="210" rx="30"
+<rect x="105" y="105" width="200" height="200" rx="30"
 stroke="#ff69e7"
 stroke-width="6"/>
 
-<rect x="685" y="105" width="210" height="210" rx="30"
+<rect x="685" y="105" width="200" height="200" rx="30"
 stroke="#52ffb8"
 stroke-width="6"/>
 
-<rect x="105" y="685" width="210" height="210" rx="30"
+<rect x="105" y="685" width="200" height="200" rx="30"
 stroke="#52dfff"
 stroke-width="6"/>
 
-<rect x="685" y="685" width="210" height="210" rx="30"
+<rect x="685" y="685" width="200" height="200" rx="30"
 stroke="#d88cff"
 stroke-width="6"/>
 
@@ -82,28 +82,28 @@ stroke-width="8"
 <!-- BASE CIRCLES -->
 
 <!-- pink -->
-<circle cx="165" cy="165" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
-<circle cx="255" cy="165" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
-<circle cx="165" cy="255" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
-<circle cx="255" cy="255" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
+<circle cx="160" cy="160" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
+<circle cx="250" cy="160" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
+<circle cx="160" cy="250" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
+<circle cx="250" cy="250" r="22" fill="#2d1026" stroke="#ff4fd8" stroke-width="3"/>
 
 <!-- green -->
-<circle cx="745" cy="165" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
-<circle cx="835" cy="165" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
-<circle cx="745" cy="255" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
-<circle cx="835" cy="255" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
+<circle cx="740" cy="160" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
+<circle cx="830" cy="160" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
+<circle cx="740" cy="250" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
+<circle cx="830" cy="250" r="22" fill="#10261c" stroke="#37ff99" stroke-width="3"/>
 
 <!-- blue -->
-<circle cx="165" cy="740" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
-<circle cx="255" cy="740" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
-<circle cx="165" cy="830" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
-<circle cx="255" cy="830" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
+<circle cx="160" cy="735" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
+<circle cx="250" cy="735" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
+<circle cx="160" cy="825" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
+<circle cx="250" cy="825" r="22" fill="#102030" stroke="#37b8ff" stroke-width="3"/>
 
  <!-- purple -->
-<circle cx="745" cy="740" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
-<circle cx="835" cy="740" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
-<circle cx="745" cy="830" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
-<circle cx="835" cy="830" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
+<circle cx="740" cy="735" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
+<circle cx="830" cy="735" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
+<circle cx="740" cy="825" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
+<circle cx="830" cy="825" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
 
 
 <!-- PATHS -->

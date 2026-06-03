@@ -67,6 +67,7 @@ function checkCapture(game, currentPlayerId)
 
 				enemyPiece.steps = -1;
 				enemyPiece.state = 'base';
+				return;
 			}
 		}
 	}

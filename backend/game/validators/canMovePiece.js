@@ -42,15 +42,28 @@ function canMovePiece(game, playerId, pieceIndex)
 		};
 	}
 
-	// SALIR DE CASA
+	/// SALIR DE CASA
 	if (piece.state === 'base')
 	{
+		if (game.dice !== 5)
+		{
+			return {
+				ok: false,
+				error: 'Need 5 to leave base'
+			};
+		}
+
+		const exitPosition = getRealBoardPosition(player.color, 0);
+		if (isPositionBlocked(game, exitPosition))
+		{
+			return {
+				ok: false,
+				error: 'Exit blocked by blockade'
+			};
+		}
+
 		return {
-			ok: game.dice === 5,
-			error:
-				game.dice === 5
-					? null
-					: 'Need 5 to leave base'
+			ok: true
 		};
 	}
 

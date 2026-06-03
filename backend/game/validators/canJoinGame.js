@@ -2,16 +2,21 @@ const { GAME_STATUS } = require('../constants');
 
 function canJoinGame(game, userId)
 {
-	const alreadyInGame = game.players.find(
-		player => player.id === userId
-	);
-
 	// 🔥 SI YA ESTÁ EN LA PARTIDA PERMITIR REJOIN
+	const alreadyInGame = game.players.find(player => player.id === userId);
 	if (alreadyInGame)
 	{
 		return {
 			ok: true,
 			rejoin: true
+		};
+	}
+
+	if (game.players.length >= 4)
+	{
+		return {
+			ok: false,
+			error: 'Game full'
 		};
 	}
 
@@ -28,14 +33,6 @@ function canJoinGame(game, userId)
 		return {
 			ok: false,
 			error: 'Game already started'
-		};
-	}
-
-	if (game.players.length >= 4)
-	{
-		return {
-			ok: false,
-			error: 'Game full'
 		};
 	}
 

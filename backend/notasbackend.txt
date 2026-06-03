@@ -9,7 +9,6 @@ exports.sendRequest = async (req, res) => {
 	{
 		const requesterId = req.user.id;
 		const addresseeId = parseInt(req.params.id, 10);
-
 		if (requesterId === addresseeId)
 		{
 			return res.status(400).json({error: 'No puedes agregarte'});
@@ -169,7 +168,6 @@ exports.getMe = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
-
 		const result = await pool.query(
 			`
 			SELECT
@@ -208,7 +206,6 @@ exports.updateMe = async (req, res) => {
 	{
 		const userId = req.user.id;
 		const { username, avatar_url } = req.body;
-
 		if (!username && !avatar_url)
 		{
 			return res.status(400).json({error: 'No hay datos para actualizar'});
@@ -302,7 +299,6 @@ exports.searchUsers = async (req, res) => {
 	try
 	{
 		const query = req.query.q;
-
 		if (!query || query.trim().length === 0)
 		{
 			return res.json({users: []});
@@ -347,6 +343,7 @@ const { getGame: getGameById, createGame: createGameInDB} = require('../game/gam
 const withGameLock = require('../game/withGameLock');
 const { getIO } = require('../socket');
 const normalizeGame = require('../game/utils/normalizeGame');
+const { startTurnTimer } = require('../game/turnTimer');
 
 /* =============================
 CREATE GAME
@@ -356,7 +353,6 @@ exports.createGame = async (req, res) => {
 	try
 	{
 		const userId = Number(req.user.id);
-
 		if (!userId)
 		{
 			return res.status(401).json({
@@ -366,12 +362,7 @@ exports.createGame = async (req, res) => {
 
 		const game = createNewGame(userId);
 
-		const created =
-			await createGameInDB(
-				game,
-				userId
-			);
-
+		const created = await createGameInDB(game, userId);
 		if (!created)
 		{
 			return res.status(500).json({
@@ -404,11 +395,7 @@ exports.createGame = async (req, res) => {
 	}
 	catch (error)
 	{
-		console.error(
-			'CREATE GAME ERROR:',
-			error
-		);
-
+		console.error('CREATE GAME ERROR:', error);
 		return res.status(500).json({
 			error:
 				'Server error creating game',
@@ -431,14 +418,11 @@ exports.getGame = async (req, res) => {
 				error: 'Game not found'
 			});
 		}
-		return res.json(
-			normalizeGame(game)
-		);
+		return res.json(normalizeGame(game));
 	}
 	catch (error)
 	{
 		console.error(error);
-
 		return res.status(500).json({
 			error: 'Server error'
 		});
@@ -529,10 +513,7 @@ exports.joinGame = async (req, res) => {
 				.to(gameId)
 				.emit(
 					'game:update',
-					normalizeGame(
-						locked.game
-					)
-				);
+					normalizeGame(locked.game));
 		}
 		catch (socketError)
 		{
@@ -562,95 +543,64 @@ exports.rollDice = async (req, res) => {
 	{
 		const userId = req.user.id;
 		const gameId = req.params.id;
-		const locked =
-			await withGameLock(
-				gameId,
-				async (game) => {
-
-					const validation = canRollDice(game, userId);
-
-					if (!validation.ok)
-					{
-						return {
-							error: validation.error
-						};
-					}
-					if (validation.startGame)
-					{
-						game.status = 'playing';
-
-						game.turn = game.players[0].id;
-
-						const { startTurnTimer } =
-							require('../game/turnTimer');
-
-						startTurnTimer(game.id);
-					}
-
-					game.dice = rollDice();
-
-					const availableMoves = getAvailableMoves(game, userId);
-
-					if (availableMoves.length === 0)
-					{
-						game.lastDice = game.dice;
-
-						nextTurn(game);
-
-						setTimeout(async () => {
-
-							try
-							{
-								await withGameLock(
-									gameId,
-									async (lockedGame) => {
-										if (!lockedGame)
-										{
-											return {
-												error: 'Game not found'
-											};
-										}
-
-										lockedGame.dice = null;
-
-										return {
-											ok: true
-										};
-									}
-								);
-
-								const refreshed =
-									await getGameById(
-										gameId
-									);
-
-								if (refreshed)
-								{
-									getIO()
-										.to(gameId)
-										.emit(
-											'game:update',
-											normalizeGame(
-												refreshed
-											)
-										);
-								}
-							}
-							catch (err)
-							{
-								console.error(err);
-							}
-						}, 1500);
-					}
-
-					game.updatedAt = Date.now();
-
+		const locked = await withGameLock(gameId,
+			async (game) => {
+				const validation = canRollDice(game, userId);
+				if (!validation.ok)
+				{
 					return {
-						ok: true,
-						dice: game.dice
+						error: validation.error
 					};
 				}
-			);
+				if (validation.startGame)
+				{
+					game.status = 'playing';
+					game.turn = game.players[0].id;
+					startTurnTimer(game.id);
+				}
+				game.dice = rollDice();
+				const availableMoves = getAvailableMoves(game, userId);
+				if (availableMoves.length === 0)
+				{
+					game.lastDice = game.dice;
+					nextTurn(game);
+					setTimeout(async () => {
+						try
+						{
+							await withGameLock(gameId,
+								async (lockedGame) => {
+									if (!lockedGame)
+									{
+										return {
+											error: 'Game not found'
+										};
+									}
+									lockedGame.dice = null;
+									return {
+										ok: true
+									};
+								});
+
+							const refreshed = await getGameById(gameId);
+							if (refreshed)
+							{
+								getIO()
+									.to(gameId)
+									.emit('game:update', normalizeGame(refreshed));
+							}
+						}
+						catch (err)
+						{
+							console.error(err);
+						}
+					}, 1500);
+				}
+				game.updatedAt = Date.now();
+				return {
+					ok: true,
+					dice: game.dice
+				};
+			});
 
 		if (!locked)
 		{
@@ -666,7 +616,6 @@ exports.rollDice = async (req, res) => {
 
 		// 🔥 FIX: SIEMPRE NORMALIZADO
 		const normalized = normalizeGame(locked.game);
-
 		getIO()
 			.to(gameId)
 			.emit('game:update', normalized);
@@ -691,30 +640,16 @@ exports.movePiece = async (req, res) => {
 		const userId = req.user.id;
 		const gameId = req.params.id;
 		const { pieceIndex } = req.body;
-
-		const locked =
-			await withGameLock(
-				gameId,
-				async (game) => {
-
-					const result =
-						executeMove(
-							game,
-							userId,
-							pieceIndex
-						);
-
-					if (!result.ok)
-					{
-						return result;
-					}
-
-					game.updatedAt =
-						Date.now();
-
+		const locked = await withGameLock(gameId,
+			async (game) => {
+				const result = executeMove(game, userId, pieceIndex);
+				if (!result.ok)
+				{
 					return result;
 				}
-			);
+				game.updatedAt = Date.now();
+				return result;
+			});
 
 		if (!locked)
 		{
@@ -735,9 +670,7 @@ exports.movePiece = async (req, res) => {
 
 		getIO()
 			.to(gameId)
-			.emit(
-				'game:update',
-				normalizeGame(locked.game));
+			.emit('game:update', normalizeGame(locked.game));
 
 		return res.json(normalizeGame(locked.game));
 	}
@@ -882,21 +815,18 @@ const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
 	const authHeader = req.headers.authorization;
-
 	if (!authHeader)
 	{
 		return res.status(401).json({ error: 'No token provided' });
 	}
 
 	const [scheme, token] = authHeader.split(' ');
-
 	if (scheme !== 'Bearer' || !token)
 	{
 		return res.status(401).json({ error: 'Formato de token inválido' });
 	}
 
 	const secret = process.env.JWT_SECRET;
-
 	try
 	{
 		const decoded = jwt.verify(token, secret);
@@ -1188,9 +1118,7 @@ FILE: ./game/rules/nextTurn.js
 function nextTurn(game)
 {
 	const currentIndex = game.players.findIndex(player => player.id === game.turn);
-
 	const nextIndex = (currentIndex + 1) % game.players.length;
-
 	game.turn = game.players[nextIndex].id;
 }
 
@@ -1204,8 +1132,7 @@ function isPositionBlocked(game, globalPosition, ignorePosition = null)
 {
 	const blockades = getBlockades(game);
 	return blockades.some(blockade => {
-
-		if ( ignorePosition !== null && blockade.position === ignorePosition)
+		if (ignorePosition !== null && blockade.position === ignorePosition)
 		{
 			return false;
 		}
@@ -1238,12 +1165,8 @@ module.exports = getAvailableMoves;
 ==============================
 FILE: ./game/rules/getBlockades.js
 ==============================
-const {
-	MAIN_TRACK_SIZE
-} = require('../constants');
-
-const getRealBoardPosition =
-	require('../utils/getRealBoardPosition');
+const {MAIN_TRACK_SIZE} = require('../constants');
+const getRealBoardPosition = require('../utils/getRealBoardPosition');
 
 function getBlockades(game)
 {
@@ -1264,9 +1187,7 @@ function getBlockades(game)
 			{
 				continue;
 			}
-
 			const position = getRealBoardPosition(player.color, piece.steps);
-
 			count[position] = (count[position] || 0) + 1;
 		}
 		for (const position in count)
@@ -1335,7 +1256,6 @@ function checkCapture(game, currentPlayerId)
 			{
 				continue;
 			}
-
 			for (const enemyPiece of enemy.pieces)
 			{
 				// Casa
@@ -1343,7 +1263,6 @@ function checkCapture(game, currentPlayerId)
 				{
 					continue;
 				}
-
 				// Pasillo final
 				if (enemyPiece.steps >= MAIN_TRACK_SIZE)
 				{
@@ -1442,7 +1361,6 @@ const {FINAL_POSITION} = require('../constants');
 function checkWin(game, playerId)
 {
 	const player = game.players.find(p => p.id === playerId);
-
 	if (!player)
 	{
 		return false;
@@ -1496,14 +1414,12 @@ FILE: ./game/rules/setPlayerConnection.js
 function setPlayerConnection(game, playerId, connected)
 {
 	const player = game.players.find(p => p.id === playerId);
-
 	if (!player)
 	{
 		return;
 	}
 
 	player.connected = connected;
-
 	if (connected)
 	{
 		player.disconnectedAt = null;
@@ -1524,14 +1440,11 @@ function checkPausedState(game)
 {
 	const disconnectedPlayers = game.players.filter(player => !player.connected && !player.abandoned);
 
-	console.log(
-		'CHECK PAUSED',
-		game.players.map(p => ({
-			id: p.id,
-			connected: p.connected,
-			abandoned: p.abandoned
-		}))
-	);
+	console.log('CHECK PAUSED', game.players.map(p => ({
+		id: p.id,
+		connected: p.connected,
+		abandoned: p.abandoned
+	})));
 
 	// Pausar partida
 	if (disconnectedPlayers.length > 0)
@@ -1592,21 +1505,22 @@ async function createGame(game, hostId)
    GET GAME
 ============================= */
 async function getGame(gameId) {
-	try {
+	try
+	{
 		const result = await pool.query(
 			`
 			SELECT state
 			FROM games
 			WHERE id = $1
 			`,
-			[gameId]
-		);
+			[gameId]);
 
-		if (result.rows.length === 0) return null;
+		if (result.rows.length === 0)
+			return null;
 
 		const state = result.rows[0].state;
-
-		if (!state) return null;
+		if (!state)
+			return null;
 
 		if (typeof state === 'string')
 		{
@@ -1616,20 +1530,14 @@ async function getGame(gameId) {
 			}
 			catch (err)
 			{
-				console.error(
-					'❌ Corrupted game state:',
-					gameId,
-					err
-				);
-
+				console.error('❌ Corrupted game state:', gameId, err);
 				return null;
 			}
 		}
-
-		// JSONB ya parseado
 		return state;
 	}
-	catch (err) {
+	catch (err)
+	{
 		console.error('getGame error:', err);
 		return null;
 	}
@@ -1656,7 +1564,6 @@ async function saveGame(game)
 				game.id
 			]
 		);
-
 		return true;
 	}
 	catch (err)
@@ -1680,7 +1587,6 @@ async function deleteGame(gameId)
 			`,
 			[gameId]
 		);
-
 		return true;
 	}
 	catch (err)
@@ -1690,12 +1596,7 @@ async function deleteGame(gameId)
 	}
 }
 
-module.exports = {
-	createGame,
-	getGame,
-	saveGame,
-	deleteGame
-};
+module.exports = {createGame, getGame, saveGame, deleteGame};
 ==============================
 FILE: ./game/gameState.js
 ==============================
@@ -1727,7 +1628,7 @@ function createNewGame(hostId)
 	};
 }
 
-module.exports = { createNewGame };
+module.exports = {createNewGame};
 ==============================
 FILE: ./game/disconnectTimers.js
 ==============================
@@ -1741,9 +1642,7 @@ function getKey(gameId, userId)
 function clearDisconnectTimer(gameId, userId)
 {
 	const key = getKey(gameId, userId);
-
 	const timer = timers.get(key);
-
 	if (timer)
 	{
 		clearTimeout(timer);
@@ -1754,43 +1653,45 @@ function clearDisconnectTimer(gameId, userId)
 function setDisconnectTimer(gameId, userId, timer)
 {
 	clearDisconnectTimer(gameId, userId);
-
 	timers.set(getKey(gameId, userId), timer);
 }
 
-module.exports = {
-	clearDisconnectTimer,
-	setDisconnectTimer
-};
+module.exports = {clearDisconnectTimer, setDisconnectTimer};
 ==============================
 FILE: ./game/withGameLock.js
 ==============================
 const pool = require('../db');
 
-function safeParse(state) {
-	if (!state) return null;
+function safeParse(state)
+{
+	if (!state)
+		return null;
 
 	// PostgreSQL JSONB ya puede venir como objeto
-	if (typeof state === 'object') return state;
+	if (typeof state === 'object')
+		return state;
 
-	if (typeof state === 'string') {
-		try {
+	if (typeof state === 'string')
+	{
+		try
+		{
 			return JSON.parse(state);
-		} catch (e) {
+		}
+		catch (e)
+		{
 			console.error('❌ JSON parse error:', e);
 			return null;
 		}
 	}
-
 	return null;
 }
 
-async function withGameLock(gameId, callback) {
+async function withGameLock(gameId, callback)
+{
 	const client = await pool.connect();
-
-	try {
+	try
+	{
 		await client.query('BEGIN');
-
 		const result = await client.query(
 			`
 			SELECT state
@@ -1801,14 +1702,16 @@ async function withGameLock(gameId, callback) {
 			[gameId]
 		);
 
-		if (result.rows.length === 0) {
+		if (result.rows.length === 0)
+		{
 			await client.query('ROLLBACK');
 			return null;
 		}
 
 		const game = safeParse(result.rows[0].state);
 
-		if (!game || !Array.isArray(game.players)) {
+		if (!game || !Array.isArray(game.players))
+		{
 			console.error('❌ Invalid game state:', game);
 			await client.query('ROLLBACK');
 			return null;
@@ -1816,12 +1719,14 @@ async function withGameLock(gameId, callback) {
 
 		const callbackResult = await callback(game, client);
 
-		if (!callbackResult) {
+		if (!callbackResult)
+		{
 			await client.query('ROLLBACK');
 			return null;
 		}
 
-		if (callbackResult.error) {
+		if (callbackResult.error)
+		{
 			await client.query('ROLLBACK');
 			return { game, result: callbackResult };
 		}
@@ -1840,17 +1745,17 @@ async function withGameLock(gameId, callback) {
 				game.id
 			]
 		);
-
 		await client.query('COMMIT');
-
 		return { game, result: callbackResult };
 	}
-	catch (error) {
+	catch (error)
+	{
 		await client.query('ROLLBACK');
 		console.error('withGameLock error:', error);
 		throw error;
 	}
-	finally {
+	finally
+	{
 		client.release();
 	}
 }
@@ -1892,8 +1797,7 @@ function startTurnTimer(gameId)
 	const timeout = setTimeout(async () => {
 		try
 		{
-			const locked = await withGameLock(
-				gameId,
+			const locked = await withGameLock(gameId,
 				async (game) => {
 
 					if (game.status !== GAME_STATUS.PLAYING)
@@ -1904,8 +1808,7 @@ function startTurnTimer(gameId)
 					nextTurn(game);
 					game.updatedAt = Date.now();
 					return { ok: true };
-				}
-			);
+				});
 
 			if (!locked)
 			{
@@ -1926,25 +1829,18 @@ function startTurnTimer(gameId)
 
 			getIO()
 				.to(gameId)
-				.emit(
-					"game:update",
-					normalizeGame(locked.game)
-				);
+				.emit("game:update", normalizeGame(locked.game));
 		}
 		catch (err)
 		{
 			console.error(err);
 		}
-
 	}, TURN_TIMEOUT);
 
 	turnTimers.set(gameId, timeout);
 }
 
-module.exports = {
-	startTurnTimer,
-	clearTurnTimer
-};
+module.exports = {startTurnTimer, clearTurnTimer};
 ==============================
 FILE: ./game/gameEngine.js
 ==============================
@@ -1979,7 +1875,7 @@ function addPlayerToGame(game, userId)
 		};
 	}
 
-	const color =COLORS[game.players.length];
+	const color = COLORS[game.players.length];
 
 	game.players.push({
 		id: userId,
@@ -2035,11 +1931,7 @@ function executeMove(game, playerId, pieceIndex)
 	};
 }
 
-module.exports = {
-	rollDice,
-	addPlayerToGame,
-	executeMove
-};
+module.exports = {rollDice, addPlayerToGame, executeMove};
 ==============================
 FILE: ./game/utils/getDistanceToHomeEntry.js
 ==============================
@@ -2050,7 +1942,6 @@ function getDistanceToHomeEntry(color, steps)
 {
 	const current = getRealBoardPosition(color, steps);
 	const entry = HOME_ENTRIES[color];
-
 	if (current <= entry)
 	{
 		return entry - current;
@@ -2063,84 +1954,96 @@ module.exports = getDistanceToHomeEntry;
 ==============================
 FILE: ./game/utils/boardMap.js
 ==============================
-// Coordenadas reales de un tablero de parchís 68 casillas
-// (simplificado pero funcional)
+const K = 1600 / 732;
 
-const BOARD_MAP = [
-  { x: 6, y: 1 },  // 0
-  { x: 6, y: 2 },
-  { x: 6, y: 3 },
-  { x: 6, y: 4 },
-  { x: 6, y: 5 },
-  { x: 5, y: 6 },  // 5
-  { x: 4, y: 6 },
-  { x: 3, y: 6 },
-  { x: 2, y: 6 },
-  { x: 1, y: 6 },
-  { x: 0, y: 6 },  // 10
+const SVG_TRACK = [
+	{ x: 366, y: 690 },
 
-  { x: 0, y: 7 },
-  { x: 0, y: 8 },
-  { x: 1, y: 8 },
-  { x: 2, y: 8 },
-  { x: 3, y: 8 },
-  { x: 4, y: 8 },
-  { x: 5, y: 8 },
-  { x: 6, y: 8 },  // 17
+	{ x: 402, y: 690 },
+	{ x: 402, y: 654 },
+	{ x: 402, y: 618 },
+	{ x: 402, y: 582 },
+	{ x: 402, y: 546 },
+	{ x: 402, y: 510 },
+	{ x: 402, y: 474 },
+	{ x: 402, y: 438 },
 
-  { x: 6, y: 9 },
-  { x: 6, y: 10 },
-  { x: 6, y: 11 },
-  { x: 6, y: 12 },
+	{ x: 438, y: 402 },
+	{ x: 474, y: 402 },
+	{ x: 510, y: 402 },
+	{ x: 546, y: 402 },
 
-  { x: 5, y: 12 },
-  { x: 4, y: 12 },
-  { x: 3, y: 12 },
-  { x: 2, y: 12 },
-  { x: 1, y: 12 },
-  { x: 0, y: 12 }, // 29
+	{ x: 582, y: 402 },
+	{ x: 618, y: 402 },
+	{ x: 654, y: 402 },
+	{ x: 690, y: 402 },
 
-  { x: 0, y: 11 },
-  { x: 0, y: 10 },
-  { x: 0, y: 9 },
+	{ x: 690, y: 366 },
 
-  { x: 1, y: 9 },
-  { x: 2, y: 9 },
-  { x: 3, y: 9 },
-  { x: 4, y: 9 },
-  { x: 5, y: 9 },
-  { x: 6, y: 9 },  // 39
+	{ x: 690, y: 330 },
+	{ x: 654, y: 330 },
+	{ x: 618, y: 330 },
+	{ x: 582, y: 330 },
+	{ x: 546, y: 330 },
+	{ x: 510, y: 330 },
+	{ x: 474, y: 330 },
+	{ x: 438, y: 330 },
 
-  { x: 7, y: 9 },
-  { x: 8, y: 9 },
-  { x: 9, y: 9 },
-  { x: 10, y: 9 },
+	{ x: 402, y: 294 },
+	{ x: 402, y: 258 },
+	{ x: 402, y: 222 },
+	{ x: 402, y: 186 },
 
-  { x: 10, y: 8 },
-  { x: 10, y: 7 },
-  { x: 10, y: 6 },
-  { x: 10, y: 5 },
-  { x: 10, y: 4 },
-  { x: 10, y: 3 }, // 51
+	{ x: 402, y: 150 },
+	{ x: 402, y: 114 },
+	{ x: 402, y: 78 },
+	{ x: 402, y: 42 },
 
-  { x: 9, y: 3 },
-  { x: 8, y: 3 },
-  { x: 7, y: 3 },
-  { x: 6, y: 3 },
+	{ x: 366, y: 42 },
 
-  { x: 6, y: 2 },
-  { x: 6, y: 1 },
-  { x: 6, y: 0 },
-  { x: 5, y: 0 },
-  { x: 4, y: 0 },
-  { x: 3, y: 0 }, // 63
+	{ x: 330, y: 42 },
+	{ x: 330, y: 78 },
+	{ x: 330, y: 114 },
+	{ x: 330, y: 150 },
+	{ x: 330, y: 186 },
+	{ x: 330, y: 222 },
+	{ x: 330, y: 258 },
+	{ x: 330, y: 294 },
 
-  { x: 2, y: 0 },
-  { x: 1, y: 0 },
-  { x: 0, y: 0 }  // 67
+	{ x: 294, y: 330 },
+	{ x: 258, y: 330 },
+	{ x: 222, y: 330 },
+	{ x: 186, y: 330 },
+
+	{ x: 150, y: 330 },
+	{ x: 114, y: 330 },
+	{ x: 78, y: 330 },
+	{ x: 42, y: 330 },
+
+	{ x: 42, y: 366 },
+
+	{ x: 42, y: 402 },
+	{ x: 78, y: 402 },
+	{ x: 114, y: 402 },
+	{ x: 150, y: 402 },
+	{ x: 186, y: 402 },
+	{ x: 222, y: 402 },
+	{ x: 258, y: 402 },
+	{ x: 294, y: 402 },
+
+	{ x: 330, y: 438 },
+	{ x: 330, y: 474 },
+	{ x: 330, y: 510 },
+	{ x: 330, y: 546 },
+	{ x: 330, y: 582 },
+	{ x: 330, y: 618 },
+	{ x: 330, y: 654 }
 ];
 
-module.exports = BOARD_MAP;
+module.exports = SVG_TRACK.map((p) => ({
+	x: p.x * K,
+	y: p.y * K
+}));
 ==============================
 FILE: ./game/utils/createPieces.js
 ==============================
@@ -2149,9 +2052,6 @@ function createPieces()
 	return Array.from({ length: 4 }).map((_, index) => ({
 		id: index,
 		state: 'base',
-		/*| -1 = casa
-		| 0..67 = recorrido exterior
-		| 68..74 = pasillo final*/
 		steps: -1
 	}));
 }
@@ -2160,16 +2060,15 @@ module.exports = createPieces;
 ==============================
 FILE: ./game/utils/getBoardCoordinates.js
 ==============================
-const BOARD_MAP = require('./boardMap');
+const BOARD_MAP = require("./boardMap");
 
-function getBoardCoordinates(globalPosition)
+function getBoardCoordinates(position)
 {
-	if (globalPosition < 0 || globalPosition >= BOARD_MAP.length)
+	if (position < 0 || position >= BOARD_MAP.length)
 	{
 		return null;
 	}
-
-	return BOARD_MAP[globalPosition];
+	return BOARD_MAP[position];
 }
 
 module.exports = getBoardCoordinates;
@@ -2310,10 +2209,10 @@ const FINAL_POSITION = MAIN_TRACK_SIZE + FINAL_STRETCH_SIZE;
 // Salidas reales
 
 const START_POSITIONS = {
-	pink: 0,
-	purple: 17,
-	green: 34,
-	blue: 51
+	pink: 39,
+	purple: 5,
+	green: 29,
+	blue: 63
 };
 
 // Casillas seguras
@@ -2336,17 +2235,16 @@ const SAFE_CELLS = [
 
 const BASE_POSITION = -1;
 
-const FINAL_STRETCH_START =
-	MAIN_TRACK_SIZE;
+const FINAL_STRETCH_START = MAIN_TRACK_SIZE;
 
 const DISCONNECT_TIMEOUT = 60000;
 
 const TURN_TIMEOUT = 30000;
 
 const HOME_ENTRIES = {
-	pink: 67,
-	purple: 16,
-	green: 33,
+	pink: 33,
+	purple: 67,
+	green: 16,
 	blue: 50
 };
 
@@ -2405,10 +2303,7 @@ function getIO()
 	return io;
 }
 
-module.exports = {
-setIO,
-getIO
-};
+module.exports = {setIO, getIO};
 ==============================
 FILE: ./routes/gameRoutes.js
 ==============================
@@ -2540,7 +2435,6 @@ initDB()
 		});
 	})
 	.catch((err) => {
-
 		console.error('DB init failed:', err);
 		process.exit(1);
 	});
@@ -2656,10 +2550,8 @@ const {DISCONNECT_TIMEOUT} = require('../game/constants');
 
 function registerGameSocket(io, socket)
 {
-	socket.on(
-		'game:join',
+	socket.on('game:join',
 		async ({ gameId }) => {
-
 			try
 			{
 				socket.join(String(gameId));
@@ -2694,19 +2586,16 @@ function registerGameSocket(io, socket)
 						{
 							message:
 								'Game not found'
-						}
-					);
+						});
 				}
 
 				if (locked.result.error)
 				{
-					return socket.emit(
-						'error',
+					return socket.emit('error',
 						{
 							message:
 								locked.result.error
-						}
-					);
+						});
 				}
 
 				const normalized = normalizeGame(locked.game);
@@ -2722,15 +2611,11 @@ function registerGameSocket(io, socket)
 					);
 
 				io.to(String(gameId)
-					).emit(
-						'game:update',
-						normalized
-					);
+					).emit('game:update', normalized);
 			}
 			catch (err)
 			{
 				console.error('game:join error:', err);
-
 				socket.emit('error',
 				{
 					message:
@@ -2742,7 +2627,6 @@ function registerGameSocket(io, socket)
 
 	socket.on('game:state',
 		async ({ gameId }) => {
-
 			try
 			{
 				const game = await getGame(gameId);
@@ -2774,7 +2658,6 @@ function registerGameSocket(io, socket)
 
 	socket.on('disconnect',
 		async () => {
-
 			try
 			{
 				const joinedGames =Array.from(socket.rooms).filter(room => room !== socket.id);
@@ -2782,21 +2665,11 @@ function registerGameSocket(io, socket)
 				{
 					const locked = await withGameLock(gameId,
 						async (game) => {
-
-							setPlayerConnection(
-								game,
-								socket.user.id,
-								false
-							);
-
-							checkPausedState(
-								game
-							);
-
+							setPlayerConnection(game, socket.user.id, false);
+							checkPausedState(game);
 							return {
 								ok: true
-							};
-						});
+							};});
 
 					if (!locked)
 					{
@@ -2806,77 +2679,61 @@ function registerGameSocket(io, socket)
 					const normalized = normalizeGame(locked.game);
 
 					io.to(String(gameId)
-						).emit(
-							'game:update',
-							normalized
-						);
+						).emit('game:update', normalized);
 
 					io.to(String(gameId)
-						).emit(
-							'game:player_disconnected',
+						).emit('game:player_disconnected',
 							{
 								userId:
 									socket.user.id
-							}
-						);
+							});
 
-					const timer = setTimeout(
-						async () => {
-
-							try
+					const timer = setTimeout(async () => {
+						try
+						{
+							const updatedGame = await getGame(gameId);
+							if (!updatedGame)
 							{
-								const updatedGame = await getGame(gameId);
-								if (!updatedGame)
-								{
-									return;
-								}
-
-								const player = updatedGame.players.find(p => p.id === socket.user.id);
-								if (!player)
-								{
-									return;
-								}
-
-								if (player.connected)
-								{
-									return;
-								}
-
-								player.abandoned = true;
-
-								const abandoned = isGameAbandoned(updatedGame);
-								if (abandoned)
-								{
-									await deleteGame(gameId);
-									return;
-								}
-
-								await saveGame(updatedGame);
-
-								io.to(String(gameId)
-									).emit(
-										'game:player_abandoned',
-										{
-											userId:
-												socket.user.id
-										});
-
-								io.to(String(gameId)
-									).emit(
-										'game:update',
-										normalizeGame(
-											updatedGame
-										));
+								return;
 							}
-							catch (err)
+
+							const player = updatedGame.players.find(p => p.id === socket.user.id);
+							if (!player)
 							{
-								console.error(err);
+								return;
 							}
-						},
-						DISCONNECT_TIMEOUT);
+
+							if (player.connected)
+							{
+								return;
+							}
+
+							player.abandoned = true;
+							const abandoned = isGameAbandoned(updatedGame);
+							if (abandoned)
+							{
+								await deleteGame(gameId);
+								return;
+							}
+
+							await saveGame(updatedGame);
+							io.to(String(gameId)
+								).emit('game:player_abandoned',
+									{
+										userId:
+											socket.user.id
+									});
+
+							io.to(String(gameId)
+								).emit('game:update', normalizeGame(updatedGame));
+						}
+						catch (err)
+						{
+							console.error(err);
+						}
+					},DISCONNECT_TIMEOUT);
 					
 					console.log('SOCKET DISCONNECT', socket.user.id);
-
 					setDisconnectTimer(gameId, socket.user.id, timer);
 				}
 			}
@@ -2912,7 +2769,6 @@ function removeUserSocket(userId, socketId)
 
 	const sockets = onlineUsers.get(userId);
 	sockets.delete(socketId);
-
 	if (sockets.size === 0)
 	{
 		onlineUsers.delete(userId);
@@ -2929,12 +2785,7 @@ function getOnlineUsers()
 	return Array.from(onlineUsers.keys());
 }
 
-module.exports = {
-  addUserSocket,
-  removeUserSocket,
-  isUserOnline,
-  getOnlineUsers
-};
+module.exports = {addUserSocket, removeUserSocket, isUserOnline, getOnlineUsers};
 ==============================
 FILE: ./sockets/index.js
 ==============================
@@ -2957,21 +2808,15 @@ function initSockets(httpServer)
 	setIO(io);
 	io.use(authSocket);
 	io.on('connection', (socket) => {
-
 		const userId = socket.user.id;
 		addUserSocket(userId, socket.id);
 		io.emit('presence:update', {userId, online: true});
 		registerGameSocket(io, socket);
 		socket.on('disconnect', () => {
-			removeUserSocket(
-				userId,
-				socket.id
-			);
-
+			removeUserSocket(userId, socket.id);
 			if (!isUserOnline(userId))
 			{
-				io.emit(
-					'presence:update',
+				io.emit('presence:update',
 					{
 						userId,
 						online: false

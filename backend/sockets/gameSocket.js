@@ -13,6 +13,10 @@ function registerGameSocket(io, socket)
 		async ({ gameId }) => {
 			try
 			{
+				if (socket.rooms.has(String(gameId)))
+				{
+					return;
+				}
 				socket.join(String(gameId));
 				clearDisconnectTimer(gameId, socket.user.id);
 				console.log('SOCKET JOIN', gameId,socket.user.id);

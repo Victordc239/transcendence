@@ -109,15 +109,15 @@ stroke-width="8"
 <!-- PATHS -->
 
 <rect x="450" y="40" width="100" height="410" rx="24"
-fill="#00ff9d22"/>
+fill="#ff3bd422"/> 
 
 <rect x="450" y="550" width="100" height="410" rx="24"
-fill="#00d9ff22"/>
+fill="#c86cff22"/> 
 
 <rect x="40" y="450" width="410" height="100" rx="24"
-fill="#ff3bd422"/>
+fill="#00d9ff22"/>
 
 <rect x="550" y="450" width="410" height="100" rx="24"
-fill="#c86cff22"/>
+fill="#00ff9d22"/> 
 
 </svg>

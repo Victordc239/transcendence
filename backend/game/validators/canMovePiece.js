@@ -6,6 +6,7 @@ const getDistanceToHomeEntry = require('../utils/getDistanceToHomeEntry');
 const getRealBoardPosition = require('../utils/getRealBoardPosition');
 const isPositionBlocked = require('../rules/isPositionBlocked');
 const isDestinationBlocked = require('../rules/isDestinationBlocked');
+const isEnemyBlockade = require('../rules/isEnemyBlockade');
 
 function canMovePiece(game, playerId, pieceIndex)
 {
@@ -16,7 +17,6 @@ function canMovePiece(game, playerId, pieceIndex)
 			error: 'Not your turn'
 		};
 	}
-
 	const player = getPlayer(game, playerId);
 	if (!player)
 	{
@@ -25,7 +25,6 @@ function canMovePiece(game, playerId, pieceIndex)
 			error: 'Player not found'
 		};
 	}
-
 	const piece = getPiece(player, pieceIndex);
 	if (!piece)
 	{
@@ -34,7 +33,6 @@ function canMovePiece(game, playerId, pieceIndex)
 			error: 'Piece not found'
 		};
 	}
-
 	if (game.dice === null)
 	{
 		return {
@@ -53,13 +51,27 @@ function canMovePiece(game, playerId, pieceIndex)
 				error: 'Need 5 to leave base'
 			};
 		}
-
 		const exitPosition = getRealBoardPosition(player.color, 0);
-		if (isPositionBlocked(game, exitPosition))
+		if (isEnemyBlockade(game, player.color, exitPosition))
 		{
 			return {
 				ok: false,
-				error: 'Exit blocked by blockade'
+				error: 'Exit blocked by enemy blockade'
+			};
+		}
+		const ownPiecesOnExit = player.pieces.filter(p => {
+			if (p.steps < 0)
+			{
+				return false;
+			}
+			const pos = getRealBoardPosition(player.color, p.steps);
+			return pos === exitPosition;
+		});
+		if (ownPiecesOnExit.length >= 2)
+		{
+			return {
+				ok: false,
+				error: 'Own blockade on exit'
 			};
 		}
 

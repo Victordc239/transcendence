@@ -1216,6 +1216,68 @@ function canJoinGame(game, userId)
 
 module.exports = canJoinGame;
 ==============================
+FILE: ./game/validators/canRollDice.js
+==============================
+const { GAME_STATUS } = require('../constants');
+
+function canRollDice(game, userId)
+{
+	// INICIAR PARTIDA
+	if (game.status === GAME_STATUS.WAITING)
+	{
+		if (game.players.length < 2)
+		{
+			return {
+				ok: false,
+				error: 'Waiting for another player'
+			};
+		}
+
+		if (game.players[0].id !== userId)
+		{
+			return {
+				ok: false,
+				error: 'Only host can start game'
+			};
+		}
+
+		return {
+			ok: true,
+			startGame: true
+		};
+	}
+
+	if (game.status !== GAME_STATUS.PLAYING)
+	{
+		return {
+			ok: false,
+			error: 'Game is not active'
+		};
+	}
+
+	if (game.turn !== userId)
+	{
+		return {
+			ok: false,
+			error: 'Not your turn'
+		};
+	}
+
+	if (game.dice !== null)
+	{
+		return {
+			ok: false,
+			error: 'Dice already rolled'
+		};
+	}
+
+	return {
+		ok: true
+	};
+}
+
+module.exports = canRollDice;
+==============================
 FILE: ./game/validators/canMovePiece.js
 ==============================
 const getPlayer = require('../utils/getPlayer');
@@ -1374,68 +1436,6 @@ function canMovePiece(game, playerId, pieceIndex)
 
 module.exports = canMovePiece;
 ==============================
-FILE: ./game/validators/canRollDice.js
-==============================
-const { GAME_STATUS } = require('../constants');
-
-function canRollDice(game, userId)
-{
-	// INICIAR PARTIDA
-	if (game.status === GAME_STATUS.WAITING)
-	{
-		if (game.players.length < 2)
-		{
-			return {
-				ok: false,
-				error: 'Waiting for another player'
-			};
-		}
-
-		if (game.players[0].id !== userId)
-		{
-			return {
-				ok: false,
-				error: 'Only host can start game'
-			};
-		}
-
-		return {
-			ok: true,
-			startGame: true
-		};
-	}
-
-	if (game.status !== GAME_STATUS.PLAYING)
-	{
-		return {
-			ok: false,
-			error: 'Game is not active'
-		};
-	}
-
-	if (game.turn !== userId)
-	{
-		return {
-			ok: false,
-			error: 'Not your turn'
-		};
-	}
-
-	if (game.dice !== null)
-	{
-		return {
-			ok: false,
-			error: 'Dice already rolled'
-		};
-	}
-
-	return {
-		ok: true
-	};
-}
-
-module.exports = canRollDice;
-==============================
 FILE: ./game/rules/isGameAbandoned.js
 ==============================
 function isGameAbandoned(game)
@@ -1564,102 +1564,6 @@ function isBlockade(game, color, globalPosition)
 }
 
 module.exports = isBlockade;
-==============================
-FILE: ./game/rules/checkCapture.js
-==============================
-const {SAFE_CELLS, MAIN_TRACK_SIZE} = require('../constants');
-const getRealBoardPosition = require('../utils/getRealBoardPosition');
-const getBlockades = require('./getBlockades');
-
-function checkCapture(game, currentPlayerId)
-{
-	const currentPlayer = game.players.find(p => p.id === currentPlayerId);
-	if (!currentPlayer)
-	{
-		return;
-	}
-
-	const blockades = getBlockades(game);
-	for (const piece of currentPlayer.pieces)
-	{
-		// Casa
-		if (piece.steps < 0)
-		{
-			continue;
-		}
-
-		// Pasillo final
-		if (piece.steps >= MAIN_TRACK_SIZE)
-		{
-			continue;
-		}
-
-		const currentPosition = getRealBoardPosition(currentPlayer.color, piece.steps);
-
-		// Casilla segura
-		if (SAFE_CELLS.includes(currentPosition))
-		{
-			continue;
-		}
-
-		// 🔥 NO SE PUEDE CAPTURAR UNA BARRERA
-		const isBlockadeCell = blockades.some(blockade => blockade.position === currentPosition);
-		if (isBlockadeCell)
-		{
-			continue;
-		}
-
-		for (const enemy of game.players)
-		{
-			if (enemy.id === currentPlayerId)
-			{
-				continue;
-			}
-			for (const enemyPiece of enemy.pieces)
-			{
-				// Casa
-				if (enemyPiece.steps < 0)
-				{
-					continue;
-				}
-				// Pasillo final
-				if (enemyPiece.steps >= MAIN_TRACK_SIZE)
-				{
-					continue;
-				}
-
-				const enemyPosition = getRealBoardPosition(enemy.color, enemyPiece.steps);
-				if (enemyPosition !== currentPosition)
-				{
-					continue;
-				}
-
-				const enemyPiecesOnCell = enemy.pieces.filter(p => {
-					if (p.steps < 0)
-					{
-						return false;
-					}
-					if (p.steps >= MAIN_TRACK_SIZE)
-					{
-						return false;
-					}
-					const pos = getRealBoardPosition(enemy.color, p.steps);
-					return pos === currentPosition;});
-				// Si hay más de una ficha enemiga significa barrera enemiga. No se puede capturar.
-				if (enemyPiecesOnCell.length >= 2)
-				{
-					continue;
-				}
-				// Captura normal
-				enemyPiece.steps = -1;
-				enemyPiece.state = 'base';
-				return;
-			}
-		}
-	}
-}
-
-module.exports = checkCapture;
 ==============================
 FILE: ./game/rules/checkPausedState.js
 ==============================
@@ -1808,6 +1712,102 @@ function setPlayerConnection(game, playerId, connected)
 }
 
 module.exports = setPlayerConnection;
+==============================
+FILE: ./game/rules/checkCapture.js
+==============================
+const {SAFE_CELLS, MAIN_TRACK_SIZE} = require('../constants');
+const getRealBoardPosition = require('../utils/getRealBoardPosition');
+const getBlockades = require('./getBlockades');
+
+function checkCapture(game, currentPlayerId)
+{
+	const currentPlayer = game.players.find(p => p.id === currentPlayerId);
+	if (!currentPlayer)
+	{
+		return;
+	}
+
+	const blockades = getBlockades(game);
+	for (const piece of currentPlayer.pieces)
+	{
+		// Casa
+		if (piece.steps < 0)
+		{
+			continue;
+		}
+
+		// Pasillo final
+		if (piece.steps >= MAIN_TRACK_SIZE)
+		{
+			continue;
+		}
+
+		const currentPosition = getRealBoardPosition(currentPlayer.color, piece.steps);
+
+		// Casilla segura
+		if (SAFE_CELLS.includes(currentPosition))
+		{
+			continue;
+		}
+
+		// 🔥 NO SE PUEDE CAPTURAR UNA BARRERA
+		const isBlockadeCell = blockades.some(blockade => blockade.position === currentPosition);
+		if (isBlockadeCell)
+		{
+			continue;
+		}
+
+		for (const enemy of game.players)
+		{
+			if (enemy.id === currentPlayerId)
+			{
+				continue;
+			}
+			for (const enemyPiece of enemy.pieces)
+			{
+				// Casa
+				if (enemyPiece.steps < 0)
+				{
+					continue;
+				}
+				// Pasillo final
+				if (enemyPiece.steps >= MAIN_TRACK_SIZE)
+				{
+					continue;
+				}
+
+				const enemyPosition = getRealBoardPosition(enemy.color, enemyPiece.steps);
+				if (enemyPosition !== currentPosition)
+				{
+					continue;
+				}
+
+				const enemyPiecesOnCell = enemy.pieces.filter(p => {
+					if (p.steps < 0)
+					{
+						return false;
+					}
+					if (p.steps >= MAIN_TRACK_SIZE)
+					{
+						return false;
+					}
+					const pos = getRealBoardPosition(enemy.color, p.steps);
+					return pos === currentPosition;});
+				// Si hay más de una ficha enemiga significa barrera enemiga. No se puede capturar.
+				if (enemyPiecesOnCell.length >= 2)
+				{
+					continue;
+				}
+				// Captura normal
+				enemyPiece.steps = -1;
+				enemyPiece.state = 'base';
+				return;
+			}
+		}
+	}
+}
+
+module.exports = checkCapture;
 ==============================
 FILE: ./game/rules/isDestinationBlocked.js
 ==============================

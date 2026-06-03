@@ -55,9 +55,8 @@ function executeMove(game, playerId, pieceIndex)
 		return validation;
 	}
 
-	applyMove(game, playerId, pieceIndex);
-	checkCapture(game, playerId);
-
+	const movedPiece = applyMove(game, playerId, pieceIndex);
+	checkCapture(game, playerId, movedPiece);
 	const won = checkWin(game, playerId);
 	if (won)
 	{

@@ -1288,6 +1288,7 @@ const getDistanceToHomeEntry = require('../utils/getDistanceToHomeEntry');
 const getRealBoardPosition = require('../utils/getRealBoardPosition');
 const isPositionBlocked = require('../rules/isPositionBlocked');
 const isDestinationBlocked = require('../rules/isDestinationBlocked');
+const isEnemyBlockade = require('../rules/isEnemyBlockade');
 
 function canMovePiece(game, playerId, pieceIndex)
 {
@@ -1298,7 +1299,6 @@ function canMovePiece(game, playerId, pieceIndex)
 			error: 'Not your turn'
 		};
 	}
-
 	const player = getPlayer(game, playerId);
 	if (!player)
 	{
@@ -1307,7 +1307,6 @@ function canMovePiece(game, playerId, pieceIndex)
 			error: 'Player not found'
 		};
 	}
-
 	const piece = getPiece(player, pieceIndex);
 	if (!piece)
 	{
@@ -1316,7 +1315,6 @@ function canMovePiece(game, playerId, pieceIndex)
 			error: 'Piece not found'
 		};
 	}
-
 	if (game.dice === null)
 	{
 		return {
@@ -1335,13 +1333,27 @@ function canMovePiece(game, playerId, pieceIndex)
 				error: 'Need 5 to leave base'
 			};
 		}
-
 		const exitPosition = getRealBoardPosition(player.color, 0);
-		if (isPositionBlocked(game, exitPosition))
+		if (isEnemyBlockade(game, player.color, exitPosition))
 		{
 			return {
 				ok: false,
-				error: 'Exit blocked by blockade'
+				error: 'Exit blocked by enemy blockade'
+			};
+		}
+		const ownPiecesOnExit = player.pieces.filter(p => {
+			if (p.steps < 0)
+			{
+				return false;
+			}
+			const pos = getRealBoardPosition(player.color, p.steps);
+			return pos === exitPosition;
+		});
+		if (ownPiecesOnExit.length >= 2)
+		{
+			return {
+				ok: false,
+				error: 'Own blockade on exit'
 			};
 		}
 
@@ -1821,85 +1833,34 @@ function isDestinationBlocked(game, globalPosition)
 
 module.exports = isDestinationBlocked;
 ==============================
+FILE: ./game/rules/isEnemyBlockade.js
+==============================
+const getBlockades = require('./getBlockades');
+
+function isEnemyBlockade(game, playerColor, globalPosition)
+{
+	const blockades = getBlockades(game);
+	return blockades.some(blockade => blockade.position === globalPosition && blockade.color !== playerColor);
+}
+
+module.exports = isEnemyBlockade;
+==============================
 FILE: ./game/constants.js
 ==============================
-const COLORS = [
-	"pink",
-	"purple",
-	"green",
-	"blue"
-];
-
-const GAME_STATUS = {
-	WAITING: "waiting",
-	PLAYING: "playing",
-	PAUSED: "paused",
-	FINISHED: "finished"
-};
-
-// PARCHÍS REAL
+const COLORS = [ "pink", "purple", "green", "blue"];
+const GAME_STATUS = { WAITING: "waiting", PLAYING: "playing", PAUSED: "paused", FINISHED: "finished" };
 const MAIN_TRACK_SIZE = 68;
-
 const FINAL_STRETCH_SIZE = 7;
-
 const FINAL_POSITION = MAIN_TRACK_SIZE + FINAL_STRETCH_SIZE;
-
-// Salidas reales
-
-const START_POSITIONS = {
-	pink: 39,
-	purple: 5,
-	green: 29,
-	blue: 63
-};
-
-// Casillas seguras
-const SAFE_CELLS = [
-	0,
-	5,
-	12,
-	17,
-	22,
-	29,
-	34,
-	39,
-	46,
-	51,
-	56,
-	63
-];
-
-// Posiciones especiales
-
+const START_POSITIONS = { pink: 39, purple: 5, green: 29, blue: 63 };
+const SAFE_CELLS = [0, 5, 12, 17, 22, 29, 34, 39, 46, 51, 56, 63];
 const BASE_POSITION = -1;
-
 const FINAL_STRETCH_START = MAIN_TRACK_SIZE;
-
 const DISCONNECT_TIMEOUT = 60000;
-
 const TURN_TIMEOUT = 30000;
+const HOME_ENTRIES = { pink: 33, purple: 67, green: 16, blue: 50 };
 
-const HOME_ENTRIES = {
-	pink: 33,
-	purple: 67,
-	green: 16,
-	blue: 50
-};
-
-module.exports = {
-	COLORS,
-	GAME_STATUS,
-	MAIN_TRACK_SIZE,
-	FINAL_STRETCH_SIZE,
-	FINAL_POSITION,
-	FINAL_STRETCH_START,
-	BASE_POSITION,
-	START_POSITIONS,
-	SAFE_CELLS,
-	HOME_ENTRIES,
-	DISCONNECT_TIMEOUT,
-	TURN_TIMEOUT
-};
+module.exports = { COLORS, GAME_STATUS, MAIN_TRACK_SIZE, FINAL_STRETCH_SIZE, FINAL_POSITION, FINAL_STRETCH_START, BASE_POSITION, START_POSITIONS, SAFE_CELLS, HOME_ENTRIES, DISCONNECT_TIMEOUT, TURN_TIMEOUT };
 ==============================
 FILE: ./game/disconnectTimers.js
 ==============================

@@ -7,7 +7,7 @@ function LobbyPage() {
   const { token } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
     navigate("/");
   };
 
@@ -96,7 +96,7 @@ function LobbyPage() {
   const [loadingJoin, setLoadingJoin] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
     navigate("/");
   };
 

@@ -18,7 +18,7 @@ function LoginPage() {
       const data = await login(email, password);
 
       if (data.token) {
-        localStorage.setItem("token", data.token);
+        sessionStorage.setItem("token", data.token);
         navigate("/lobby");
       } else {
         alert(data.error || "Error en login");

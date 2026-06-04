@@ -6,7 +6,7 @@ export async function http<T>(
 ): Promise<T> {
 
   const token =
-    localStorage.getItem("token");
+    sessionStorage.getItem("token");
 
   const res = await fetch(
     `${API_URL}${endpoint}`,

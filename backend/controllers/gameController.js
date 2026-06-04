@@ -140,6 +140,9 @@ exports.joinGame = async (req, res) => {
 							id: p.id,
 							color: p.color
 						})));
+					console.log(
+						JSON.stringify(game.players, null, 2)
+						);
 
 					if (addResult && addResult.error)
 					{

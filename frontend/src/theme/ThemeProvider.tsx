@@ -29,7 +29,7 @@ export function ThemeProvider({
   const [theme, setThemeState] = useState<Theme>("light");
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem(
+    const savedTheme = sessionStorage.getItem(
       THEME_STORAGE_KEY
     ) as Theme | null;
 
@@ -47,7 +47,7 @@ export function ThemeProvider({
       root.classList.remove("dark");
     }
 
-    localStorage.setItem(
+    sessionStorage.setItem(
       THEME_STORAGE_KEY,
       theme
     );

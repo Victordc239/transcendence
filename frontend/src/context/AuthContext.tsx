@@ -16,17 +16,17 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
+  const [token, setToken] = useState<string | null>(sessionStorage.getItem("token"));
   const [user, setUser] = useState<User | null>(null);
 
   const login = (newToken: string, user: User) => {
-    localStorage.setItem("token", newToken);
+    sessionStorage.setItem("token", newToken);
     setToken(newToken);
     setUser(user);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
     setToken(null);
     setUser(null);
   };

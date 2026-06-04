@@ -1,7 +1,7 @@
 import { API_URL } from "./config";
 
 function getToken() {
-  return localStorage.getItem("token");
+  return sessionStorage.getItem("token");
 }
 
 export async function createGame() {

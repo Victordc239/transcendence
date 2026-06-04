@@ -45,3 +45,6 @@ docker logs -f transcendence_backend
 
 
 
+
+
+arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una alado de otra

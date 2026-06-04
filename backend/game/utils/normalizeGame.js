@@ -16,6 +16,8 @@ function normalizeGame(game)
 		turn: game.turn,
 		dice: game.dice,
 		lastDice: game.lastDice,
+		consecutiveSixes: game.consecutiveSixes || {},
+		lastMovedPiece: game.lastMovedPiece || null,
 		winner: game.winner,
 		createdAt: game.createdAt,
 		updatedAt: game.updatedAt,

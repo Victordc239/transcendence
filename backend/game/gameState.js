@@ -8,17 +8,20 @@ function createNewGame(hostId)
 		id: Date.now().toString(),
 
 		players: [
-			{id: hostId,
-			color: "pink",
-			connected: true,
-			disconnectedAt: null,
-			abandoned: false,
-			pieces: createPieces()}
+			{
+				id: hostId,
+				color: "pink",
+				connected: true,
+				disconnectedAt: null,
+				abandoned: false,
+				pieces: createPieces()
+			}
 		],
-
 		turn: hostId,
 		dice: null,
 		lastDice: null,
+		consecutiveSixes: {},
+		lastMovedPiece: null,
 		winner: null,
 		status: GAME_STATUS.WAITING,
 		createdAt: Date.now(),
@@ -26,4 +29,4 @@ function createNewGame(hostId)
 	};
 }
 
-module.exports = {createNewGame};
+module.exports = { createNewGame };

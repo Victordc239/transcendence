@@ -1,11 +1,11 @@
-const { COLORS, GAME_STATUS } =require('./constants');
+const { COLORS, GAME_STATUS } = require('./constants');
 const canMovePiece = require('./validators/canMovePiece');
 const applyMove = require('./rules/applyMove');
 const nextTurn = require('./rules/nextTurn');
 const checkCapture = require('./rules/checkCapture');
 const checkWin = require('./rules/checkWin');
 const createPieces = require('./utils/createPieces');
-const {startTurnTimer, clearTurnTimer} = require('./turnTimer');
+const { startTurnTimer, clearTurnTimer } = require('./turnTimer');
 
 function rollDice()
 {
@@ -20,7 +20,6 @@ function addPlayerToGame(game, userId)
 			error: 'Game full'
 		};
 	}
-
 	const alreadyInGame = game.players.find(player => player.id === userId);
 	if (alreadyInGame)
 	{
@@ -28,9 +27,7 @@ function addPlayerToGame(game, userId)
 			error: 'Already in game'
 		};
 	}
-
 	const color = COLORS[game.players.length];
-
 	game.players.push({
 		id: userId,
 		color,
@@ -39,12 +36,31 @@ function addPlayerToGame(game, userId)
 		abandoned: false,
 		pieces: createPieces()
 	});
-
 	game.updatedAt = Date.now();
-
 	return {
 		ok: true
 	};
+}
+
+function sendLastMovedPieceToBase(game)
+{
+	const info = game.lastMovedPiece;
+	if (!info)
+	{
+		return;
+	}
+	const player = game.players.find(p => p.id === info.playerId);
+	if (!player)
+	{
+		return;
+	}
+	const piece = player.pieces[info.pieceIndex];
+	if (!piece)
+	{
+		return;
+	}
+	piece.steps = -1;
+	piece.state = 'base';
 }
 
 function executeMove(game, playerId, pieceIndex)
@@ -54,34 +70,60 @@ function executeMove(game, playerId, pieceIndex)
 	{
 		return validation;
 	}
-
 	const movedPiece = applyMove(game, playerId, pieceIndex);
+	game.lastMovedPiece = { playerId, pieceIndex};
 	checkCapture(game, playerId, movedPiece);
 	const won = checkWin(game, playerId);
 	if (won)
 	{
 		clearTurnTimer(game.id);
 		game.status = GAME_STATUS.FINISHED;
-		game.winner =playerId;
-
+		game.winner = playerId;
 		return {
 			ok: true,
 			finished: true
 		};
 	}
-
-	if (game.dice !== 6)
+	// Inicializar contador
+	if (!game.consecutiveSixes)
 	{
+		game.consecutiveSixes = {};
+	}
+	if (!game.consecutiveSixes[playerId])
+	{
+		game.consecutiveSixes[playerId] = 0;
+	}
+	// SEIS
+	if (game.dice === 6)
+	{
+		game.consecutiveSixes[playerId]++;
+		// TERCER SEIS
+		if (game.consecutiveSixes[playerId] >= 3)
+		{
+			sendLastMovedPieceToBase(game);
+			game.consecutiveSixes[playerId] = 0;
+			game.lastMovedPiece = null;
+			nextTurn(game);
+			game.dice = null;
+			game.updatedAt = Date.now();
+			startTurnTimer(game.id);
+			return {
+				ok: true,
+				thirdSixPenalty: true
+			};
+		}
+	}
+	else
+	{
+		game.consecutiveSixes[playerId] = 0;
 		nextTurn(game);
 	}
-
 	game.dice = null;
 	game.updatedAt = Date.now();
-
 	startTurnTimer(game.id);
 	return {
 		ok: true
 	};
 }
 
-module.exports = {rollDice, addPlayerToGame, executeMove};
+module.exports = { rollDice, addPlayerToGame, executeMove };

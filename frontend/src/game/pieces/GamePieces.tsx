@@ -94,8 +94,13 @@ const BARRIER_OFFSET = 28;
 
 export default function GamePieces({
   game,
+  onPieceClick,
 }: {
   game: Game;
+  onPieceClick: (
+    playerId: number,
+    pieceIndex: number
+  ) => void;
 }) {
   const piecesToRender: PieceRenderData[] = [];
 
@@ -184,14 +189,21 @@ export default function GamePieces({
         w-full
         h-full
         z-30
-        pointer-events-none
+        pointer-events-auto
       "
       preserveAspectRatio="xMidYMid meet"
     >
       {finalPieces.map((piece) => (
         <g
           key={`${piece.playerId}-${piece.index}`}
+          onClick={() =>
+            onPieceClick(
+              piece.playerId,
+              piece.index
+            )
+          }
           style={{
+            cursor: "pointer",
             transition:
               "transform 220ms ease-out",
           }}

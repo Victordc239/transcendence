@@ -40,18 +40,27 @@ export default function Piece({
   );
 }*/
 
+type PieceProps = {
+  x: number;
+  y: number;
+  color: string;
+  onClick?: () => void;
+};
+
 export default function Piece({
   x,
   y,
   color,
-}: any) {
+  onClick,
+}: PieceProps) {
   return (
     <g
+      onClick={onClick}
       style={{
         transform: `translate(${x}px, ${y}px)`,
+        cursor: "pointer",
       }}
     >
-      {/* OUTER GLOW */}
       <circle
         r={28}
         fill={color}
@@ -61,7 +70,6 @@ export default function Piece({
         }}
       />
 
-      {/* MAIN BODY */}
       <circle
         r={18}
         fill={color}
@@ -70,7 +78,6 @@ export default function Piece({
         }}
       />
 
-      {/* INNER LIGHT */}
       <circle
         cy={-5}
         r={7}

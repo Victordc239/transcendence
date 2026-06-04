@@ -63,7 +63,10 @@ import BoardEffects from "../board/BoardEffects";
   );
 }*/
 
-export default function GameScene({ game }: any) {
+export default function GameScene({
+  game,
+  onPieceClick,
+}: any) {
   return (
     <div className="relative w-full h-screen overflow-hidden">
 
@@ -80,7 +83,10 @@ export default function GameScene({ game }: any) {
 
           <GameBoard />
           <BoardEffects />
-          <GamePieces game={game} />
+          <GamePieces
+            game={game}
+            onPieceClick={onPieceClick}
+          />
 
         </div>
       </div>

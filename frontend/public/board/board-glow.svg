@@ -29,9 +29,9 @@ stroke="#c86cff"
 stroke-width="10"/>
 
 <polygon
-points="440,560 440,440 560,440 560,560"
+points="400,600 400,400 600,400 600, 600"
 stroke="#f5f3e2ff"
-stroke-width="10"
+stroke-width="5"
 />
 
 </g>

@@ -119,6 +119,44 @@ function registerGameSocket(io, socket)
 		}
 	);
 
+	// CHAT
+	socket.on('chat:send',
+		async ({ gameId, message }) => {
+			try
+			{
+				if (!message?.trim())
+				{
+					return;
+				}
+
+				const game = await getGame(gameId);
+				if (!game)
+				{
+					return;
+				}
+
+				const player = game.players.find(p => p.id === socket.user.id);
+				if (!player)
+				{
+					return;
+				}
+
+				io.to(String(gameId)).emit('chat:message',
+					{
+						userId: socket.user.id,
+						color: player.color,
+						message: message.trim(),
+						timestamp: Date.now()
+					}
+				);
+			}
+			catch (err)
+			{
+				console.error('chat:send error', err);
+			}
+		}
+	);
+
 	socket.on('disconnect',
 		async () => {
 			try

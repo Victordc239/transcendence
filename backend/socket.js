@@ -3,7 +3,6 @@ let io = null;
 /* =============================
 SET IO INSTANCE
 ============================= */
-
 function setIO(serverIO)
 {
 	io = serverIO;
@@ -12,7 +11,6 @@ function setIO(serverIO)
 /* =============================
 GET IO INSTANCE
 ============================= */
-
 function getIO()
 {
 	if (!io)

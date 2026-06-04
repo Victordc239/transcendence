@@ -126,7 +126,7 @@ export const bases: Record<string, Point[]> = {
 
   purple: [
     { x: 1207, y: 1207 },
-    { x: 1351, y: 1207 }, // x+35   y+40
+    { x: 1351, y: 1207 },
     { x: 1207, y: 1351 },
     { x: 1351, y: 1351 },
   ],

@@ -90,7 +90,7 @@ type PieceRenderData = {
   y: number;
 };
 
-const BARRIER_OFFSET = 28;
+const STACK_OFFSET = 28;
 
 export default function GamePieces({
   game,
@@ -116,9 +116,7 @@ export default function GamePieces({
         pos = finishedPositions[player.color][i];
       }
 
-      if (!pos) {
-        return;
-      }
+      if (!pos) return;
 
       piecesToRender.push({
         playerId: player.id,
@@ -133,7 +131,10 @@ export default function GamePieces({
   const groups = new Map<string, PieceRenderData[]>();
 
   for (const piece of piecesToRender) {
-    const key = `${piece.color}-${Math.round(piece.x)}-${Math.round(piece.y)}`;
+    // IMPORTANTE:
+    // agrupamos SOLO por coordenada para detectar
+    // fichas de distintos colores en la misma safe cell.
+    const key = `${Math.round(piece.x)}-${Math.round(piece.y)}`;
 
     if (!groups.has(key)) {
       groups.set(key, []);
@@ -145,39 +146,36 @@ export default function GamePieces({
   const finalPieces: PieceRenderData[] = [];
 
   groups.forEach((group) => {
-    if (group.length !== 2) {
-      finalPieces.push(...group);
+    if (group.length === 1) {
+      finalPieces.push(group[0]);
       return;
     }
 
-    const { x, y } = group[0];
+    const baseX = group[0].x;
+    const baseY = group[0].y;
 
     const isVerticalTrack =
-      (x > 600 && x < 1000) || // columna central
-      (x < 450) ||            // columna izquierda
-      (x > 1150);             // columna derecha
+      (baseX > 600 && baseX < 1000) ||
+      baseX < 450 ||
+      baseX > 1150;
 
-    if (isVerticalTrack) {
-      finalPieces.push({
-        ...group[0],
-        x: group[0].x - BARRIER_OFFSET,
-      });
+    const center = (group.length - 1) / 2;
 
-      finalPieces.push({
-        ...group[1],
-        x: group[1].x + BARRIER_OFFSET,
-      });
-    } else {
-      finalPieces.push({
-        ...group[0],
-        y: group[0].y - BARRIER_OFFSET,
-      });
+    group.forEach((piece, idx) => {
+      const offset = (idx - center) * STACK_OFFSET;
 
-      finalPieces.push({
-        ...group[1],
-        y: group[1].y + BARRIER_OFFSET,
-      });
-    }
+      if (isVerticalTrack) {
+        finalPieces.push({
+          ...piece,
+          x: baseX + offset,
+        });
+      } else {
+        finalPieces.push({
+          ...piece,
+          y: baseY + offset,
+        });
+      }
+    });
   });
 
   return (

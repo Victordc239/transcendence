@@ -7,9 +7,7 @@ exports.sendRequest = async (req, res) => {
 		const requesterId = req.user.id;
 		const addresseeId = parseInt(req.params.id, 10);
 		if (requesterId === addresseeId)
-		{
 			return res.status(400).json({error: 'No puedes agregarte'});
-		}
 
 		const existing = await pool.query(
 			`
@@ -24,9 +22,7 @@ exports.sendRequest = async (req, res) => {
 		);
 
 		if (existing.rows.length > 0)
-		{
 			return res.status(400).json({ error: 'La relación ya existe'});
-		}
 
 		const result = await pool.query(
 			`
@@ -72,9 +68,7 @@ exports.acceptRequest = async (req, res) => {
 		);
 
 		if (result.rows.length === 0)
-		{
 			return res.status(404).json({error: 'Solicitud no encontrada'});
-		}
 
 		return res.json({success: true, friendship: result.rows[0]});
 	}

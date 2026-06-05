@@ -4,9 +4,7 @@ async function initDB()
 {
 	try
 	{
-		/* =============================
-			USERS
-		============================== */
+		// USERS:
 		await pool.query(`
 			CREATE TABLE IF NOT EXISTS users (
 			id SERIAL PRIMARY KEY,
@@ -19,9 +17,7 @@ async function initDB()
 			);
 		`);
 
-		/* =============================
-			FRIENDSHIPS
-		============================== */
+		// FRIENDSHIPS:
 		await pool.query(`
 			CREATE TABLE IF NOT EXISTS friendships (
 				id SERIAL PRIMARY KEY,
@@ -41,9 +37,7 @@ async function initDB()
 			);
 		`);
 
-		/* =============================
-			GAMES
-		============================== */
+		// GAMES: 
 		await pool.query(`
 			CREATE TABLE IF NOT EXISTS games (
 			id VARCHAR(255) PRIMARY KEY,

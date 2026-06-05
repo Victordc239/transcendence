@@ -67,9 +67,7 @@ function executeMove(game, playerId, pieceIndex)
 {
 	const validation = canMovePiece(game, playerId, pieceIndex);
 	if (!validation.ok)
-	{
 		return validation;
-	}
 	const movedPiece = applyMove(game, playerId, pieceIndex);
 	game.lastMovedPiece = { playerId, pieceIndex};
 	checkCapture(game, playerId, movedPiece);
@@ -86,13 +84,9 @@ function executeMove(game, playerId, pieceIndex)
 	}
 	// Inicializar contador
 	if (!game.consecutiveSixes)
-	{
 		game.consecutiveSixes = {};
-	}
 	if (!game.consecutiveSixes[playerId])
-	{
 		game.consecutiveSixes[playerId] = 0;
-	}
 	// SEIS
 	if (game.dice === 6)
 	{
@@ -121,9 +115,7 @@ function executeMove(game, playerId, pieceIndex)
 	game.dice = null;
 	game.updatedAt = Date.now();
 	startTurnTimer(game.id);
-	return {
-		ok: true
-	};
+	return { ok: true };
 }
 
 module.exports = { rollDice, addPlayerToGame, executeMove };

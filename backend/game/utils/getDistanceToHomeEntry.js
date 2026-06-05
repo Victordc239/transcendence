@@ -6,9 +6,7 @@ function getDistanceToHomeEntry(color, steps)
 	const current = getRealBoardPosition(color, steps);
 	const entry = HOME_ENTRIES[color];
 	if (current <= entry)
-	{
 		return entry - current;
-	}
 
 	return (MAIN_TRACK_SIZE - current + entry);
 }

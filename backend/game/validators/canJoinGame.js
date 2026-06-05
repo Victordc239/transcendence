@@ -21,11 +21,7 @@ function canJoinGame(game, userId)
 	}
 
 	if (game.status === GAME_STATUS.WAITING)
-	{
-		return {
-			ok: true
-		};
-	}
+		return { ok: true };
 
 	// 🔥 SOLO bloquear si ya empezó Y no pertenece a la partida
 	if (game.status === GAME_STATUS.PLAYING || game.status === GAME_STATUS.PAUSED || game.status === GAME_STATUS.FINISHED)
@@ -36,9 +32,7 @@ function canJoinGame(game, userId)
 		};
 	}
 
-	return {
-		ok: true
-	};
+	return { ok: true };
 }
 
 module.exports = canJoinGame;

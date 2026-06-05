@@ -6,7 +6,6 @@ function createNewGame(hostId)
 {
 	return{
 		id: Date.now().toString(),
-
 		players: [
 			{
 				id: hostId,

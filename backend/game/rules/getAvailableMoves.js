@@ -8,9 +8,7 @@ function getAvailableMoves(game, playerId)
 	{
 		const validation = canMovePiece(game, playerId, i)
 		if (validation.ok)
-		{
 			moves.push(i);
-		}
 	}
 	return moves;
 }

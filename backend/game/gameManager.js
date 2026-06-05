@@ -1,8 +1,6 @@
 const pool = require('../db');
 
-/* =============================
-   CREATE GAME
-============================= */
+// CREATE GAME:
 async function createGame(game, hostId)
 {
 	try
@@ -29,9 +27,7 @@ async function createGame(game, hostId)
 	}
 }
 
-/* =============================
-   GET GAME
-============================= */
+// GET GAME:
 async function getGame(gameId) {
 	try
 	{
@@ -71,9 +67,7 @@ async function getGame(gameId) {
 	}
 }
 
-/* =============================
-   SAVE GAME
-============================= */
+// SAVE GAME:
 async function saveGame(game)
 {
 	try
@@ -101,9 +95,7 @@ async function saveGame(game)
 	}
 }
 
-/* =============================
-   DELETE GAME
-============================= */
+// DELETE GAME:
 async function deleteGame(gameId)
 {
 	try

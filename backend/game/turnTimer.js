@@ -4,14 +4,10 @@ const withGameLock = require('./withGameLock');
 const { getIO } = require('../socket');
 const normalizeGame = require('./utils/normalizeGame');
 
-/* =============================
-   ACTIVE TIMERS
-============================= */
+// ACTIVE TIMERS:
 const turnTimers = new Map();
 
-/* =============================
-   CLEAR TURN TIMER
-============================= */
+// CLEAR TURN TIMER:
 function clearTurnTimer(gameId)
 {
 	const existingTimer = turnTimers.get(gameId);
@@ -22,9 +18,7 @@ function clearTurnTimer(gameId)
 	}
 }
 
-/* =============================
-   START TURN TIMER
-============================= */
+// START TURN TIMER:
 function startTurnTimer(gameId)
 {
 	clearTurnTimer(gameId);
@@ -35,9 +29,7 @@ function startTurnTimer(gameId)
 				async (game) => {
 
 					if (game.status !== GAME_STATUS.PLAYING)
-					{
 						return { skip: true };
-					}
 					game.dice = null;
 					nextTurn(game);
 					game.updatedAt = Date.now();

@@ -15,9 +15,7 @@ function checkPausedState(game)
 
 	// Si la partida todavía no ha empezado, jamás cambiar su estado.
 	if (game.status === GAME_STATUS.WAITING)
-	{
 		return;
-	}
 
 	// Pausar partida
 	if (disconnectedPlayers.length > 0)

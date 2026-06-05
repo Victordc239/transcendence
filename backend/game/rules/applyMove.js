@@ -6,14 +6,10 @@ function applyMove(game, playerId, pieceIndex)
 {
 	const player = game.players.find(p => p.id === playerId);
 	if (!player)
-	{
 		return null;
-	}
 	const piece = player.pieces[pieceIndex];
 	if (!piece)
-	{
 		return null;
-	}
 	// SALIR DE CASA
 	if (piece.state === 'base' && game.dice === 5)
 	{
@@ -26,9 +22,7 @@ function applyMove(game, playerId, pieceIndex)
 	{
 		piece.steps += game.dice;
 		if (piece.steps === FINAL_POSITION)
-		{
 			piece.state = 'finished';
-		}
 		return piece;
 	}
 	// ENTRADA AL PASILLO FINAL
@@ -39,9 +33,7 @@ function applyMove(game, playerId, pieceIndex)
 		piece.steps = MAIN_TRACK_SIZE + overshoot;
 		piece.state = 'final';
 		if (piece.steps === FINAL_POSITION)
-		{
 			piece.state = 'finished';
-		}
 		return piece;
 	}
 	// RECORRIDO NORMAL

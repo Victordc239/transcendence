@@ -8,9 +8,7 @@ function validateTurn(game, userId)
 		};
 	}
 
-	return {
-		ok: true
-	};
+	return { ok: true };
 }
 
 module.exports = validateTurn;

@@ -51,9 +51,7 @@ function canRollDice(game, userId)
 		};
 	}
 
-	return {
-		ok: true
-	};
+	return { ok: true };
 }
 
 module.exports = canRollDice;

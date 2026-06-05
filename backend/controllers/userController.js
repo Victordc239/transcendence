@@ -21,9 +21,7 @@ exports.getMe = async (req, res) => {
 		);
 
 		if (result.rows.length === 0)
-		{
 			return res.status(404).json({error: 'Usuario no encontrado'});
-		}
 
 		const user = result.rows[0];
 		return res.json({
@@ -44,9 +42,7 @@ exports.updateMe = async (req, res) => {
 		const userId = req.user.id;
 		const { username, avatar_url } = req.body;
 		if (!username && !avatar_url)
-		{
 			return res.status(400).json({error: 'No hay datos para actualizar'});
-		}
 
 		if (username)
 		{
@@ -60,9 +56,7 @@ exports.updateMe = async (req, res) => {
 				[username, userId]);
 
 			if (usernameExists.rows.length > 0)
-			{
 				return res.status(400).json({error: 'El nombre de usuario ya está en uso'});
-			}
 		}
 
 		const result = await pool.query(
@@ -115,9 +109,7 @@ exports.getUserById = async (req, res) => {
 		);
 
 		if (result.rows.length === 0)
-		{
 			return res.status(404).json({error: 'Usuario no encontrado'});
-		}
 
 		const user = result.rows[0];
 		return res.json({
@@ -137,9 +129,7 @@ exports.searchUsers = async (req, res) => {
 	{
 		const query = req.query.q;
 		if (!query || query.trim().length === 0)
-		{
 			return res.json({users: []});
-		}
 
 		const result = await pool.query(
 			`

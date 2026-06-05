@@ -6,9 +6,7 @@ const { MAIN_TRACK_SIZE } = require('../constants');
 function normalizeGame(game)
 {
 	if (!game)
-	{
 		return game;
-	}
 
 	return {
 		id: game.id,
@@ -21,27 +19,21 @@ function normalizeGame(game)
 		winner: game.winner,
 		createdAt: game.createdAt,
 		updatedAt: game.updatedAt,
-
 		players: game.players.map(player => ({
 			id: player.id,
 			color: player.color,
 			connected: player.connected,
 			abandoned: player.abandoned,
-
 			pieces: player.pieces.map(piece => {
 
 				let position = -1;
 				let coords = null;
-
 				if (piece.steps >= 0)
 				{
 					// recorrido exterior
 					if (piece.steps < MAIN_TRACK_SIZE)
 					{
-						position = getRealBoardPosition(
-							player.color,
-							piece.steps
-						);
+						position = getRealBoardPosition(player.color, piece.steps);
 						coords = getBoardCoordinates(position);
 					}
 					else

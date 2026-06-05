@@ -14,9 +14,7 @@ function registerGameSocket(io, socket)
 			try
 			{
 				if (socket.rooms.has(String(gameId)))
-				{
 					return;
-				}
 				socket.join(String(gameId));
 				clearDisconnectTimer(gameId, socket.user.id);
 				console.log('SOCKET JOIN', gameId,socket.user.id);
@@ -28,62 +26,36 @@ function registerGameSocket(io, socket)
 						console.log('SOCKET PLAYER CHECK', socket.user.id, game.players.map(p => p.id));
 
 						if (!player)
-						{
-							return {
-								error:
-									'You are not part of this game'
-							};
-						}
+							return { error: 'You are not part of this game' };
 						setPlayerConnection(game, socket.user.id, true);
 						checkPausedState(game);
 
-						return {
-							ok: true
-						};
+						return { ok: true };
 					});
 
 				if (!locked)
-				{
-					return socket.emit(
-						'error',
-						{
-							message:
-								'Game not found'
-						});
-				}
+					return socket.emit('error',{ message: 'Game not found' });
 
 				if (locked.result.error)
-				{
-					return socket.emit('error',
-						{
-							message:
-								locked.result.error
-						});
-				}
+					return socket.emit('error',{ message: locked.result.error });
 
 				const normalized = normalizeGame(locked.game);
 				socket.emit('game:update', normalized);
 
 				io.to(String(gameId)
-					).emit(
-						'game:player_reconnected',
+					).emit('game:player_reconnected',
 						{
 							userId:
 								socket.user.id
 						}
 					);
 
-				io.to(String(gameId)
-					).emit('game:update', normalized);
+				io.to(String(gameId)).emit('game:update', normalized);
 			}
 			catch (err)
 			{
 				console.error('game:join error:', err);
-				socket.emit('error',
-				{
-					message:
-						'Socket join error'
-				});
+				socket.emit('error',{ message: 'Socket join error'});
 			}
 		}
 	);
@@ -94,23 +66,10 @@ function registerGameSocket(io, socket)
 			{
 				const game = await getGame(gameId);
 				if (!game)
-				{
-					return socket.emit(
-						'error',
-						{
-							message:
-								'Game not found'
-						}
-					);
-				}
+					return socket.emit('error', {message: 'Game not found'});
 
 				io.to(String(gameId)
-					).emit(
-						'game:update',
-						normalizeGame(
-							game
-						)
-					);
+					).emit('game:update', normalizeGame(game));
 			}
 			catch (err)
 			{
@@ -125,21 +84,15 @@ function registerGameSocket(io, socket)
 			try
 			{
 				if (!message?.trim())
-				{
 					return;
-				}
 
 				const game = await getGame(gameId);
 				if (!game)
-				{
 					return;
-				}
 
 				const player = game.players.find(p => p.id === socket.user.id);
 				if (!player)
-				{
 					return;
-				}
 
 				io.to(String(gameId)).emit('chat:message',
 					{
@@ -173,14 +126,10 @@ function registerGameSocket(io, socket)
 							};});
 
 					if (!locked)
-					{
 						continue;
-					}
 
 					const normalized = normalizeGame(locked.game);
-
-					io.to(String(gameId)
-						).emit('game:update', normalized);
+					io.to(String(gameId)).emit('game:update', normalized);
 
 					io.to(String(gameId)
 						).emit('game:player_disconnected',
@@ -194,20 +143,14 @@ function registerGameSocket(io, socket)
 						{
 							const updatedGame = await getGame(gameId);
 							if (!updatedGame)
-							{
 								return;
-							}
 
 							const player = updatedGame.players.find(p => p.id === socket.user.id);
 							if (!player)
-							{
 								return;
-							}
 
 							if (player.connected)
-							{
 								return;
-							}
 
 							player.abandoned = true;
 							const abandoned = isGameAbandoned(updatedGame);

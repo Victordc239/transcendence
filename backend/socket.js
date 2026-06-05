@@ -1,22 +1,16 @@
 let io = null;
 
-/* =============================
-SET IO INSTANCE
-============================= */
+// SET IO INSTANCE:
 function setIO(serverIO)
 {
 	io = serverIO;
 }
 
-/* =============================
-GET IO INSTANCE
-============================= */
+// GET IO INSTANCE:
 function getIO()
 {
 	if (!io)
-	{
 		throw new Error("Socket.io not initialized");
-	}
 	return io;
 }
 

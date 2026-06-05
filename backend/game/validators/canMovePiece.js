@@ -61,9 +61,7 @@ function canMovePiece(game, playerId, pieceIndex)
 		}
 		const ownPiecesOnExit = player.pieces.filter(p => {
 			if (p.steps < 0)
-			{
 				return false;
-			}
 			const pos = getRealBoardPosition(player.color, p.steps);
 			return pos === exitPosition;
 		});
@@ -75,9 +73,7 @@ function canMovePiece(game, playerId, pieceIndex)
 			};
 		}
 
-		return {
-			ok: true
-		};
+		return { ok: true };
 	}
 
 	// FICHA TERMINADA
@@ -100,9 +96,7 @@ function canMovePiece(game, playerId, pieceIndex)
 			};
 		}
 
-		return {
-			ok: true
-		};
+		return { ok: true };
 	}
 
 	// POSICIÓN ACTUAL
@@ -112,9 +106,7 @@ function canMovePiece(game, playerId, pieceIndex)
 	for (let step = 1; step <= game.dice; step++)
 	{
 		if (isEnteringHomeStretch(player.color, piece.steps, step))
-		{
 			break;
-		}
 
 		const futureSteps = piece.steps + step;
 		const globalPosition = getRealBoardPosition(player.color, futureSteps);
@@ -143,9 +135,7 @@ function canMovePiece(game, playerId, pieceIndex)
 			};
 		}
 
-		return {
-			ok: true
-		};
+		return { ok: true };
 	}
 
 	const targetSteps = piece.steps + game.dice;
@@ -159,9 +149,7 @@ function canMovePiece(game, playerId, pieceIndex)
 		};
 	}
 
-	return {
-		ok: true
-	};
+	return { ok: true };
 }
 
 module.exports = canMovePiece;

@@ -33,10 +33,7 @@ const httpServer = http.createServer(app);
 
 const PORT = process.env.PORT || 3000;
 
-/* ======================================
-   🔥 FIX: inicializar sockets DESPUÉS de DB
-====================================== */
-
+// 🔥 FIX: inicializar sockets DESPUÉS de DB
 initDB()
 	.then(() => {
 

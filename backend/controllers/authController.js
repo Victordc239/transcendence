@@ -10,17 +10,11 @@ exports.register = async (req, res) => {
 	{
 		const { username, email, password } = req.body;
 		if (!username || !email || !password)
-		{
 			return res.status(400).json({ error: 'Faltan datos' });
-		}
 		if (!EMAIL_REGEX.test(email))
-		{
 			return res.status(400).json({ error: 'Email inválido' });
-		}
 		if (password.length < 8)
-		{
 			return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
-		}
 		const salt = await bcrypt.genSalt(10);
 		const hashedPassword = await bcrypt.hash(password, salt);
 		const newUser = await pool.query(
@@ -52,9 +46,8 @@ exports.register = async (req, res) => {
 		console.error(error);
 
 		if (error.code === '23505')
-		{
 			return res.status(400).json({ error: 'El usuario o email ya existe' });
-		}
+
 		return res.status(500).json({ error: 'Error en el servidor' });
 	}
 };
@@ -65,9 +58,7 @@ exports.login = async (req, res) => {
 		const { email, password } = req.body;
 
 		if (!email || !password)
-		{
 			return res.status(400).json({ error: 'Faltan datos' });
-		}
 		const result = await pool.query(
 			`
 			SELECT *
@@ -78,17 +69,13 @@ exports.login = async (req, res) => {
 		);
 
 		if (result.rows.length === 0)
-		{
 			return res.status(400).json({ error: 'Credenciales inválidas' });
-		}
 
 		const user = result.rows[0];
 		const validPassword = await bcrypt.compare( password, user.password);
 
 		if (!validPassword)
-		{
 			return res.status(400).json({ error: 'Credenciales inválidas' });
-		}
 
 		const token = jwt.sign(
 			{

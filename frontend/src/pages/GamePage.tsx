@@ -80,7 +80,7 @@ export default function GamePage() {
       <div className="flex-1 flex items-center justify-center">
         <GameScene
           game={game}
-          onPieceClick={(playerId, pieceIndex) => {
+          onPieceClick={(playerId: number, pieceIndex: number) => {
             const currentPlayer = game.players.find(
               (p: any) => p.id === game.turn
             );

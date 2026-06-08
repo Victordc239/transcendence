@@ -24,9 +24,9 @@
 
 </defs>
 
-<circle cx="220" cy="220" r="190" fill="url(#pinkGlow)" opacity="0.25"/>
-<circle cx="780" cy="220" r="190" fill="url(#greenGlow)" opacity="0.25"/>
-<circle cx="220" cy="780" r="190" fill="url(#blueGlow)" opacity="0.25"/>
-<circle cx="780" cy="780" r="190" fill="url(#purpleGlow)" opacity="0.25"/>
+<circle cx="210" cy="210" r="190" fill="url(#pinkGlow)" opacity="0.25"/>
+<circle cx="790" cy="210" r="190" fill="url(#greenGlow)" opacity="0.25"/>
+<circle cx="210" cy="790" r="190" fill="url(#blueGlow)" opacity="0.25"/>
+<circle cx="790" cy="790" r="190" fill="url(#purpleGlow)" opacity="0.25"/>
 
 </svg>

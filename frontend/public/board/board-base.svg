@@ -2,29 +2,6 @@
 
 <rect width="1000" height="1000" rx="60" fill="#050816"/>
 
-<!-- GRID -->
-<g opacity="0.12">
-  <path d="M0 100H1000" stroke="#ffffff"/>
-  <path d="M0 200H1000" stroke="#ffffff"/>
-  <path d="M0 300H1000" stroke="#ffffff"/>
-  <path d="M0 400H1000" stroke="#ffffff"/>
-  <path d="M0 500H1000" stroke="#ffffff"/>
-  <path d="M0 600H1000" stroke="#ffffff"/>
-  <path d="M0 700H1000" stroke="#ffffff"/>
-  <path d="M0 800H1000" stroke="#ffffff"/>
-  <path d="M0 900H1000" stroke="#ffffff"/>
-
-  <path d="M100 0V1000" stroke="#ffffff"/>
-  <path d="M200 0V1000" stroke="#ffffff"/>
-  <path d="M300 0V1000" stroke="#ffffff"/>
-  <path d="M400 0V1000" stroke="#ffffff"/>
-  <path d="M500 0V1000" stroke="#ffffff"/>
-  <path d="M600 0V1000" stroke="#ffffff"/>
-  <path d="M700 0V1000" stroke="#ffffff"/>
-  <path d="M800 0V1000" stroke="#ffffff"/>
-  <path d="M900 0V1000" stroke="#ffffff"/>
-</g>
-
 <!-- PLAYER ZONES -->
 
 <rect x="30" y="30" width="340" height="340" rx="40"
@@ -65,19 +42,7 @@ stroke-width="6"/>
 stroke="#d88cff"
 stroke-width="6"/>
 
-<!-- CENTER -->
 
-<circle cx="500" cy="500" r="110"
-fill="#0a1020"
-stroke="#ffffff22"
-stroke-width="8"/>
-
-<polygon
-points="500,390 610,500 500,610 390,500"
-fill="#101f40"
-stroke="#dbeff1ff"
-stroke-width="8"
-/>
 
 <!-- BASE CIRCLES -->
 
@@ -106,18 +71,6 @@ stroke-width="8"
 <circle cx="845" cy="845" r="22" fill="#24122d" stroke="#bb6cff" stroke-width="3"/>
 
 
-<!-- PATHS -->
 
-<rect x="450" y="40" width="100" height="410" rx="24"
-fill="#ff3bd422"/> 
-
-<rect x="450" y="550" width="100" height="410" rx="24"
-fill="#c86cff22"/> 
-
-<rect x="40" y="450" width="410" height="100" rx="24"
-fill="#00d9ff22"/>
-
-<rect x="550" y="450" width="410" height="100" rx="24"
-fill="#00ff9d22"/> 
 
 </svg>

@@ -18,6 +18,8 @@ find . -type f \
 ' sh {} + > notasbackend.txt
 
 
+docker logs -f transcendence_backend
+
 
 comando frontend:
 
@@ -28,6 +30,7 @@ find . -type f \
 ! -name "notas-frontend.txt" \
 ! -name ".gitignore" \
 ! -name ".dockerignore" \
+! -path "./public/*" \
 -exec sh -c '
   for file do
     echo "=============================="
@@ -37,14 +40,3 @@ find . -type f \
     echo
   done
 ' sh {} + > notas-frontend.txt
-
-
-
-
-docker logs -f transcendence_backend
-
-
-
-
-
-arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una alado de otra

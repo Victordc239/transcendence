@@ -16,3 +16,4 @@
 - Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera
 - Implementar un boton para salir/abandonar una partida
 - Poner foto a los jugadores 
+- arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una alado de otra

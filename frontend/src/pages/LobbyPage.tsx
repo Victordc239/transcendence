@@ -86,6 +86,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createGame, joinGame } from "../api/game.api";
 import { useAuth } from "../context/AuthContext";
+import MainLayout from "../layouts/MainLayout";
 
 function LobbyPage() {
   const navigate = useNavigate();
@@ -165,12 +166,34 @@ function LobbyPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="rounded-xl bg-red-500/10 px-4 py-2 text-red-200 hover:bg-red-500/20"
-        >
-          Logout
-        </button>
+        <div className="flex gap-6 items-center">
+          <button
+            onClick={() => navigate("/profile")}
+          >
+            Perfil
+          </button>
+
+          <button
+            onClick={() => navigate("/friends")}
+          >
+            Amigos
+          </button>
+
+          <button
+            onClick={() =>
+              navigate("/friend-requests")
+            }
+          >
+            Solicitudes
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="rounded-xl bg-red-500/10 px-4 py-2 text-red-200"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* HERO */}

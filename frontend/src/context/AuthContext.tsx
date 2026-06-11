@@ -5,7 +5,8 @@ import {
   useEffect,
 } from "react";
 
-import { getMe } from "../api/api";
+//import { getMe } from "../api/api";
+import { getMe } from "../api/user.api";
 
 type User = {
   id: number;
@@ -38,7 +39,8 @@ export function AuthProvider({
       if (!token) return;
 
       try {
-        const me = await getMe(token);
+        const me = await getMe();
+        //const me = await getMe(token);
         setUser(me);
       } catch (err) {
         console.error(err);

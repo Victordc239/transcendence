@@ -6,7 +6,8 @@ import LobbyPage from "./pages/LobbyPage";
 import GamePage from "./pages/GamePage";
 import ProfilePage from "./pages/ProfilePage";
 import HistoryPage from "./pages/HistoryPage";
-
+import FriendsPage from "./pages/FriendsPage";
+import FriendRequestsPage from "./pages/FriendRequestsPage";
 import ProtectedRoute from "./auth/ProtectedRoute";
 
 export const router = createBrowserRouter([
@@ -48,6 +49,22 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <HistoryPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/friends",
+    element: (
+      <ProtectedRoute>
+        <FriendsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/friend-requests",
+    element: (
+      <ProtectedRoute>
+        <FriendRequestsPage />
       </ProtectedRoute>
     ),
   },

@@ -1,10 +1,9 @@
 const createPieces = require('./utils/createPieces');
-
 const { GAME_STATUS } = require('./constants');
 
 function createNewGame(hostId)
 {
-	return{
+	return {
 		id: Date.now().toString(),
 		players: [
 			{
@@ -22,6 +21,8 @@ function createNewGame(hostId)
 		consecutiveSixes: {},
 		lastMovedPiece: null,
 		winner: null,
+		finishedPlayers: [],
+		ranking: [],
 		status: GAME_STATUS.WAITING,
 		createdAt: Date.now(),
 		updatedAt: Date.now()

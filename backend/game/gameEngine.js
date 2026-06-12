@@ -71,15 +71,43 @@ function executeMove(game, playerId, pieceIndex)
 	const movedPiece = applyMove(game, playerId, pieceIndex);
 	game.lastMovedPiece = { playerId, pieceIndex};
 	checkCapture(game, playerId, movedPiece);
-	const won = checkWin(game, playerId);
+	const won = checkWin(player);
 	if (won)
 	{
-		clearTurnTimer(game.id);
-		game.status = GAME_STATUS.FINISHED;
-		game.winner = playerId;
+		if (!game.finishedPlayers)
+			game.finishedPlayers = [];
+
+		if (!game.ranking)
+			game.ranking = [];
+
+		if (!game.finishedPlayers.includes(playerId))
+		{
+			game.finishedPlayers.push(playerId);
+			game.ranking.push(playerId);
+		}
+
+		const activePlayers = game.players.length - game.finishedPlayers.length;
+		if (activePlayers === 1)
+		{
+			const lastPlayer = game.players.find(p => !game.finishedPlayers.includes(p.id));
+			if (lastPlayer)
+			{
+				game.finishedPlayers.push(lastPlayer.id);
+				game.ranking.push(lastPlayer.id);
+			}
+			clearTurnTimer(game.id);
+			game.status = GAME_STATUS.FINISHED;
+			game.winner = game.ranking[0];
+			return {
+				ok: true,
+				finished: true
+			};
+		}
+		nextTurn(game);
 		return {
 			ok: true,
-			finished: true
+			playerFinished: true,
+			finished: false
 		};
 	}
 	// Inicializar contador

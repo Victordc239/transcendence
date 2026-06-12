@@ -86,7 +86,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createGame, joinGame } from "../api/game.api";
 import { useAuth } from "../context/AuthContext";
-import MainLayout from "../layouts/MainLayout";
+//import MainLayout from "../layouts/MainLayout";
 
 function LobbyPage() {
   const navigate = useNavigate();

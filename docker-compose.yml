@@ -7,8 +7,6 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: transcendence
-    ports:
-      - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     networks:
@@ -28,8 +26,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     networks:
       - transcendence_network
 
@@ -37,13 +35,22 @@ services:
     build: ./frontend
     container_name: transcendence_frontend
     restart: always
+    expose:
+      - "80"
     depends_on:
       - backend
+    networks:
+      - transcendence_network
+
+  nginx:
+    build: ./nginx
+    container_name: transcendence_nginx
+    restart: always
+    depends_on:
+      - frontend
+      - backend
     ports:
-      - "5180:5180"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - "443:443"
     networks:
       - transcendence_network
 

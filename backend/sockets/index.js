@@ -8,7 +8,7 @@ function initSockets(httpServer)
 {
 	const io = new Server(httpServer, {
 		cors: {
-			origin: '*',
+			origin: true,
 			methods: ['GET', 'POST'],
 			credentials: true
 		}

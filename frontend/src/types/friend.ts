@@ -6,11 +6,10 @@ export interface Friend {
 }
 
 export interface FriendRequest {
-  id: number;
   senderId: number;
   senderUsername: string;
+  avatar_url?: string;
 }
-
 export interface FriendsResponse {
   friends: Friend[];
 }

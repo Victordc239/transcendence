@@ -53,7 +53,7 @@ export default function FriendRequestsPage() {
           {requests.map(
             (request) => (
               <div
-                key={request.id}
+                key={request.senderId}
                 className="
                   flex
                   justify-between
@@ -70,7 +70,7 @@ export default function FriendRequestsPage() {
                   className="w-auto px-4"
                   onClick={() =>
                     handleAccept(
-                      request.id
+                      request.senderId
                     )
                   }
                 >

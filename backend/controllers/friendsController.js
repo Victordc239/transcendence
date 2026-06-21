@@ -127,8 +127,8 @@ exports.getPendingRequests = async (req, res) => {
 		const result = await pool.query(
 			`
 			SELECT
-				u.id,
-				u.username,
+				f.requester_id as "senderId",
+				u.username as "senderUsername",
 				u.avatar_url,
 				f.created_at
 			FROM friendships f

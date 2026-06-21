@@ -128,8 +128,10 @@ exports.searchUsers = async (req, res) => {
 	try
 	{
 		const query = req.query.q;
+		const userId = req.user.id;
+
 		if (!query || query.trim().length === 0)
-			return res.json({users: []});
+			return res.json({ users: [] });
 
 		const result = await pool.query(
 			`
@@ -138,22 +140,30 @@ exports.searchUsers = async (req, res) => {
 				username,
 				avatar_url
 			FROM users
-			WHERE LOWER(username) LIKE LOWER($1)
+			WHERE
+				LOWER(username) LIKE LOWER($1)
+				AND id != $2
 			ORDER BY username ASC
 			LIMIT 20
 			`,
-			[`%${query}%`]
+			[
+				`%${query}%`,
+				userId
+			]
 		);
 
 		const users = result.rows.map(user => ({
 			...user,
-			online: isUserOnline(user.id)}));
+			online: isUserOnline(user.id)
+		}));
 
-		return res.json({users});
+		return res.json({ users });
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({ error: 'Error en el servidor'});
+		return res.status(500).json({
+			error: 'Error en el servidor'
+		});
 	}
 };

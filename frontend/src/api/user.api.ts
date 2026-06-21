@@ -17,3 +17,14 @@ export function updateProfile(
     }),
   });
 }
+
+export function searchUsers(query: string) {
+  return http<{
+    users: {
+      id: number;
+      username: string;
+      avatar_url?: string;
+      online?: boolean;
+    }[];
+  }>(`/users/search?q=${encodeURIComponent(query)}`);
+}

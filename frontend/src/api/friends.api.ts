@@ -24,3 +24,9 @@ export function sendFriendRequest(userId: number) {
     method: "POST",
   });
 }
+
+export function removeFriend(friendId: number) {
+  return http<void>(`/friends/${friendId}`, {
+    method: "DELETE",
+  });
+}

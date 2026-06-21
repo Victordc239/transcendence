@@ -149,3 +149,45 @@ exports.getPendingRequests = async (req, res) => {
 		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
+
+exports.removeFriend = async (req, res) => {
+	try
+	{
+		const userId = req.user.id;
+		const friendId = parseInt(req.params.id, 10);
+
+		const result = await pool.query(
+			`
+			DELETE FROM friendships
+			WHERE
+				(
+					requester_id = $1
+					AND addressee_id = $2
+				)
+				OR
+				(
+					requester_id = $2
+					AND addressee_id = $1
+				)
+			RETURNING *
+			`,
+			[userId, friendId]
+		);
+
+		if (result.rows.length === 0)
+			return res.status(404).json({
+				error: 'Amistad no encontrada'
+			});
+
+		return res.json({
+			success: true
+		});
+	}
+	catch (error)
+	{
+		console.error(error);
+		return res.status(500).json({
+			error: 'Error en el servidor'
+		});
+	}
+};

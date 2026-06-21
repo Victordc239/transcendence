@@ -11,6 +11,7 @@ import Button from "../components/ui/Button";
 import {
   getFriends,
   sendFriendRequest,
+  removeFriend,
 } from "../api/friends.api";
 
 import { searchUsers } from "../api/user.api";
@@ -98,6 +99,18 @@ export default function FriendsPage() {
     }
   }
 
+  async function handleRemoveFriend(
+    friendId: number
+  ) {
+    try {
+      await removeFriend(friendId);
+      await loadFriends();
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo eliminar el amigo");
+    }
+  }
+
   return (
     <MainLayout>
       <GlassPanel className="p-6">
@@ -175,20 +188,34 @@ export default function FriendsPage() {
               className="
                 flex
                 justify-between
+                items-center
                 border-b
                 border-white/10
                 pb-2
               "
             >
-              <span>
-                {friend.username}
-              </span>
+              <div className="flex gap-4 items-center">
+                <span>
+                  {friend.username}
+                </span>
 
-              <span>
-                {friend.online
-                  ? "🟢 CONECTADO"
-                  : "⚫ DESCONECTADO"}
-              </span>
+                <span>
+                  {friend.online
+                    ? "🟢 CONECTADO"
+                    : "⚫ DESCONECTADO"}
+                </span>
+              </div>
+
+              <Button
+                className="w-auto px-4 py-2 bg-red-600"
+                onClick={() =>
+                  handleRemoveFriend(
+                    friend.id
+                  )
+                }
+              >
+                Eliminar
+              </Button>
             </div>
           ))}
         </div>

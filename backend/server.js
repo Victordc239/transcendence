@@ -24,10 +24,10 @@ app.get('/', (req, res) => {
 	res.json({ status: 'ok' });
 });
 
-app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
-app.use('/friends', friendsRoutes);
-app.use('/games', gameRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/friends', friendsRoutes);
+app.use('/api/games', gameRoutes);
 
 const httpServer = http.createServer(app);
 

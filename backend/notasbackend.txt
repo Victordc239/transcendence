@@ -999,7 +999,14 @@ FILE: ./game/rules/nextTurn.js
 function nextTurn(game)
 {
 	const currentIndex = game.players.findIndex(player => player.id === game.turn);
-	const nextIndex = (currentIndex + 1) % game.players.length;
+	let nextIndex = currentIndex;
+	do
+	{
+		nextIndex = (nextIndex + 1) % game.players.length;
+	}
+	while (
+		game.finishedPlayers.includes(game.players[nextIndex].id)
+	);
 	game.turn = game.players[nextIndex].id;
 }
 
@@ -1457,12 +1464,11 @@ module.exports = {createGame, getGame, saveGame, deleteGame};
 FILE: ./game/gameState.js
 ==============================
 const createPieces = require('./utils/createPieces');
-
 const { GAME_STATUS } = require('./constants');
 
 function createNewGame(hostId)
 {
-	return{
+	return {
 		id: Date.now().toString(),
 		players: [
 			{
@@ -1480,6 +1486,8 @@ function createNewGame(hostId)
 		consecutiveSixes: {},
 		lastMovedPiece: null,
 		winner: null,
+		finishedPlayers: [],
+		ranking: [],
 		status: GAME_STATUS.WAITING,
 		createdAt: Date.now(),
 		updatedAt: Date.now()
@@ -1767,15 +1775,43 @@ function executeMove(game, playerId, pieceIndex)
 	const movedPiece = applyMove(game, playerId, pieceIndex);
 	game.lastMovedPiece = { playerId, pieceIndex};
 	checkCapture(game, playerId, movedPiece);
-	const won = checkWin(game, playerId);
+	const won = checkWin(player);
 	if (won)
 	{
-		clearTurnTimer(game.id);
-		game.status = GAME_STATUS.FINISHED;
-		game.winner = playerId;
+		if (!game.finishedPlayers)
+			game.finishedPlayers = [];
+
+		if (!game.ranking)
+			game.ranking = [];
+
+		if (!game.finishedPlayers.includes(playerId))
+		{
+			game.finishedPlayers.push(playerId);
+			game.ranking.push(playerId);
+		}
+
+		const activePlayers = game.players.length - game.finishedPlayers.length;
+		if (activePlayers === 1)
+		{
+			const lastPlayer = game.players.find(p => !game.finishedPlayers.includes(p.id));
+			if (lastPlayer)
+			{
+				game.finishedPlayers.push(lastPlayer.id);
+				game.ranking.push(lastPlayer.id);
+			}
+			clearTurnTimer(game.id);
+			game.status = GAME_STATUS.FINISHED;
+			game.winner = game.ranking[0];
+			return {
+				ok: true,
+				finished: true
+			};
+		}
+		nextTurn(game);
 		return {
 			ok: true,
-			finished: true
+			playerFinished: true,
+			finished: false
 		};
 	}
 	// Inicializar contador
@@ -2250,7 +2286,7 @@ const gameRoutes = require('./routes/gameRoutes');
 const app = express();
 
 app.use(cors({
-	origin: '*',
+	origin: true,
 	methods: ['GET', 'POST', 'PUT', 'DELETE'],
 	credentials: true
 }));
@@ -2616,7 +2652,7 @@ function initSockets(httpServer)
 {
 	const io = new Server(httpServer, {
 		cors: {
-			origin: '*',
+			origin: true,
 			methods: ['GET', 'POST'],
 			credentials: true
 		}

@@ -1,5 +1,4 @@
 const HOST = window.location.hostname;
 
-export const API_URL = `https://${HOST}`;
-
-export const SOCKET_URL = API_URL;
+export const API_URL = `https://${HOST}/api`;
+export const SOCKET_URL = `https://${HOST}`;

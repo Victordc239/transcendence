@@ -19,6 +19,8 @@ import {
   useFriendsStore,
 } from "../store/friendsStore";
 
+import { socket } from "../socket/socket";
+
 interface SearchUser {
   id: number;
   username: string;
@@ -30,6 +32,7 @@ export default function FriendsPage() {
   const {
     friends,
     setFriends,
+    updateOnlineStatus,
   } = useFriendsStore();
 
   const [query, setQuery] =
@@ -40,6 +43,20 @@ export default function FriendsPage() {
 
   useEffect(() => {
     loadFriends();
+
+    socket.on(
+      "presence:update",
+      ({ userId, online }) => {
+        updateOnlineStatus(
+          userId,
+          online
+        );
+      }
+    );
+
+    return () => {
+      socket.off("presence:update");
+    };
   }, []);
 
   async function loadFriends() {
@@ -75,7 +92,9 @@ export default function FriendsPage() {
       alert("Solicitud enviada");
     } catch (err) {
       console.error(err);
-      alert("No se pudo enviar la solicitud");
+      alert(
+        "No se pudo enviar la solicitud"
+      );
     }
   }
 
@@ -119,8 +138,8 @@ export default function FriendsPage() {
 
                   <span>
                     {user.online
-                      ? "🟢"
-                      : "⚫"}
+                      ? "🟢 CONECTADO"
+                      : "⚫ DESCONECTADO"}
                   </span>
                 </div>
 
@@ -167,8 +186,8 @@ export default function FriendsPage() {
 
               <span>
                 {friend.online
-                  ? "🟢"
-                  : "⚫"}
+                  ? "🟢 CONECTADO"
+                  : "⚫ DESCONECTADO"}
               </span>
             </div>
           ))}

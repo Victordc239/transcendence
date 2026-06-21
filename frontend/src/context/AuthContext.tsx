@@ -5,8 +5,12 @@ import {
   useEffect,
 } from "react";
 
-//import { getMe } from "../api/api";
 import { getMe } from "../api/user.api";
+
+import {
+  connectSocket,
+  disconnectSocket,
+} from "../socket/socket";
 
 type User = {
   id: number;
@@ -21,18 +25,21 @@ type AuthContextType = {
   logout: () => void;
 };
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext =
+  createContext<AuthContextType | null>(null);
 
 export function AuthProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [token, setToken] = useState<string | null>(
-    sessionStorage.getItem("token")
-  );
+  const [token, setToken] =
+    useState<string | null>(
+      sessionStorage.getItem("token")
+    );
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] =
+    useState<User | null>(null);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -40,8 +47,9 @@ export function AuthProvider({
 
       try {
         const me = await getMe();
-        //const me = await getMe(token);
         setUser(me);
+
+        connectSocket(token);
       } catch (err) {
         console.error(err);
         logout();
@@ -51,14 +59,26 @@ export function AuthProvider({
     loadUser();
   }, [token]);
 
-  const login = (newToken: string, user: User) => {
-    sessionStorage.setItem("token", newToken);
+  const login = (
+    newToken: string,
+    user: User
+  ) => {
+    sessionStorage.setItem(
+      "token",
+      newToken
+    );
+
     setToken(newToken);
     setUser(user);
+
+    connectSocket(newToken);
   };
 
   const logout = () => {
     sessionStorage.removeItem("token");
+
+    disconnectSocket();
+
     setToken(null);
     setUser(null);
   };

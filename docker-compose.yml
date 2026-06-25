@@ -50,7 +50,7 @@ services:
       - frontend
       - backend
     ports:
-      - "443:443"
+      - "8443:443"
     networks:
       - transcendence_network
 

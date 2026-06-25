@@ -90,7 +90,7 @@ type PieceRenderData = {
   y: number;
 };
 
-const STACK_OFFSET = 30;
+const STACK_OFFSET = 28;
 
 export default function GamePieces({
   game,

@@ -65,13 +65,25 @@ function sendLastMovedPieceToBase(game)
 
 function executeMove(game, playerId, pieceIndex)
 {
+	if (!game || !Array.isArray(game.players)) {
+		return { error: "Invalid game state (players missing)" };
+	}
+
 	const validation = canMovePiece(game, playerId, pieceIndex);
 	if (!validation.ok)
 		return validation;
 	const movedPiece = applyMove(game, playerId, pieceIndex);
 	game.lastMovedPiece = { playerId, pieceIndex};
 	checkCapture(game, playerId, movedPiece);
-	const won = checkWin(player);
+
+	const player = game.players.find(p => p.id === playerId);
+
+	if (!player) {
+		return { error: "Player not found" };
+	}
+
+	const won = checkWin(game, playerId);
+
 	if (won)
 	{
 		if (!game.finishedPlayers)
@@ -86,7 +98,8 @@ function executeMove(game, playerId, pieceIndex)
 			game.ranking.push(playerId);
 		}
 
-		const activePlayers = game.players.length - game.finishedPlayers.length;
+		//const activePlayers = game.players.length - game.finishedPlayers.length;
+		const activePlayers = game.players.length - (game.finishedPlayers?.length || 0);
 		if (activePlayers === 1)
 		{
 			const lastPlayer = game.players.find(p => !game.finishedPlayers.includes(p.id));

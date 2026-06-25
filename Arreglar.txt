@@ -17,3 +17,6 @@
 - Implementar un boton para salir/abandonar una partida
 - Poner foto a los jugadores 
 - arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una alado de otra
+- hacer el README
+- hacer paginas de Privacy Policy and Terms of Service footer
+- revisar cuantos modulos tenemos y cuantos puntos nos faltan para llegar a 21-22 puntos

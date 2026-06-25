@@ -1,0 +1,4390 @@
+==============================
+FILE: ./Dockerfile
+==============================
+FROM node:20 AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+==============================
+FILE: ./eslint.config.js
+==============================
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from 'typescript-eslint'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      globals: globals.browser,
+    },
+  },
+])
+
+==============================
+FILE: ./index.html
+==============================
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+==============================
+FILE: ./nginx.conf
+==============================
+server {
+    listen 80;
+    server_name localhost;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+==============================
+FILE: ./postcss.config.js
+==============================
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+
+==============================
+FILE: ./src/App.tsx
+==============================
+function App() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="rounded-3xl border border-white/20 bg-white/30 p-10 shadow-glass backdrop-blur-xl">
+        <h1 className="text-5xl font-bold text-pink-Primary">
+          ft_transcendence
+        </h1>
+
+        <p className="mt-4 text-slate-700">
+          Parchís Online
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default App;
+==============================
+FILE: ./src/api/api.ts
+==============================
+import { API_URL } from "./config";
+
+export async function login(email: string, password: string) {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  return res.json();
+}
+
+export async function register(username: string, email: string, password: string) {
+  const res = await fetch(`${API_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, email, password }),
+  });
+
+  return res.json();
+}
+
+export async function getMe(token: string) {
+  const res = await fetch(`${API_URL}/users/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.json();
+}
+==============================
+FILE: ./src/api/friends.api.ts
+==============================
+import { http } from "./http";
+import type { Friend, FriendRequest } from "../types/friend";
+
+export function getFriends() {
+  return http<{
+    friends: Friend[];
+  }>("/friends");
+}
+
+export function getPendingRequests() {
+  return http<{
+    requests: FriendRequest[];
+  }>("/friends/requests");
+}
+
+export function acceptFriendRequest(requestId: number) {
+  return http<void>(`/friends/accept/${requestId}`, {
+    method: "POST",
+  });
+}
+
+export function sendFriendRequest(userId: number) {
+  return http<void>(`/friends/request/${userId}`, {
+    method: "POST",
+  });
+}
+
+export function removeFriend(friendId: number) {
+  return http<void>(`/friends/${friendId}`, {
+    method: "DELETE",
+  });
+}
+==============================
+FILE: ./src/api/game.api.ts
+==============================
+import { API_URL } from "./config";
+
+function getAuthHeader(token: string) {
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+}
+
+async function safeFetch(res: Response) {
+  const text = await res.text();
+
+  let data: any;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
+  }
+
+  if (!res.ok) {
+    throw new Error(data?.error || `API Error ${res.status}`);
+  }
+
+  return data;
+}
+
+export async function createGame(token: string) {
+  const res = await fetch(`${API_URL}/games`, {
+    method: "POST",
+    headers: getAuthHeader(token),
+  });
+
+  return safeFetch(res);
+}
+
+export async function getGame(token: string, id: string) {
+  const res = await fetch(`${API_URL}/games/${id}`, {
+    headers: getAuthHeader(token),
+  });
+
+  return safeFetch(res);
+}
+
+export async function joinGame(token: string, id: string) {
+  const res = await fetch(`${API_URL}/games/${id}/join`, {
+    method: "POST",
+    headers: getAuthHeader(token),
+  });
+
+  return safeFetch(res);
+}
+
+export async function rollDice(token: string, id: string) {
+  const res = await fetch(`${API_URL}/games/${id}/roll`, {
+    method: "POST",
+    headers: getAuthHeader(token),
+  });
+
+  return safeFetch(res);
+}
+
+export async function movePiece(
+  token: string,
+  id: string,
+  pieceIndex: number
+) {
+  const res = await fetch(`${API_URL}/games/${id}/move`, {
+    method: "POST",
+    headers: getAuthHeader(token),
+    body: JSON.stringify({ pieceIndex }),
+  });
+
+  return safeFetch(res);
+}
+==============================
+FILE: ./src/api/game.ts
+==============================
+import { API_URL } from "./config";
+
+function getToken() {
+  return sessionStorage.getItem("token");
+}
+
+export async function createGame() {
+  const res = await fetch(`${API_URL}/games`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+
+  return res.json();
+}
+
+export async function getGame(gameId: string) {
+  const res = await fetch(`${API_URL}/games/${gameId}`, {
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+
+  return res.json();
+}
+
+export async function joinGame(gameId: string) {
+  const res = await fetch(`${API_URL}/games/${gameId}/join`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+
+  return res.json();
+}
+
+export async function rollDice(gameId: string) {
+  const res = await fetch(`${API_URL}/games/${gameId}/roll`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+
+  return res.json();
+}
+
+export async function movePiece(
+  gameId: string,
+  pieceIndex: number
+) {
+  const res = await fetch(
+    `${API_URL}/games/${gameId}/move`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify({ pieceIndex }),
+    }
+  );
+
+  return res.json();
+}
+==============================
+FILE: ./src/api/http.ts
+==============================
+import { API_URL } from "./config";
+
+export async function http<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+
+  const token =
+    sessionStorage.getItem("token");
+
+  const res = await fetch(
+    `${API_URL}${endpoint}`,
+    {
+      ...options,
+
+      headers: {
+        "Content-Type": "application/json",
+
+        ...(token
+          ? {
+              Authorization:
+                `Bearer ${token}`,
+            }
+          : {}),
+
+        ...options.headers,
+      },
+    }
+  );
+
+  let data;
+
+  try {
+    data = await res.json();
+
+  } catch {
+    throw new Error(
+      "Invalid server response"
+    );
+  }
+
+  if (!res.ok) {
+    throw new Error(
+      data.error || "HTTP Error"
+    );
+  }
+
+  return data;
+}
+
+==============================
+FILE: ./src/api/user.api.ts
+==============================
+import { http } from "./http";
+import type { User } from "../types/user";
+
+export function getMe() {
+  return http<User>("/users/me");
+}
+
+export function updateProfile(
+  username: string,
+  avatar_url: string
+) {
+  return http<User>("/users/me", {
+    method: "PUT",
+    body: JSON.stringify({
+      username,
+      avatar_url,
+    }),
+  });
+}
+
+export function searchUsers(query: string) {
+  return http<{
+    users: {
+      id: number;
+      username: string;
+      avatar_url?: string;
+      online?: boolean;
+    }[];
+  }>(`/users/search?q=${encodeURIComponent(query)}`);
+}
+
+==============================
+FILE: ./src/api/config.ts
+==============================
+const HOST = window.location.host;
+
+export const API_URL = `https://${HOST}/api`;
+export const SOCKET_URL = `https://${HOST}`;
+==============================
+FILE: ./src/auth/ProtectedRoute.tsx
+==============================
+import type { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
+
+import { isAuthenticated } from "./auth";
+
+interface ProtectedRouteProps {
+  children: ReactNode;
+}
+
+function ProtectedRoute({
+  children,
+}: ProtectedRouteProps) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+export default ProtectedRoute;
+==============================
+FILE: ./src/auth/auth.ts
+==============================
+export function getToken() {
+  return sessionStorage.getItem("token");
+}
+
+export function isAuthenticated() {
+  return !!sessionStorage.getItem("token");
+}
+
+export function logout() {
+  sessionStorage.removeItem("token");
+}
+==============================
+FILE: ./src/components/ui/Button.tsx
+==============================
+import type {
+  ButtonHTMLAttributes,
+} from "react";
+
+interface ButtonProps
+  extends ButtonHTMLAttributes<HTMLButtonElement> {}
+
+function Button({
+  children,
+  className = "",
+  ...props
+}: ButtonProps) {
+  return (
+    <button
+      {...props}
+      className={`
+        w-full rounded-glass
+        border border-glassBorder
+        bg-gradient-to-r
+        from-pinkPrimary
+        to-purplePrimary
+        px-4 py-3
+        font-semibold
+        text-white
+        shadow-glass
+        backdrop-blur-xl
+        transition-all
+        duration-300
+        ease-smooth
+        hover:scale-[1.02]
+        hover:shadow-neon
+        active:scale-[0.98]
+        ${className}
+      `}
+    >
+      {children}
+    </button>
+  );
+}
+
+export default Button;
+==============================
+FILE: ./src/components/ui/GlassPanel.tsx
+==============================
+import type { ReactNode } from "react";
+import clsx from "clsx";
+
+interface Props {
+  children: ReactNode;
+  className?: string;
+}
+
+export default function GlassPanel({
+  children,
+  className,
+}: Props) {
+  return (
+    <div
+      className={clsx(
+        "rounded-glass border border-glassBorder bg-glass backdrop-blur-xl shadow-glass",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+==============================
+FILE: ./src/components/ui/Input.tsx
+==============================
+import type {
+  InputHTMLAttributes,
+} from "react";
+
+interface InputProps
+  extends InputHTMLAttributes<HTMLInputElement> {}
+
+function Input({
+  className = "",
+  ...props
+}: InputProps) {
+  return (
+    <input
+      {...props}
+      className={`
+        w-full rounded-glass
+        border border-glassBorder
+        bg-glass
+        px-4 py-3
+        text-textPrimary
+        outline-none
+        backdrop-blur-xl
+        transition-all
+        duration-300
+        placeholder:text-textSecondary
+        focus:shadow-neon
+        focus:ring-2
+        focus:ring-pinkPrimary
+        ${className}
+      `}
+    />
+  );
+}
+
+export default Input;
+==============================
+FILE: ./src/components/ui/ThemeToggle.tsx
+==============================
+import { Moon, Sun } from "lucide-react";
+
+import { useTheme } from "../../theme/ThemeProvider";
+
+function ThemeToggle() {
+  const {
+    theme,
+    toggleTheme,
+  } = useTheme();
+
+  return (
+    <button
+      onClick={toggleTheme}
+      className="
+        flex items-center justify-center
+        rounded-full
+        border border-glassBorder
+        bg-glass
+        p-3
+        text-textPrimary
+        backdrop-blur-xl
+        transition-all
+        hover:scale-105
+        hover:shadow-neon
+      "
+    >
+      {theme === "light" ? (
+        <Moon size={20} />
+      ) : (
+        <Sun size={20} />
+      )}
+    </button>
+  );
+}
+
+export default ThemeToggle;
+==============================
+FILE: ./src/context/AuthContext.tsx
+==============================
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+} from "react";
+
+import { getMe } from "../api/user.api";
+
+import {
+  connectSocket,
+  disconnectSocket,
+} from "../socket/socket";
+
+type User = {
+  id: number;
+  username: string;
+  email: string;
+};
+
+type AuthContextType = {
+  user: User | null;
+  token: string | null;
+  login: (token: string, user: User) => void;
+  logout: () => void;
+};
+
+const AuthContext =
+  createContext<AuthContextType | null>(null);
+
+export function AuthProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [token, setToken] =
+    useState<string | null>(
+      sessionStorage.getItem("token")
+    );
+
+  const [user, setUser] =
+    useState<User | null>(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      if (!token) return;
+
+      try {
+        const me = await getMe();
+        setUser(me);
+
+        connectSocket(token);
+      } catch (err) {
+        console.error(err);
+        logout();
+      }
+    };
+
+    loadUser();
+  }, [token]);
+
+  const login = (
+    newToken: string,
+    user: User
+  ) => {
+    sessionStorage.setItem(
+      "token",
+      newToken
+    );
+
+    setToken(newToken);
+    setUser(user);
+
+    connectSocket(newToken);
+  };
+
+  const logout = () => {
+    sessionStorage.removeItem("token");
+
+    disconnectSocket();
+
+    setToken(null);
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+
+  if (!ctx)
+    throw new Error(
+      "useAuth must be used inside AuthProvider"
+    );
+
+  return ctx;
+};
+
+==============================
+FILE: ./src/game/animations/DiceRoll.tsx
+==============================
+
+==============================
+FILE: ./src/game/animations/MoveAnimation.tsx
+==============================
+
+==============================
+FILE: ./src/game/animations/VictoryAnimation.tsx
+==============================
+
+==============================
+FILE: ./src/game/board/BoardEffects.tsx
+==============================
+export default function BoardEffects() {
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      <div className="w-full h-full bg-gradient-radial from-transparent to-black opacity-40" />
+
+      {/* glow pulse center */}
+      <div className="absolute left-1/2 top-1/2 w-40 h-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400 blur-3xl opacity-10 animate-pulse" />
+    </div>
+  );
+}
+==============================
+FILE: ./src/game/board/GameBoard.tsx
+==============================
+
+export default function GameBoard() {
+  return (
+    <div className="absolute inset-0">
+
+      {/* BASE */}
+      <img
+        src="/board/board-base.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          object-contain
+          select-none
+          pointer-events-none
+        "
+      />
+
+        <img
+        src="/board/board-path.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          object-contain
+          opacity-90
+          pointer-events-none
+        "
+      />
+
+      {/* GLOW */}
+      <img
+        src="/board/board-glow.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          object-contain
+          opacity-90
+          mix-blend-screen
+          pointer-events-none
+        "
+      />
+
+      <img
+        src="/board/board-effects.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          object-contain
+          opacity-90
+          mix-blend-screen
+          pointer-events-none
+        "
+      />
+
+      <img
+        src="/board/board-home-paths.svg"
+        className="
+          absolute inset-0
+          w-full h-full
+          object-contain
+          opacity-50
+          pointer-events-none
+        "
+      />
+
+    </div>
+  );
+}
+==============================
+FILE: ./src/game/board/boardCoordinates.ts
+==============================
+import { mainTrack, bases } from "../boardPositions";
+
+export type Point = { x: number; y: number };
+
+export const BOARD_SIZE = 1600;
+
+/**
+ * Centro del tablero real SVG
+ */
+export const CENTER: Point = {
+  x: 800,
+  y: 800,
+};
+
+/**
+ * CASILLAS DEL TABLERO (YA ALINEADAS CON BACKEND)
+ */
+export { mainTrack, bases };
+==============================
+FILE: ./src/game/boardEngine.ts
+==============================
+export type Point = { x: number; y: number };
+
+export const BOARD_SIZE = 600;
+
+/* =========================
+   MAIN TRACK (0 - 55)
+========================= */
+
+export const mainTrack: Point[] = [
+  // aquí reutilizas tu actual mainTrack
+];
+
+/* =========================
+   CENTER
+========================= */
+
+export const CENTER: Point = {
+  x: 300,
+  y: 300,
+};
+
+/* =========================
+   BASE POSITIONS
+========================= */
+
+export const bases: Record<string, Point[]> = {
+  pink: [
+    { x: 480, y: 100 },
+    { x: 520, y: 100 },
+    { x: 480, y: 140 },
+    { x: 520, y: 140 },
+  ],
+  blue: [
+    { x: 480, y: 80 },
+    { x: 520, y: 80 },
+    { x: 480, y: 120 },
+    { x: 520, y: 120 },
+  ],
+  green: [
+    { x: 80, y: 480 },
+    { x: 120, y: 480 },
+    { x: 80, y: 520 },
+    { x: 120, y: 520 },
+  ],
+  purple: [
+    { x: 480, y: 480 },
+    { x: 520, y: 480 },
+    { x: 480, y: 520 },
+    { x: 520, y: 520 },
+  ],
+};
+==============================
+FILE: ./src/game/boardPositions.ts
+==============================
+export type Point = {
+  x: number;
+  y: number;
+};
+
+export const BOARD_SIZE = 1600;
+
+/*
+ * board-path.svg
+ * viewBox 732x732
+ *
+ * GamePieces usa viewBox 1600x1600
+ *
+ * factor:
+ */
+const K = 1600 / 732;
+
+const SVG_TRACK: Point[] = [
+  { x: 366, y: 711 }, // 68
+
+  { x: 416, y: 711 }, // 1
+  { x: 416, y: 675 }, // 2
+  { x: 416, y: 639 }, // 3
+  { x: 416, y: 603 }, // 4
+  { x: 416, y: 567 }, // 5
+  { x: 416, y: 531 }, // 6
+  { x: 416, y: 495 }, // 7
+  { x: 416, y: 459 }, // 8
+
+  { x: 459, y: 416 }, // 9
+  { x: 495, y: 416 }, // 10
+  { x: 531, y: 416 }, // 11
+  { x: 567, y: 416 }, // 12
+  { x: 603, y: 416 }, // 13
+  { x: 639, y: 416 }, // 14
+  { x: 675, y: 416 }, // 15
+  { x: 711, y: 416 }, // 16
+
+  { x: 711, y: 366 }, // 17
+
+  { x: 711, y: 316 }, // 18
+  { x: 675, y: 316 }, // 19
+  { x: 639, y: 316 }, // 20
+  { x: 603, y: 316 }, // 21
+  { x: 567, y: 316 }, // 22
+  { x: 531, y: 316 }, // 23
+  { x: 495, y: 316 }, // 24
+  { x: 459, y: 316 }, // 25
+
+  { x: 416, y: 273 }, // 26
+  { x: 416, y: 237 }, // 27
+  { x: 416, y: 201 }, // 28
+  { x: 416, y: 165 }, // 29
+  { x: 416, y: 129 }, // 30
+  { x: 416, y: 93 }, // 31
+  { x: 416, y: 57 }, // 32
+  { x: 416, y: 21 }, // 33
+
+  { x: 366, y: 21 }, // 34
+
+  { x: 315, y: 21 }, // 35
+  { x: 315, y: 57 }, // 36
+  { x: 315, y: 93 }, // 37
+  { x: 315, y: 129 }, // 38
+  { x: 315, y: 165 }, // 39
+  { x: 315, y: 201 }, // 40
+  { x: 315, y: 237 }, // 41
+  { x: 315, y: 273 }, // 42
+
+  { x: 273, y: 316 }, // 43
+  { x: 237, y: 316 }, // 44
+  { x: 201, y: 316 }, // 45
+  { x: 165, y: 316 }, // 46
+  { x: 129, y: 316 }, // 47
+  { x: 93, y: 316 }, // 48
+  { x: 57, y: 316 }, // 49
+  { x: 21, y: 316 }, // 50
+
+  { x: 21, y: 366 }, // 51
+
+  { x: 21, y: 416 }, // 52
+  { x: 57, y: 416 }, // 53
+  { x: 93, y: 416 }, // 54
+  { x: 129, y: 416 }, // 55
+  { x: 165, y: 416 }, // 56
+  { x: 201, y: 416 }, // 57
+  { x: 237, y: 416 }, // 58
+  { x: 273, y: 416 }, // 59
+
+  { x: 315, y: 459 }, // 60
+  { x: 315, y: 495 }, // 61
+  { x: 315, y: 531 }, // 62
+  { x: 315, y: 567 }, // 63
+  { x: 315, y: 603 }, // 64
+  { x: 315, y: 639 }, // 65
+  { x: 315, y: 675 }, // 66
+  { x: 315, y: 711 }, // 67
+];
+
+export const mainTrack = SVG_TRACK.map((p) => ({
+  x: p.x * K,
+  y: p.y * K,
+}));
+
+export const bases: Record<string, Point[]> = {
+  pink: [
+    { x: 247, y: 247 },
+    { x: 391, y: 247 },
+    { x: 247, y: 391 },
+    { x: 391, y: 391 },
+  ],
+
+  green: [
+    { x: 1207, y: 247 },
+    { x: 1351, y: 247 },
+    { x: 1207, y: 391 },
+    { x: 1351, y: 391 },
+  ],
+
+  blue: [
+    { x: 247, y: 1207 },
+    { x: 391, y: 1207 },
+    { x: 247, y: 1351 },
+    { x: 391, y: 1351 },
+  ],
+
+  purple: [
+    { x: 1207, y: 1207 },
+    { x: 1351, y: 1207 },
+    { x: 1207, y: 1351 },
+    { x: 1351, y: 1351 },
+  ],
+};
+
+export const homeStretch = {
+	pink: [
+		{ x: 366 * K, y: 57 * K },
+		{ x: 366 * K, y: 93 * K },
+		{ x: 366 * K, y: 129 * K },
+		{ x: 366 * K, y: 165 * K },
+		{ x: 366 * K, y: 201 * K },
+		{ x: 366 * K, y: 237 * K },
+		{ x: 366 * K, y: 273 * K },
+	],
+
+	green: [
+		{ x: 639 * K, y: 366 * K },
+		{ x: 603 * K, y: 366 * K },
+		{ x: 567 * K, y: 366 * K },
+		{ x: 531 * K, y: 366 * K },
+		{ x: 495 * K, y: 366 * K },
+		{ x: 459 * K, y: 366 * K },
+		{ x: 423 * K, y: 366 * K },
+	],
+
+	purple: [
+		{ x: 366 * K, y: 675 * K },
+		{ x: 366 * K, y: 639 * K },
+		{ x: 366 * K, y: 603 * K },
+		{ x: 366 * K, y: 567 * K },
+		{ x: 366 * K, y: 531 * K },
+		{ x: 366 * K, y: 495 * K },
+		{ x: 366 * K, y: 459 * K },
+	],
+
+	blue: [
+		{ x: 93 * K, y: 366 * K },
+		{ x: 129 * K, y: 366 * K },
+		{ x: 165 * K, y: 366 * K },
+		{ x: 201 * K, y: 366 * K },
+		{ x: 237 * K, y: 366 * K },
+		{ x: 273 * K, y: 366 * K },
+		{ x: 309 * K, y: 366 * K },
+	],
+};
+
+export const finishedPositions: Record<string, Point[]> = {
+  // TRIÁNGULO SUPERIOR (rosa)
+  pink: [
+    { x: 730, y: 670 },
+    { x: 870, y: 670 },
+    { x: 800, y: 670 },
+    { x: 800, y: 740 },
+  ],
+
+  // TRIÁNGULO DERECHO (verde)
+  green: [
+    { x: 860, y: 730 },
+    { x: 860, y: 870 },
+    { x: 860, y: 800 },
+    { x: 790, y: 800 },
+  ],
+
+  // TRIÁNGULO IZQUIERDO (azul)
+  blue: [
+    { x: 740, y: 730 },
+    { x: 740, y: 870 },
+    { x: 740, y: 800 },
+    { x: 810, y: 800 },
+  ],
+
+  // TRIÁNGULO INFERIOR (morado)
+  purple: [
+    { x: 730, y: 860 },
+    { x: 870, y: 860 },
+    { x: 800, y: 860 },
+    { x: 800, y: 790 },
+  ],
+};
+==============================
+FILE: ./src/game/hooks/useAnimatedPiece.ts
+==============================
+import { useEffect, useRef, useState } from "react";
+import type { Point } from "../board/boardCoordinates";
+import { mainTrack, bases, CENTER } from "../board/boardCoordinates";
+
+type Params = {
+  piece: any;
+  player: any;
+  pieceIndex: number;
+};
+
+export function useAnimatedPiece({
+  piece,
+  player,
+  pieceIndex,
+}: Params) {
+  const animationRef = useRef<number | null>(null);
+
+  function getPosition(): Point {
+    if (piece.state === "base") {
+      return (
+        bases[player.color]?.[pieceIndex] ??
+        CENTER
+      );
+    }
+
+    if (piece.state === "track") {
+      return (
+        mainTrack[piece.trackIndex] ??
+        CENTER
+      );
+    }
+
+    if (piece.state === "home") {
+      return CENTER;
+    }
+
+    return CENTER;
+  }
+
+  const [position, setPosition] = useState<Point>(
+    getPosition()
+  );
+
+  useEffect(() => {
+    const target = getPosition();
+
+    animate(position, target);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [
+    piece.state,
+    piece.trackIndex,
+    piece.position,
+    pieceIndex,
+  ]);
+
+  function animate(
+    from: Point,
+    to: Point
+  ) {
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+
+    const start = performance.now();
+    const duration = 280;
+
+    function frame(now: number) {
+      const t = Math.min(
+        (now - start) / duration,
+        1
+      );
+
+      const eased =
+        1 - Math.pow(1 - t, 3);
+
+      const x =
+        from.x + (to.x - from.x) * eased;
+
+      const y =
+        from.y + (to.y - from.y) * eased;
+
+      setPosition({ x, y });
+
+      if (t < 1) {
+        animationRef.current =
+          requestAnimationFrame(frame);
+      }
+    }
+
+    animationRef.current =
+      requestAnimationFrame(frame);
+  }
+
+  return position;
+}
+==============================
+FILE: ./src/game/hooks/useBoardSize.ts
+==============================
+import { useEffect, useState } from "react";
+
+export function useBoardSize() {
+  const [size, setSize] = useState(900);
+
+  useEffect(() => {
+    const update = () => {
+      const next =
+        Math.min(window.innerWidth * 0.7, window.innerHeight * 0.9);
+
+      setSize(next);
+    };
+
+    update();
+
+    window.addEventListener("resize", update);
+
+    return () => {
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  return size;
+}
+==============================
+FILE: ./src/game/hud/ChatPanel.tsx
+==============================
+
+import { useEffect, useState } from "react";
+import { socket } from "../../socket/socket";
+
+type ChatMessage = {
+  userId: number;
+  color: string;
+  message: string;
+  timestamp: number;
+};
+
+export default function ChatPanel({
+  game,
+}: any) {
+  const [msg, setMsg] =
+    useState("");
+
+  const [messages, setMessages] =
+    useState<ChatMessage[]>([]);
+
+  useEffect(() => {
+    const onMessage = (
+      data: ChatMessage
+    ) => {
+      setMessages((prev) => [
+        ...prev,
+        data,
+      ]);
+    };
+
+    socket.on(
+      "chat:message",
+      onMessage
+    );
+
+    return () => {
+      socket.off(
+        "chat:message",
+        onMessage
+      );
+    };
+  }, []);
+
+  const send = () => {
+    if (!msg.trim()) return;
+
+    socket.emit("chat:send", {
+      gameId: game.id,
+      message: msg,
+    });
+
+    setMsg("");
+  };
+
+  return (
+    <div className="glass-panel rounded-3xl p-4 flex-1 flex flex-col gap-3 min-h-0">
+      <div className="font-semibold text-white/80">
+        Chat
+      </div>
+
+      <div
+        className="
+          flex-1
+          overflow-y-auto
+          rounded-2xl
+          bg-black/20
+          border
+          border-white/5
+          p-3
+          space-y-2
+        "
+      >
+        {messages.map(
+          (m, index) => (
+            <div
+              key={index}
+              className="
+                text-sm
+                break-words
+              "
+            >
+              <span
+                className="
+                  font-semibold
+                  text-cyan-400
+                "
+              >
+                {m.color}
+              </span>
+
+              <span className="mx-2">
+                :
+              </span>
+
+              <span>
+                {m.message}
+              </span>
+            </div>
+          )
+        )}
+      </div>
+
+      <div className="flex gap-2 items-center">
+        <input
+          value={msg}
+          onChange={(e) =>
+            setMsg(
+              e.target.value
+            )
+          }
+          onKeyDown={(e) => {
+            if (
+              e.key === "Enter"
+            ) {
+              send();
+            }
+          }}
+          className="
+            flex-1
+            min-w-0
+            rounded-xl
+            bg-black/30
+            border
+            border-white/10
+            p-3
+            outline-none
+          "
+          placeholder="Write a message..."
+        />
+
+        <button
+          onClick={send}
+          className="
+            shrink-0
+            px-4
+            py-3
+            rounded-xl
+            bg-purple-500
+            border
+            border-cyan-400/30
+          "
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}
+==============================
+FILE: ./src/game/hud/GameHUD.tsx
+==============================
+import PlayersPanel from "./PlayersPanel";
+import ChatPanel from "./ChatPanel";
+import DicePanel from "./DicePanel";
+
+export default function GameHUD({ game }: any) {
+  return (
+    <div className="
+      fixed
+      right-[20px]
+      top-1/2
+      -translate-y-1/2
+
+      w-[290px]
+      h-[62vh]
+
+      flex
+      flex-col
+      gap-4
+
+      z-50
+    ">
+      <PlayersPanel game={game} />
+
+      <DicePanel game={game} />
+
+      <ChatPanel game={game} />
+    </div>
+  );
+}
+==============================
+FILE: ./src/game/hud/PlayersPanel.tsx
+==============================
+export default function PlayersPanel({ game }: any) {
+  return (
+    <div className="
+      rounded-3xl
+      p-4
+      flex
+      flex-col
+      gap-3
+    ">
+      <h3 className="font-bold mb-2">Players</h3>
+
+      {game.players.map((p: any) => {
+        const isTurn = game.turn === p.id;
+
+        return (
+          <div
+            key={p.id}
+            className={`
+              rounded-2xl
+              p-3
+              flex
+              items-center
+              gap-3
+              border
+
+              ${isTurn
+                ? "border-cyan-400 shadow-[0_0_25px_rgba(34,211,238,.3)]"
+                : "border-white/5"
+              }
+            `}
+          >
+            <div
+              className="
+                w-14 h-14
+                rounded-full
+                bg-slate-700
+                border-2 border-white/10
+              "
+            />
+
+            <div className="flex-1">
+              <div className="font-semibold capitalize">
+                {p.color}
+              </div>
+
+              <div className="text-xs text-white/50">
+                {p.abandoned
+                  ? "Abandoned"
+                  : p.connected
+                  ? "Connected"
+                  : "Disconnected"}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+==============================
+FILE: ./src/game/hud/DicePanel.tsx
+==============================
+import { motion } from "framer-motion";
+
+export default function DicePanel({ game }: any) {
+  const dice = game.dice || 1;
+
+  return (
+    <div className="
+      glass-panel
+      rounded-3xl
+      p-6
+      flex
+      flex-col
+      items-center
+      justify-center
+      gap-4
+    ">
+      <motion.img
+        key={dice}
+        src={`/ui/dice-${dice}.svg`}
+        className="w-28 h-28 object-contain"
+        initial={{
+          rotate: -180,
+          scale: 0.4,
+          opacity: 0
+        }}
+        animate={{
+          rotate: 0,
+          scale: 1,
+          opacity: 1
+        }}
+        transition={{
+          duration: .6,
+          type: "spring"
+        }}
+      />
+
+    </div>
+  );
+}
+==============================
+FILE: ./src/game/layout/GameScene.tsx
+==============================
+import GameBoard from "../board/GameBoard";
+import GamePieces from "../pieces/GamePieces";
+import GameHUD from "../hud/GameHUD";
+import BoardEffects from "../board/BoardEffects";
+
+/*export default function GameScene({ game }: any) {
+  return (
+    <div className="relative w-full h-screen overflow-hidden">
+
+      {
+        game.status === "finished" &&
+        (
+          <div
+            className="
+            absolute
+            inset-0
+            flex
+            items-center
+            justify-center
+            bg-black/70
+            z-[200]
+          "
+          >
+            Winner:
+            {game.winner}
+          </div>
+        )
+      }
+
+      <div
+        className="
+          absolute inset-0
+          bg-[radial-gradient(circle_at_center,rgba(59,130,246,.12),transparent_60%)]
+        "
+      />
+
+      <div
+        className="
+          absolute inset-0
+          flex
+          items-center
+          justify-center
+        "
+      >
+        <div
+          className="
+            relative
+            aspect-square
+            w-[92vmin]
+            max-w-[1100px]
+          "
+        >
+          <GameBoard />
+
+          <BoardEffects />
+
+          <GamePieces game={game} />
+        </div>
+      </div>
+
+      <GameHUD game={game} />
+    </div>
+  );
+}*/
+
+export default function GameScene({
+  game,
+  onPieceClick,
+}: any) {
+  return (
+    <div className="relative w-full h-screen overflow-hidden">
+
+      {game.status === "finished" && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-[200]">
+          Winner: {game.winner}
+        </div>
+      )}
+
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,.12),transparent_60%)]" />
+
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="relative aspect-square w-[92vmin] max-w-[1100px]">
+
+          <GameBoard />
+          <BoardEffects />
+          <GamePieces
+            game={game}
+            onPieceClick={onPieceClick}
+          />
+
+        </div>
+      </div>
+
+      <GameHUD game={game} />
+    </div>
+  );
+}
+==============================
+FILE: ./src/game/pieces/AnimatedPiece.tsx
+==============================
+import Piece from "./Piece";
+import { useAnimatedPiece } from "../hooks/useAnimatedPiece";
+
+type Props = {
+  piece: any;
+  player: any;
+  pieceIndex: number;
+};
+
+export default function AnimatedPiece({
+  piece,
+  player,
+  pieceIndex,
+}: Props) {
+  const pos = useAnimatedPiece({
+    piece,
+    player,
+    pieceIndex,
+  });
+
+  return (
+    <svg
+      className="
+        absolute
+        inset-0
+        w-full
+        h-full
+        overflow-visible
+      "
+    >
+      <Piece
+        x={pos.x}
+        y={pos.y}
+        color={player.color}
+      />
+    </svg>
+  );
+}
+==============================
+FILE: ./src/game/pieces/Piece.tsx
+==============================
+/*import { motion } from "framer-motion";
+
+const glowClass: Record<string, string> = {
+  pink: "neon-pink",
+  blue: "neon-blue",
+  green: "neon-green",
+  purple: "neon-purple",
+};
+
+export default function Piece({
+  x,
+  y,
+  color,
+}: any) {
+  return (
+    <motion.img
+      src={`/pieces/${color}-piece.png`}
+      className={`
+        absolute
+        w-[42px]
+        h-[42px]
+        -translate-x-1/2
+        -translate-y-1/2
+        pointer-events-auto
+        ${glowClass[color]}
+      `}
+      animate={{
+        left: x,
+        top: y,
+      }}
+      transition={{
+        type: "spring",
+        damping: 14,
+        stiffness: 120,
+      }}
+      whileHover={{
+        scale: 1.08,
+      }}
+    />
+  );
+}*/
+
+type PieceProps = {
+  x: number;
+  y: number;
+  color: string;
+  onClick?: () => void;
+};
+
+export default function Piece({
+  x,
+  y,
+  color,
+  onClick,
+}: PieceProps) {
+  return (
+    <g
+      onClick={onClick}
+      style={{
+        transform: `translate(${x}px, ${y}px)`,
+        cursor: "pointer",
+      }}
+    >
+      <circle
+        r={28}
+        fill={color}
+        opacity={0.18}
+        style={{
+          filter: `blur(10px)`,
+        }}
+      />
+
+      <circle
+        r={18}
+        fill={color}
+        style={{
+          filter: `drop-shadow(0 0 18px ${color})`,
+        }}
+      />
+
+      <circle
+        cy={-5}
+        r={7}
+        fill="rgba(255,255,255,.65)"
+      />
+    </g>
+  );
+}
+==============================
+FILE: ./src/game/pieces/GamePieces.tsx
+==============================
+/*import type { Game } from "../../types/game";
+import { bases } from "../boardPositions";
+
+const pieceImages: Record<string, string> = {
+  pink: "/pieces/pink-piece.png",
+  purple: "/pieces/purple-piece.png",
+  blue: "/pieces/blue-piece.png",
+  green: "/pieces/green-piece.png",
+};
+
+export default function GamePieces({
+  game,
+}: {
+  game: Game;
+}) {
+  return (
+    <svg
+      viewBox="0 0 1600 1600"
+      className="
+        absolute
+        inset-0
+        w-full
+        h-full
+        z-30
+        pointer-events-none
+      "
+      preserveAspectRatio="xMidYMid meet"
+    >
+      {game.players.map((player) =>
+        player.pieces.map((piece, i) => {
+          let pos = piece.coords;
+          if (!pos && piece.state === "base") {
+            pos = bases[player.color][i];
+          }
+
+          if (!pos) {
+            return null;
+          }
+
+          return (
+            <g key={`${player.id}-${i}`}>
+              <circle
+                cx={pos.x}
+                cy={pos.y}
+                r={42}
+                fill={player.color}
+                opacity={0.18}
+              />
+
+              <image
+                href={pieceImages[player.color]}
+                x={pos.x - 32}
+                y={pos.y - 32}
+                width={64}
+                height={64}
+                preserveAspectRatio="xMidYMid meet"
+                style={{
+                  filter: `
+                    drop-shadow(0 0 12px ${player.color})
+                    drop-shadow(0 0 24px ${player.color})
+                  `,
+                }}
+              />
+            </g>
+          );
+        })
+      )}
+    </svg>
+  );
+}*/
+
+import type { Game } from "../../types/game";
+import {
+  bases,
+  finishedPositions,
+} from "../boardPositions";
+
+const pieceImages: Record<string, string> = {
+  pink: "/pieces/pink-piece.png",
+  purple: "/pieces/purple-piece.png",
+  blue: "/pieces/blue-piece.png",
+  green: "/pieces/green-piece.png",
+};
+
+type PieceRenderData = {
+  playerId: number;
+  color: string;
+  index: number;
+  x: number;
+  y: number;
+};
+
+const STACK_OFFSET = 28;
+
+export default function GamePieces({
+  game,
+  onPieceClick,
+}: {
+  game: Game;
+  onPieceClick: (
+    playerId: number,
+    pieceIndex: number
+  ) => void;
+}) {
+  const piecesToRender: PieceRenderData[] = [];
+
+  for (const player of game.players) {
+    player.pieces.forEach((piece, i) => {
+      let pos = piece.coords;
+
+      if (!pos && piece.state === "base") {
+        pos = bases[player.color][i];
+      }
+
+      if (!pos && piece.state === "finished") {
+        pos = finishedPositions[player.color][i];
+      }
+
+      if (!pos) return;
+
+      piecesToRender.push({
+        playerId: player.id,
+        color: player.color,
+        index: i,
+        x: pos.x,
+        y: pos.y,
+      });
+    });
+  }
+
+  const groups = new Map<string, PieceRenderData[]>();
+
+  for (const piece of piecesToRender) {
+    // IMPORTANTE:
+    // agrupamos SOLO por coordenada para detectar
+    // fichas de distintos colores en la misma safe cell.
+    const key = `${Math.round(piece.x)}-${Math.round(piece.y)}`;
+
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+
+    groups.get(key)!.push(piece);
+  }
+
+  const finalPieces: PieceRenderData[] = [];
+
+  groups.forEach((group) => {
+    if (group.length === 1) {
+      finalPieces.push(group[0]);
+      return;
+    }
+
+    const baseX = group[0].x;
+    const baseY = group[0].y;
+
+    const isVerticalTrack =
+      (baseX > 600 && baseX < 1000) ||
+      baseX < 450 ||
+      baseX > 1150;
+
+    const center = (group.length - 1) / 2;
+
+    group.forEach((piece, idx) => {
+      const offset = (idx - center) * STACK_OFFSET;
+
+      if (isVerticalTrack) {
+        finalPieces.push({
+          ...piece,
+          x: baseX + offset,
+        });
+      } else {
+        finalPieces.push({
+          ...piece,
+          y: baseY + offset,
+        });
+      }
+    });
+  });
+
+  return (
+    <svg
+      viewBox="0 0 1600 1600"
+      className="
+        absolute
+        inset-0
+        w-full
+        h-full
+        z-30
+        pointer-events-auto
+      "
+      preserveAspectRatio="xMidYMid meet"
+    >
+      {finalPieces.map((piece) => (
+        <g
+          key={`${piece.playerId}-${piece.index}`}
+          onClick={() =>
+            onPieceClick(
+              piece.playerId,
+              piece.index
+            )
+          }
+          style={{
+            cursor: "pointer",
+            transition:
+              "transform 220ms ease-out",
+          }}
+        >
+          <circle
+            cx={piece.x}
+            cy={piece.y}
+            r={42}
+            fill={piece.color}
+            opacity={0.18}
+          />
+
+          <image
+            href={pieceImages[piece.color]}
+            x={piece.x - 32}
+            y={piece.y - 32}
+            width={64}
+            height={64}
+            preserveAspectRatio="xMidYMid meet"
+            style={{
+              transition:
+                "x 220ms ease-out, y 220ms ease-out",
+              filter: `
+                drop-shadow(0 0 12px ${piece.color})
+                drop-shadow(0 0 24px ${piece.color})
+              `,
+            }}
+          />
+        </g>
+      ))}
+    </svg>
+  );
+}
+==============================
+FILE: ./src/game/realtime/useGameRealtime.ts
+==============================
+import { useEffect, useRef } from "react";
+import { socket, connectSocket } from "../../socket/socket";
+import { useGameStore } from "../../store/gameStore";
+
+export function useGameRealtime(
+  gameId: string,
+  token: string
+) {
+  const setGame = useGameStore(
+    (s) => s.setGame
+  );
+
+  const clearGame = useGameStore(
+    (s) => s.clear
+  );
+
+  const joinedRef = useRef<string | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (!gameId || !token) {
+      return;
+    }
+
+    connectSocket(token);
+
+    clearGame();
+
+    const onUpdate = (game: any) => {
+      setGame(game);
+    };
+
+    socket.off("game:update", onUpdate);
+    socket.on("game:update", onUpdate);
+
+    if (joinedRef.current !== gameId) {
+      joinedRef.current = gameId;
+
+      socket.emit("game:join", {
+        gameId,
+      });
+
+      socket.emit("game:state", {
+        gameId,
+      });
+    }
+
+    return () => {
+      socket.off(
+        "game:update",
+        onUpdate
+      );
+    };
+  }, [
+    gameId,
+    token,
+    setGame,
+    clearGame,
+  ]);
+}
+==============================
+FILE: ./src/game/sound.ts
+==============================
+export function playSound(name: "dice" | "move" | "win") {
+  const audio = new Audio(`/sounds/${name}.mp3`);
+  audio.volume = 0.5;
+  audio.play();
+}
+==============================
+FILE: ./src/game/sync/gameSync.ts
+==============================
+import { socket } from "../../socket/socket";
+import { useGameStore } from "../../store/gameStore";
+
+export function initGameSync(gameId: string, token: string) {
+	const setGame = useGameStore.getState().setGame;
+
+	socket.auth = { token };
+
+	if (!socket.connected) {
+		socket.connect();
+	}
+
+	socket.emit("game:join", { gameId });
+
+	socket.on("game:update", (game) => {
+		setGame(game);
+	});
+}
+==============================
+FILE: ./src/game/usePieceAnimation.ts
+==============================
+import { useEffect, useRef } from "react";
+
+export function usePieceAnimation() {
+  const frame = useRef<number | null>(null);
+
+  const animate = (
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    onUpdate: (p: { x: number; y: number }) => void,
+    duration = 300
+  ) => {
+    const start = performance.now();
+
+    const step = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+
+      const eased = t * (2 - t); // easeOut
+
+      onUpdate({
+        x: from.x + (to.x - from.x) * eased,
+        y: from.y + (to.y - from.y) * eased,
+      });
+
+      if (t < 1) {
+        frame.current = requestAnimationFrame(step);
+      }
+    };
+
+    frame.current = requestAnimationFrame(step);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (frame.current) cancelAnimationFrame(frame.current);
+    };
+  }, []);
+
+  return { animate };
+}
+==============================
+FILE: ./src/index.css
+==============================
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "Poppins", sans-serif;
+
+  --bg-primary: #f8fafc;
+  --bg-secondary: #eef2ff;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+
+  --pink-primary: #f9a8d4;
+  --purple-primary: #c4b5fd;
+  --blue-primary: #93c5fd;
+  --green-primary: #86efac;
+
+  --glass-bg: rgba(255, 255, 255, 0.35);
+  --glass-border: rgba(255, 255, 255, 0.18);
+}
+
+.dark {
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+
+  --pink-primary: #f472b6;
+  --purple-primary: #a78bfa;
+  --blue-primary: #60a5fa;
+  --green-primary: #4ade80;
+
+  --glass-bg: rgba(15, 23, 42, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--bg-primary),
+      var(--bg-secondary)
+    );
+
+  color: var(--text-primary);
+
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+
+  border: 1px solid var(--glass-border);
+
+  backdrop-filter: blur(20px);
+
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.neon-glow {
+  box-shadow:
+    0 0 24px rgba(168, 85, 247, 0.2);
+}
+
+html {
+  color-scheme: light dark;
+}
+
+/*@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0b1020, #020617);
+  color: white;
+}
+
+
+.game-scene {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(circle at center, #111827 0%, #050816 100%);
+}
+
+
+.board-container {
+  position: relative;
+
+  width: min(92vw, 92vh);
+  aspect-ratio: 1 / 1;
+
+  max-width: 1100px;
+  max-height: 1100px;
+}
+
+
+.neon-pink {
+  filter:
+    drop-shadow(0 0 6px #ff4fd8)
+    drop-shadow(0 0 12px #ff4fd8);
+}
+
+.neon-blue {
+  filter:
+    drop-shadow(0 0 6px #3b82f6)
+    drop-shadow(0 0 12px #3b82f6);
+}
+
+.neon-green {
+  filter:
+    drop-shadow(0 0 6px #22c55e)
+    drop-shadow(0 0 12px #22c55e);
+}
+
+.neon-purple {
+  filter:
+    drop-shadow(0 0 6px #a855f7)
+    drop-shadow(0 0 12px #a855f7);
+}
+
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.72);
+
+  backdrop-filter: blur(18px);
+
+  border: 1px solid rgba(255,255,255,.08);
+
+  box-shadow:
+    inset 0 0 30px rgba(255,255,255,.03),
+    0 10px 40px rgba(0,0,0,.4);
+}
+
+@keyframes glowPulse {
+  0% {
+    opacity: .4;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+
+  100% {
+    opacity: .4;
+    transform: scale(1);
+  }
+}
+
+.glow-pulse {
+  animation: glowPulse 2s infinite ease-in-out;
+}*/
+
+==============================
+FILE: ./src/layouts/AuthLayout.tsx
+==============================
+import type { ReactNode } from "react";
+
+import ThemeToggle from "../components/ui/ThemeToggle";
+
+interface AuthLayoutProps {
+  children: ReactNode;
+}
+
+function AuthLayout({
+  children,
+}: AuthLayoutProps) {
+  return (
+    <div
+      className="
+        relative
+        flex min-h-screen
+        items-center
+        justify-center
+        overflow-hidden
+        bg-gradient-to-br
+        from-bgPrimary
+        via-bgSecondary
+        to-bgPrimary
+        p-6
+      "
+    >
+      <div className="absolute top-6 right-6">
+        <ThemeToggle />
+      </div>
+
+      <div
+        className="
+          glass-panel
+          relative
+          w-full
+          max-w-md
+          rounded-glass
+          p-8
+          shadow-glass
+        "
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export default AuthLayout;
+
+==============================
+FILE: ./src/layouts/MainLayout.tsx
+==============================
+/*import type { ReactNode } from "react";
+import GlassPanel from "../components/ui/GlassPanel";
+
+interface Props {
+  children: ReactNode;
+}
+
+export default function MainLayout({ children }: Props) {
+  return (
+    <div className="min-h-screen bg-bgPrimary text-textPrimary transition-colors">
+      <div className="mx-auto max-w-7xl p-6">
+        <GlassPanel className="mb-6 p-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-title font-bold">
+              🎮 Parchís Online
+            </h1>
+
+            <div className="text-small text-textSecondary">
+              Lobby System
+            </div>
+          </div>
+        </GlassPanel>
+
+        {children}
+      </div>
+    </div>
+  );
+}*/
+
+import type { ReactNode } from "react";
+
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
+
+import GlassPanel from "../components/ui/GlassPanel";
+
+import { useAuth } from "../context/AuthContext";
+
+interface Props {
+  children: ReactNode;
+}
+
+export default function MainLayout({
+  children,
+}: Props) {
+  const navigate =
+    useNavigate();
+
+  const { logout } =
+    useAuth();
+
+  function handleLogout() {
+    logout();
+
+    navigate("/");
+  }
+
+  return (
+    <div className="min-h-screen bg-bgPrimary text-textPrimary">
+      <div className="mx-auto max-w-7xl p-6">
+        <GlassPanel className="mb-6 p-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-title font-bold">
+              🎮 Parchís Online
+            </h1>
+
+            <div className="flex gap-4">
+              <Link to="/lobby">
+                Lobby
+              </Link>
+
+              <Link to="/profile">
+                Perfil
+              </Link>
+
+              <Link to="/friends">
+                Amigos
+              </Link>
+
+              <Link to="/friend-requests">
+                Solicitudes
+              </Link>
+
+              <button
+                onClick={
+                  handleLogout
+                }
+              >
+                Salir
+              </button>
+            </div>
+          </div>
+        </GlassPanel>
+
+        {children}
+      </div>
+    </div>
+  );
+}
+
+==============================
+FILE: ./src/main.tsx
+==============================
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { RouterProvider } from "react-router-dom";
+
+import "./index.css";
+
+import { router } from "./router";
+
+import { ThemeProvider } from "./theme/ThemeProvider";
+
+import { AuthProvider } from "./context/AuthContext";
+
+ReactDOM.createRoot(
+  document.getElementById("root")!
+).render(
+  <React.StrictMode>
+    <AuthProvider>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </AuthProvider>
+  </React.StrictMode>
+);
+==============================
+FILE: ./src/pages/FriendRequestsPage.tsx
+==============================
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import MainLayout from "../layouts/MainLayout";
+
+import GlassPanel from "../components/ui/GlassPanel";
+
+import Button from "../components/ui/Button";
+
+import type { FriendRequest } from "../types/friend";
+
+import {
+  getPendingRequests,
+  acceptFriendRequest,
+} from "../api/friends.api";
+
+export default function FriendRequestsPage() {
+  const [requests, setRequests] =
+    useState<FriendRequest[]>([]);
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
+  async function loadRequests() {
+    try {
+      const data = await getPendingRequests();
+
+      setRequests(data.requests);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleAccept(
+    id: number
+  ) {
+    await acceptFriendRequest(id);
+
+    loadRequests();
+  }
+
+  return (
+    <MainLayout>
+      <GlassPanel className="p-6">
+        <h2 className="text-2xl font-bold mb-6">
+          Solicitudes
+        </h2>
+
+        <div className="space-y-4">
+          {requests.map(
+            (request) => (
+              <div
+                key={request.senderId}
+                className="
+                  flex
+                  justify-between
+                  items-center
+                "
+              >
+                <span>
+                  {
+                    request.senderUsername
+                  }
+                </span>
+
+                <Button
+                  className="w-auto px-4"
+                  onClick={() =>
+                    handleAccept(
+                      request.senderId
+                    )
+                  }
+                >
+                  Aceptar
+                </Button>
+              </div>
+            )
+          )}
+        </div>
+      </GlassPanel>
+    </MainLayout>
+  );
+}
+==============================
+FILE: ./src/pages/FriendsPage.tsx
+==============================
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import MainLayout from "../layouts/MainLayout";
+import GlassPanel from "../components/ui/GlassPanel";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
+
+import {
+  getFriends,
+  sendFriendRequest,
+  removeFriend,
+} from "../api/friends.api";
+
+import { searchUsers } from "../api/user.api";
+
+import {
+  useFriendsStore,
+} from "../store/friendsStore";
+
+import { socket } from "../socket/socket";
+
+interface SearchUser {
+  id: number;
+  username: string;
+  avatar_url?: string;
+  online?: boolean;
+}
+
+export default function FriendsPage() {
+  const {
+    friends,
+    setFriends,
+    updateOnlineStatus,
+  } = useFriendsStore();
+
+  const [query, setQuery] =
+    useState("");
+
+  const [results, setResults] =
+    useState<SearchUser[]>([]);
+
+  useEffect(() => {
+    loadFriends();
+
+    socket.on(
+      "presence:update",
+      ({ userId, online }) => {
+        updateOnlineStatus(
+          userId,
+          online
+        );
+      }
+    );
+
+    return () => {
+      socket.off("presence:update");
+    };
+  }, []);
+
+  async function loadFriends() {
+    try {
+      const data = await getFriends();
+      setFriends(data.friends);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleSearch() {
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+
+    try {
+      const data =
+        await searchUsers(query);
+
+      setResults(data.users);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleSendRequest(
+    userId: number
+  ) {
+    try {
+      await sendFriendRequest(userId);
+      alert("Solicitud enviada");
+    } catch (err) {
+      console.error(err);
+      alert(
+        "No se pudo enviar la solicitud"
+      );
+    }
+  }
+
+  async function handleRemoveFriend(
+    friendId: number
+  ) {
+    try {
+      await removeFriend(friendId);
+      await loadFriends();
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo eliminar el amigo");
+    }
+  }
+
+  return (
+    <MainLayout>
+      <GlassPanel className="p-6">
+        <h2 className="text-2xl font-bold mb-6">
+          Amigos
+        </h2>
+
+        <div className="mb-8 space-y-4">
+          <Input
+            placeholder="Buscar usuario..."
+            value={query}
+            onChange={(e) =>
+              setQuery(e.target.value)
+            }
+          />
+
+          <Button onClick={handleSearch}>
+            Buscar
+          </Button>
+
+          <div className="space-y-3">
+            {results.map((user) => (
+              <div
+                key={user.id}
+                className="
+                  flex
+                  justify-between
+                  items-center
+                  border-b
+                  border-white/10
+                  pb-2
+                "
+              >
+                <div className="flex items-center gap-3">
+                  <span>
+                    {user.username}
+                  </span>
+
+                  <span>
+                    {user.online
+                      ? "🟢 CONECTADO"
+                      : "⚫ DESCONECTADO"}
+                  </span>
+                </div>
+
+                <Button
+                  className="w-auto px-4 py-2"
+                  onClick={() =>
+                    handleSendRequest(
+                      user.id
+                    )
+                  }
+                >
+                  Añadir
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <h3 className="text-xl font-semibold mb-4">
+          Lista de amigos
+        </h3>
+
+        <div className="space-y-3">
+          {friends.length === 0 && (
+            <p className="text-white/60">
+              No tienes amigos todavía.
+            </p>
+          )}
+
+          {friends.map((friend) => (
+            <div
+              key={friend.id}
+              className="
+                flex
+                justify-between
+                items-center
+                border-b
+                border-white/10
+                pb-2
+              "
+            >
+              <div className="flex gap-4 items-center">
+                <span>
+                  {friend.username}
+                </span>
+
+                <span>
+                  {friend.online
+                    ? "🟢 CONECTADO"
+                    : "⚫ DESCONECTADO"}
+                </span>
+              </div>
+
+              <Button
+                className="w-auto px-4 py-2 bg-red-600"
+                onClick={() =>
+                  handleRemoveFriend(
+                    friend.id
+                  )
+                }
+              >
+                Eliminar
+              </Button>
+            </div>
+          ))}
+        </div>
+      </GlassPanel>
+    </MainLayout>
+  );
+}
+==============================
+FILE: ./src/pages/GamePage.tsx
+==============================
+import { useState } from "react";
+import { useGameRealtime } from "../game/realtime/useGameRealtime";
+import { useParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { useGameStore } from "../store/gameStore";
+import { rollDice, movePiece } from "../api/game.api";
+import GameScene from "../game/layout/GameScene";
+
+export default function GamePage() {
+  const { id } = useParams();
+  const { token } = useAuth();
+
+  /*if (id && token)
+  {
+    useGameRealtime(
+      id,
+      token
+    );
+  }*/
+
+  const game = useGameStore((s) => s.game);
+
+  const [rolling, setRolling] = useState(false);
+
+  useGameRealtime(id ?? "", token ?? "");
+
+  /*useEffect(() => {
+    if (!token || !id) return;
+
+    const init = async () => {
+      await fetch(`${API_URL}/games/${id}/join`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      connectSocket(token);
+
+      socket.emit("game:join", { gameId: id });
+
+      socket.on("game:update", (state) => {
+        setGame(state);
+      });
+
+      //socket.emit("game:state", { gameId: id });
+    };
+
+    init();
+
+    return () => {
+      socket.off("game:update");
+    };
+  }, [id, token]);*/
+
+  const handleRoll = async () => {
+    if (!token || !id) return;
+
+    setRolling(true);
+
+    try {
+      await rollDice(token, id);
+    } finally {
+      setTimeout(() => setRolling(false), 500);
+    }
+  };
+
+  const handleMove = async (index: number) => {
+    if (!token || !id) return;
+    await movePiece(token, id, index);
+  };
+
+  if (!game) {
+    return <div className="text-white p-6">Loading game...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white flex">
+      
+      <div className="flex-1 flex items-center justify-center">
+        <GameScene
+          game={game}
+          onPieceClick={(playerId: number, pieceIndex: number) => {
+            const currentPlayer = game.players.find(
+              (p: any) => p.id === game.turn
+            );
+
+            if (!currentPlayer) {
+              return;
+            }
+
+            if (currentPlayer.id !== playerId) {
+              return;
+            }
+
+            handleMove(pieceIndex);
+          }}
+        />
+      </div>
+
+      <div className="w-80 p-4 space-y-4 bg-black/20 backdrop-blur-xl">
+        
+        <h1 className="text-xl font-bold">
+          Game {game.id}
+        </h1>
+
+        <div className="text-white/60">
+          Turn: {game.turn}
+        </div>
+
+        <div
+          className={`text-4xl p-4 rounded-xl bg-white/10 transition ${
+            rolling ? "scale-110 rotate-12" : ""
+          }`}
+        >
+          {game.dice ?? "🎲"}
+        </div>
+
+        <button
+          onClick={handleRoll}
+          className="w-full py-2 bg-purple-500 rounded-xl"
+        >
+          Roll Dice
+        </button>
+
+      </div>
+    </div>
+  );
+}
+
+==============================
+FILE: ./src/pages/HistoryPage.tsx
+==============================
+function HistoryPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      History Page
+    </div>
+  );
+}
+
+export default HistoryPage;
+==============================
+FILE: ./src/pages/LobbyPage.tsx
+==============================
+/*import { useNavigate } from "react-router-dom";
+import { createGame } from "../api/game.api";
+import { useAuth } from "../context/AuthContext";
+
+function LobbyPage() {
+  const navigate = useNavigate();
+  const { token } = useAuth();
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("token");
+    navigate("/");
+  };
+
+const handleCreateGame = async () => {
+  try {
+    if (!token) {
+      console.warn("No token - usuario no autenticado");
+      return;
+    }
+
+    const game = await createGame(token);
+
+    console.log("GAME CREATED:", game);
+
+    if (game?.id) {
+      navigate(`/game/${game.id}`);
+    }
+  } catch (err) {
+    console.error("CREATE GAME ERROR:", err);
+    alert("Error creando partida");
+  }
+};
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white">
+
+      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent">
+            Parchís Online
+          </h1>
+          <p className="text-white/60 text-sm mt-2">
+            Lobby social competitivo
+          </p>
+        </div>
+
+        <button
+          onClick={handleLogout}
+          className="rounded-xl bg-red-500/10 px-4 py-2 text-red-200 hover:bg-red-500/20"
+        >
+          Logout
+        </button>
+      </div>
+
+      <div className="mx-auto mt-6 max-w-7xl rounded-3xl border border-white/10 bg-white/5 p-10 backdrop-blur-xl">
+        <h2 className="text-5xl font-bold">
+          Bienvenida al Parchís Online
+        </h2>
+
+        <p className="mt-4 text-white/70 max-w-2xl">
+          Sistema multiplayer con sockets, matchmaking y partidas en tiempo real.
+        </p>
+
+        <div className="mt-8 flex gap-4">
+          <button
+            onClick={handleCreateGame}
+            className="rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 px-6 py-3 font-semibold"
+          >
+            Crear partida
+          </button>
+
+          <button
+            className="rounded-2xl border border-white/10 bg-white/10 px-6 py-3"
+          >
+            Unirse a partida
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default LobbyPage;*/
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createGame, joinGame } from "../api/game.api";
+import { useAuth } from "../context/AuthContext";
+//import MainLayout from "../layouts/MainLayout";
+
+function LobbyPage() {
+  const navigate = useNavigate();
+  const { token } = useAuth();
+
+  const [gameId, setGameId] = useState("");
+  const [loadingCreate, setLoadingCreate] = useState(false);
+  const [loadingJoin, setLoadingJoin] = useState(false);
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("token");
+    navigate("/");
+  };
+
+  const handleCreateGame = async () => {
+    try {
+      if (!token) return;
+
+      setLoadingCreate(true);
+
+      const game = await createGame(token);
+
+      console.log("GAME CREATED:", game);
+
+      if (game?.id) {
+        navigate(`/game/${game.id}`);
+      }
+    } catch (err) {
+      console.error("CREATE GAME ERROR:", err);
+      alert("Error creando partida");
+    } finally {
+      setLoadingCreate(false);
+    }
+  };
+
+  const handleJoinGame = async () => {
+    try {
+      if (!token) return;
+
+      if (!gameId.trim()) {
+        alert("Introduce un ID de partida");
+        return;
+      }
+
+      setLoadingJoin(true);
+
+      const game = await joinGame(token, gameId.trim());
+
+      console.log("JOIN GAME:", game);
+
+      if (game?.id) {
+        navigate(`/game/${game.id}`);
+      }
+    } catch (err) {
+      console.error("JOIN GAME ERROR:", err);
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Error uniéndose a la partida"
+      );
+    } finally {
+      setLoadingJoin(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white">
+
+      {/* HEADER */}
+      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent">
+            Parchís Online
+          </h1>
+          <p className="text-white/60 text-sm mt-2">
+            Lobby social competitivo
+          </p>
+        </div>
+
+        <div className="flex gap-6 items-center">
+          <button
+            onClick={() => navigate("/profile")}
+          >
+            Perfil
+          </button>
+
+          <button
+            onClick={() => navigate("/friends")}
+          >
+            Amigos
+          </button>
+
+          <button
+            onClick={() =>
+              navigate("/friend-requests")
+            }
+          >
+            Solicitudes
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="rounded-xl bg-red-500/10 px-4 py-2 text-red-200"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {/* HERO */}
+      <div className="mx-auto mt-6 max-w-7xl rounded-3xl border border-white/10 bg-white/5 p-10 backdrop-blur-xl">
+        <h2 className="text-5xl font-bold">
+          Bienvenida al Parchís Online
+        </h2>
+
+        <p className="mt-4 text-white/70 max-w-2xl">
+          Sistema multiplayer con sockets, matchmaking y partidas en tiempo real.
+        </p>
+
+        {/* CREATE + JOIN */}
+        <div className="mt-8 flex flex-col gap-4">
+
+          {/* CREATE */}
+          <button
+            onClick={handleCreateGame}
+            disabled={loadingCreate}
+            className="rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 px-6 py-3 font-semibold disabled:opacity-50"
+          >
+            {loadingCreate ? "Creando..." : "Crear partida"}
+          </button>
+
+          {/* JOIN INPUT */}
+          <div className="flex gap-3">
+            <input
+              value={gameId}
+              onChange={(e) => setGameId(e.target.value)}
+              placeholder="ID de partida"
+              className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white placeholder-white/40"
+            />
+
+            <button
+              onClick={handleJoinGame}
+              disabled={loadingJoin}
+              className="rounded-xl border border-white/10 bg-white/10 px-6 py-2 disabled:opacity-50"
+            >
+              {loadingJoin ? "Uniéndose..." : "Unirse"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default LobbyPage;
+
+==============================
+FILE: ./src/pages/LoginPage.tsx
+==============================
+/*import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import AuthLayout from "../layouts/AuthLayout";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+
+import { login } from "../api/api";
+
+function LoginPage() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = async () => {
+    try {
+      const data = await login(email, password);
+
+      if (data.token) {
+        sessionStorage.setItem("token", data.token);
+        navigate("/lobby");
+      } else {
+        alert(data.error || "Error en login");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error de conexión");
+    }
+  };
+
+  return (
+    <AuthLayout>
+      <div className="flex flex-col gap-6">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-pink-Primary">
+            Parchís Online
+          </h1>
+
+          <p className="mt-2 text-slate-600">
+            Bienvenido de nuevo
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <Input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e: any) => setEmail(e.target.value)}
+          />
+
+          <Input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e: any) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <Button onClick={handleLogin}>
+          Iniciar sesión
+        </Button>
+
+        <p className="text-center text-sm">
+          ¿No tienes cuenta?{" "}
+          <span
+            onClick={() => navigate("/register")}
+            className="cursor-pointer text-pink-Primary"
+          >
+            Regístrate
+          </span>
+        </p>
+        
+        <div className="flex flex-col gap-3">
+          <Button className="bg-white/40 text-slate-700">
+            Continuar con Google
+          </Button>
+
+          <Button className="bg-white/40 text-slate-700">
+            Continuar con 42
+          </Button>
+
+          <Button className="bg-white/40 text-slate-700">
+            Continuar con GitHub
+          </Button>
+        </div>
+      </div>
+    </AuthLayout>
+  );
+}
+
+export default LoginPage;*/
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import AuthLayout from "../layouts/AuthLayout";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+
+import { login, getMe } from "../api/api";
+import { useAuth } from "../context/AuthContext";
+
+function LoginPage() {
+  const navigate = useNavigate();
+  const auth = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = async () => {
+    try {
+      const data = await login(email, password);
+
+      if (!data.token) {
+        alert(data.error || "Error en login");
+        return;
+      }
+
+      const user = await getMe(data.token);
+
+      auth.login(data.token, user);
+
+      navigate("/lobby");
+    } catch (err) {
+      console.error(err);
+      alert("Error de conexión");
+    }
+  };
+
+  return (
+    <AuthLayout>
+      <div className="flex flex-col gap-6">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-pink-Primary">
+            Parchís Online
+          </h1>
+
+          <p className="mt-2 text-slate-600">
+            Bienvenido de nuevo
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <Input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e: any) => setEmail(e.target.value)}
+          />
+
+          <Input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e: any) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <Button onClick={handleLogin}>
+          Iniciar sesión
+        </Button>
+
+        <p className="text-center text-sm">
+          ¿No tienes cuenta?{" "}
+          <span
+            onClick={() => navigate("/register")}
+            className="cursor-pointer text-pink-Primary"
+          >
+            Regístrate
+          </span>
+        </p>
+
+        <div className="flex flex-col gap-3">
+          <Button className="bg-white/40 text-slate-700">
+            Continuar con Google
+          </Button>
+
+          <Button className="bg-white/40 text-slate-700">
+            Continuar con 42
+          </Button>
+
+          <Button className="bg-white/40 text-slate-700">
+            Continuar con GitHub
+          </Button>
+        </div>
+      </div>
+    </AuthLayout>
+  );
+}
+
+export default LoginPage;
+==============================
+FILE: ./src/pages/ProfilePage.tsx
+==============================
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import MainLayout from "../layouts/MainLayout";
+
+import {
+  getMe,
+  updateProfile,
+} from "../api/user.api";
+
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import GlassPanel from "../components/ui/GlassPanel";
+
+export default function ProfilePage() {
+  const [user, setUser] = useState<any>(null);
+
+  const [editing, setEditing] =
+    useState(false);
+
+  const [username, setUsername] =
+    useState("");
+
+  const [avatarUrl, setAvatarUrl] =
+    useState("");
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  async function loadProfile() {
+    try {
+      const data = await getMe();
+
+      setUser(data);
+
+      setUsername(data.username);
+
+      setAvatarUrl(
+        data.avatar_url || ""
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleSave() {
+    try {
+      await updateProfile(
+        username,
+        avatarUrl
+      );
+
+      await loadProfile();
+
+      setEditing(false);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  if (!user) {
+    return (
+      <MainLayout>
+        <div>Cargando...</div>
+      </MainLayout>
+    );
+  }
+
+  return (
+    <MainLayout>
+      <GlassPanel className="max-w-xl mx-auto p-6">
+        <h2 className="text-2xl font-bold mb-6">
+          Mi Perfil
+        </h2>
+
+        {editing ? (
+          <>
+            <Input
+              value={username}
+              onChange={(e) =>
+                setUsername(
+                  e.target.value
+                )
+              }
+            />
+
+            <Input
+              value={avatarUrl}
+              onChange={(e) =>
+                setAvatarUrl(
+                  e.target.value
+                )
+              }
+            />
+
+            <Button
+              onClick={handleSave}
+            >
+              Guardar
+            </Button>
+          </>
+        ) : (
+          <>
+            <p>
+              <strong>
+                Usuario:
+              </strong>{" "}
+              {user.username}
+            </p>
+
+            <p>
+              <strong>Email:</strong>{" "}
+              {user.email}
+            </p>
+
+            <p>
+              <strong>
+                Fecha alta:
+              </strong>{" "}
+              {new Date(
+                user.created_at
+              ).toLocaleDateString()}
+            </p>
+
+            <Button
+              onClick={() =>
+                setEditing(true)
+              }
+            >
+              Editar Perfil
+            </Button>
+          </>
+        )}
+      </GlassPanel>
+    </MainLayout>
+  );
+}
+==============================
+FILE: ./src/pages/RegisterPage.tsx
+==============================
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import AuthLayout from "../layouts/AuthLayout";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+
+import { register } from "../api/api";
+
+function RegisterPage() {
+  const navigate = useNavigate();
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleRegister = async () => {
+    try {
+      const data = await register(username, email, password);
+
+      if (data.user) {
+        navigate("/");
+      } else {
+        alert(data.error || "Error en registro");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error de conexión");
+    }
+  };
+
+  return (
+    <AuthLayout>
+      <div className="flex flex-col gap-4">
+        <h1 className="text-3xl font-bold text-center text-pink-Primary">
+          Crear cuenta
+        </h1>
+
+        <Input
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+
+        <Input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <Input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <Button onClick={handleRegister}>
+          Registrarse
+        </Button>
+
+        <p className="text-center text-sm">
+          ¿Ya tienes cuenta?{" "}
+          <span
+            onClick={() => navigate("/")}
+            className="cursor-pointer text-pink-Primary"
+          >
+            Inicia sesión
+          </span>
+        </p>
+      </div>
+    </AuthLayout>
+  );
+}
+
+export default RegisterPage;
+==============================
+FILE: ./src/router.tsx
+==============================
+import { createBrowserRouter } from "react-router-dom";
+
+import LoginPage from "./pages/LoginPage.tsx";
+import RegisterPage from "./pages/RegisterPage";
+import LobbyPage from "./pages/LobbyPage";
+import GamePage from "./pages/GamePage";
+import ProfilePage from "./pages/ProfilePage";
+import HistoryPage from "./pages/HistoryPage";
+import FriendsPage from "./pages/FriendsPage";
+import FriendRequestsPage from "./pages/FriendRequestsPage";
+import ProtectedRoute from "./auth/ProtectedRoute";
+
+export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <LoginPage />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
+  },
+
+  {
+    path: "/lobby",
+    element: (
+      <ProtectedRoute>
+        <LobbyPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/game/:id",
+    element: (
+      <ProtectedRoute>
+        <GamePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/profile",
+    element: (
+      <ProtectedRoute>
+        <ProfilePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/history",
+    element: (
+      <ProtectedRoute>
+        <HistoryPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/friends",
+    element: (
+      <ProtectedRoute>
+        <FriendsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/friend-requests",
+    element: (
+      <ProtectedRoute>
+        <FriendRequestsPage />
+      </ProtectedRoute>
+    ),
+  },
+]);
+==============================
+FILE: ./src/services/apiClient.ts
+==============================
+import { API_URL } from "../api/config";
+
+export async function apiClient<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const token = sessionStorage.getItem("token");
+
+  const response = await fetch(
+    `${API_URL}${endpoint}`,
+    {
+      ...options,
+
+      headers: {
+        "Content-Type": "application/json",
+
+        ...(token && {
+          Authorization: `Bearer ${token}`,
+        }),
+
+        ...options.headers,
+      },
+    }
+  );
+
+  let data;
+
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error("Invalid server response");
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || "Request failed"
+    );
+  }
+
+  return data;
+}
+==============================
+FILE: ./src/socket/socket.ts
+==============================
+/*import { io } from "socket.io-client";
+import { API_URL } from "../api/config";
+
+export const socket = io(API_URL, {
+  autoConnect: false,
+});
+
+export function connectSocket(
+  token: string
+) {
+  socket.auth = { token };
+
+  if (!socket.connected) {
+    socket.connect();
+  }
+}*/
+
+import { io } from "socket.io-client";
+import { SOCKET_URL } from "../api/config";
+
+export const socket = io(SOCKET_URL, {
+  autoConnect: false,
+});
+
+export function connectSocket(token: string) {
+  socket.auth = { token };
+
+  if (!socket.connected) {
+    socket.connect();
+  }
+}
+
+export function disconnectSocket() {
+  if (socket.connected) {
+    socket.disconnect();
+  }
+}
+==============================
+FILE: ./src/store/friendsStore.ts
+==============================
+import { create } from "zustand";
+
+export interface Friend {
+  id: number;
+  username: string;
+  avatar_url?: string;
+  online?: boolean;
+}
+
+interface FriendsStore {
+  friends: Friend[];
+
+  setFriends: (
+    friends: Friend[]
+  ) => void;
+
+  updateOnlineStatus: (
+    userId: number,
+    online: boolean
+  ) => void;
+}
+
+export const useFriendsStore =
+  create<FriendsStore>((set) => ({
+    friends: [],
+
+    setFriends: (friends) =>
+      set({ friends }),
+
+    updateOnlineStatus: (
+      userId,
+      online
+    ) =>
+      set((state) => ({
+        friends: state.friends.map(
+          (friend) =>
+            friend.id === userId
+              ? {
+                  ...friend,
+                  online,
+                }
+              : friend
+        ),
+      })),
+  }));
+==============================
+FILE: ./src/store/gameStore.ts
+==============================
+/*import { create } from "zustand";
+
+export type PieceState =
+  | "base"
+  | "track"
+  | "home"
+  | "finished";
+
+export type Piece = {
+  id: string;
+  ownerId: number;
+
+  state: PieceState;
+
+  trackIndex: number;   // 0–55 (global board)
+  homeIndex: number;    // 0–5 (final lane)
+
+  isAnimating?: boolean;
+};
+
+export type Player = {
+  id: number;
+  color: "pink" | "purple" | "green" | "blue";
+  pieces: Piece[];
+};
+
+export type GameStatus = "waiting" | "playing" | "finished";
+
+export type Game = {
+  id: string;
+  players: Player[];
+
+  turn: number;
+  dice: number | null;
+
+  status: GameStatus;
+
+  lastMove?: {
+    pieceId: string;
+    from: number;
+    to: number;
+  };
+};
+
+type GameStore = {
+  game: Game | null;
+  setGame: (game: Game) => void;
+  clear: () => void;
+};
+
+export const useGameStore = create<GameStore>((set) => ({
+  game: null,
+  setGame: (game) => set({ game }),
+  clear: () => set({ game: null }),
+}));*/
+
+import { create } from "zustand";
+import type { Game } from "../types/game";
+
+type GameStore = {
+  game: Game | null;
+
+  setGame: (
+    game: Game
+  ) => void;
+
+  clear: () => void;
+};
+
+export const useGameStore =
+  create<GameStore>((set) => ({
+    game: null,
+
+    setGame: (game) =>
+      set({ game }),
+
+    clear: () =>
+      set({ game: null }),
+  }));
+==============================
+FILE: ./src/store/socketStore.ts
+==============================
+import { create } from "zustand";
+import { socket } from "../socket/socket";
+
+type SocketStore = {
+  connected: boolean;
+  connect: (token: string) => void;
+  disconnect: () => void;
+};
+
+export const useSocketStore = create<SocketStore>((set) => ({
+  connected: false,
+
+  connect: (token) => {
+    socket.auth = { token };
+    socket.connect();
+    set({ connected: true });
+  },
+
+  disconnect: () => {
+    socket.disconnect();
+    set({ connected: false });
+  },
+}));
+==============================
+FILE: ./src/styles/tokens.ts
+==============================
+export const tokens = {
+  radius: {
+    sm: "12px",
+    md: "18px",
+    lg: "28px",
+    xl: "36px",
+  },
+
+  spacing: {
+    xs: "4px",
+    sm: "8px",
+    md: "16px",
+    lg: "24px",
+    xl: "32px",
+  },
+
+  font: {
+    xs: "12px",
+    sm: "14px",
+    md: "16px",
+    lg: "20px",
+    xl: "28px",
+    xxl: "40px",
+  },
+};
+==============================
+FILE: ./src/theme/ThemeProvider.tsx
+==============================
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  THEME_STORAGE_KEY,
+  type Theme,
+} from "./theme";
+
+interface ThemeContextType {
+  theme: Theme;
+  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
+}
+
+export const ThemeContext = createContext<ThemeContextType | null>(null);
+
+interface ThemeProviderProps {
+  children: ReactNode;
+}
+
+export function ThemeProvider({
+  children,
+}: ThemeProviderProps) {
+  const [theme, setThemeState] = useState<Theme>("light");
+
+  useEffect(() => {
+    const savedTheme = sessionStorage.getItem(
+      THEME_STORAGE_KEY
+    ) as Theme | null;
+
+    if (savedTheme) {
+      setThemeState(savedTheme);
+    }
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+
+    sessionStorage.setItem(
+      THEME_STORAGE_KEY,
+      theme
+    );
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setThemeState((prev) =>
+      prev === "light" ? "dark" : "light"
+    );
+  };
+
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+  };
+
+  return (
+    <ThemeContext.Provider
+      value={{
+        theme,
+        toggleTheme,
+        setTheme,
+      }}
+    >
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export function useTheme() {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error( "useTheme must be used inside ThemeProvider" );
+  }
+  return context;
+}
+
+==============================
+FILE: ./src/theme/theme.ts
+==============================
+export type Theme = "light" | "dark";
+
+export const THEME_STORAGE_KEY = "theme";
+
+export function getSystemTheme(): Theme {
+  if (typeof window === "undefined") return "light";
+
+  const saved = sessionStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+  if (saved) return saved;
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+==============================
+FILE: ./src/theme/themes/dark.ts
+==============================
+
+==============================
+FILE: ./src/theme/themes/light.ts
+==============================
+
+==============================
+FILE: ./src/theme/useTheme.ts
+==============================
+import { useContext } from "react";
+import { ThemeContext } from "./ThemeProvider";
+
+export function useTheme() {
+  const ctx = useContext(ThemeContext);
+
+  if (!ctx) {
+    throw new Error("useTheme must be used inside ThemeProvider");
+  }
+
+  return ctx;
+}
+==============================
+FILE: ./src/types/friend.ts
+==============================
+export interface Friend {
+  id: number;
+  username: string;
+  avatar_url?: string;
+  online?: boolean;
+}
+
+export interface FriendRequest {
+  senderId: number;
+  senderUsername: string;
+  avatar_url?: string;
+}
+export interface FriendsResponse {
+  friends: Friend[];
+}
+
+export interface FriendRequestsResponse {
+  requests: FriendRequest[];
+}
+==============================
+FILE: ./src/types/game.ts
+==============================
+
+export type PieceState =
+  | "base"
+  | "track"
+  | "final"
+  | "finished";
+
+export interface PieceCoords {
+  x: number;
+  y: number;
+}
+
+export interface Piece {
+  id: string;
+
+  state: PieceState;
+
+  position: number;
+
+  coords: PieceCoords | null;
+}
+
+export interface Player {
+  id: number;
+
+  color:
+    | "pink"
+    | "purple"
+    | "green"
+    | "blue";
+
+  connected: boolean;
+
+  abandoned: boolean;
+
+  pieces: Piece[];
+}
+
+export type GameStatus =
+  | "waiting"
+  | "playing"
+  | "finished";
+
+export interface Game {
+  id: string;
+
+  status: GameStatus;
+
+  turn: number;
+
+  dice: number | null;
+
+  lastDice?: number | null;
+
+  winner?: number | null;
+
+  players: Player[];
+}
+==============================
+FILE: ./src/types/user.ts
+==============================
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  avatar_url?: string;
+  created_at: string;
+}
+==============================
+FILE: ./tailwind.config.js
+==============================
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+
+  darkMode: "class",
+
+  theme: {
+    extend: {
+      colors: {
+        bgPrimary: "var(--bg-primary)",
+        bgSecondary: "var(--bg-secondary)",
+
+        textPrimary: "var(--text-primary)",
+        textSecondary: "var(--text-secondary)",
+
+        glass: "var(--glass-bg)",
+        glassBorder: "var(--glass-border)",
+
+        pinkPrimary: "var(--pink-primary)",
+        purplePrimary: "var(--purple-primary)",
+        bluePrimary: "var(--blue-primary)",
+        greenPrimary: "var(--green-primary)",
+
+        neonPurple: "var(--neon-purple)",
+        neonBlue: "var(--neon-blue)",
+        neonPink: "var(--neon-pink)",
+      },
+
+      boxShadow: {
+        glass:
+          "0 8px 32px rgba(31, 38, 135, 0.15)",
+
+        neon:
+          "0 0 24px rgba(168, 85, 247, 0.25)",
+
+        soft:
+          "0 4px 20px rgba(15, 23, 42, 0.08)",
+      },
+
+      backdropBlur: {
+        xs: "2px",
+      },
+
+      borderRadius: {
+        glass: "28px",
+      },
+
+      transitionTimingFunction: {
+        smooth: "cubic-bezier(0.4, 0, 0.2, 1)",
+      },
+
+      fontSize: {
+        hero: ["4rem", { lineHeight: "1" }],
+        title: ["2rem", { lineHeight: "1.2" }],
+        section: ["1.5rem", { lineHeight: "1.3" }],
+        body: ["1rem", { lineHeight: "1.6" }],
+        small: ["0.875rem", { lineHeight: "1.4" }],
+      },
+
+      animation: {
+        float: "float 6s ease-in-out infinite",
+        pulseSoft: "pulseSoft 3s ease-in-out infinite",
+      },
+
+      keyframes: {
+        float: {
+          "0%, 100%": {
+            transform: "translateY(0px)",
+          },
+          "50%": {
+            transform: "translateY(-6px)",
+          },
+        },
+
+        pulseSoft: {
+          "0%, 100%": {
+            opacity: "1",
+          },
+          "50%": {
+            opacity: ".85",
+          },
+        },
+      },
+    },
+  },
+
+  plugins: [],
+};
+==============================
+FILE: ./tsconfig.json
+==============================
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
+
+==============================
+FILE: ./tsconfig.node.json
+==============================
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "module": "esnext",
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["vite.config.ts"]
+}
+
+==============================
+FILE: ./vite.config.ts
+==============================
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+
+export default defineConfig({
+  plugins: [react()],
+
+  server: {
+    host: "0.0.0.0",
+    port: 5180,
+  },
+});
+==============================
+FILE: ./tsconfig.app.json
+==============================
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src", "generatePieces.js"]
+}

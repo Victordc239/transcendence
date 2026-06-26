@@ -35,6 +35,14 @@ function canRollDice(game, userId)
 		};
 	}
 
+	if (game.finishedPlayers && game.finishedPlayers.includes(userId))
+	{
+	    return {
+	        ok: false,
+	        error: 'You have already finished'
+	    };
+	}
+
 	if (game.turn !== userId)
 	{
 		return {

@@ -8,6 +8,24 @@ const isPositionBlocked = require('../rules/isPositionBlocked');
 const isDestinationBlocked = require('../rules/isDestinationBlocked');
 const isEnemyBlockade = require('../rules/isEnemyBlockade');
 
+function countPiecesOnPosition(game, globalPosition)
+{
+    let count = 0;
+    for (const player of game.players)
+    {
+        for (const piece of player.pieces)
+        {
+            if (piece.steps < 0)
+                continue;
+            if (piece.steps >= MAIN_TRACK_SIZE)
+                continue;
+            if (getRealBoardPosition(player.color, piece.steps) === globalPosition)
+                count++;
+        }
+    }
+    return count;
+}
+
 function canMovePiece(game, playerId, pieceIndex)
 {
 	if (game.turn !== playerId)
@@ -72,6 +90,10 @@ function canMovePiece(game, playerId, pieceIndex)
 				error: 'Own blockade on exit'
 			};
 		}
+
+		const totalOnExit = countPiecesOnPosition(game, exitPosition);
+    	if (totalOnExit >= 4)
+    	    return { ok: false, error: 'Cell is full (max 4 pieces)' };
 
 		return { ok: true };
 	}
@@ -147,6 +169,15 @@ function canMovePiece(game, playerId, pieceIndex)
 			ok: false,
 			error: 'Destination blocked by blockade'
 		};
+	}
+
+	const totalPiecesOnTarget = countPiecesOnPosition(game, targetPosition);
+	if (totalPiecesOnTarget >= 4)
+	{
+	    return {
+	        ok: false,
+	        error: 'Cell is full (max 4 pieces)'
+	    };
 	}
 
 	return { ok: true };

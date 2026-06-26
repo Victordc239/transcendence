@@ -10,9 +10,9 @@
 - Solucionar que cuando hay en casa 2 fichas de otro color la ficha rosa no puede sacar (error)
 - Solucionar que en la casa rosa se ponen 3 fichas de distintos colores
 - Solucionar que cuando hay 3 fichas haciendo barrera las fichas de atrás pasan 
-- No puede haber 4 fichas en la misma casilla 
+- No puede haber 4 fichas en la misma casilla ✓
 - Hay un error con las fichas cuando llegan a meta, algunas no cuentan bien las casillas que faltan y suben a meta con un numero mayor
-- Cuando un jugador gana no puede seguir tirando el dado
+- Cuando un jugador gana no puede seguir tirando el dado ✓
 - Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera
 - Implementar un boton para salir/abandonar una partida
 - Poner foto a los jugadores 

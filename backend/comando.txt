@@ -40,3 +40,25 @@ find . -type f \
     echo
   done
 ' sh {} + > notas-frontend.txt
+
+
+
+find . \
+  -path "./node_modules" -prune -o \
+  -type f \
+  ! -name "README.md" \
+  ! -name "package.json" \
+  ! -name "package-lock.json" \
+  ! -name "notas-frontend.txt" \
+  ! -name ".gitignore" \
+  ! -name ".dockerignore" \
+  ! -path "./public/*" \
+  -exec sh -c '
+    for file do
+      echo "=============================="
+      echo "FILE: $file"
+      echo "=============================="
+      cat "$file"
+      echo
+    done
+  ' sh {} + > notas-frontend.txt

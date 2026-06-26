@@ -1,4 +1,4 @@
-- Cuando sacas 6 al inicio puedes volver a tirar
+- Cuando sacas 6 al inicio puedes volver a tirar ✓
 - Turno de los jugadores en sentido antihorario
 - Cuando comes te sumas 20 y cuando llegas a meta te sumas 10
 - cuando sacas 6 debes abrir barrera

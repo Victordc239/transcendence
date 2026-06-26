@@ -172,7 +172,8 @@ exports.rollDice = async (req, res) => {
 				if (availableMoves.length === 0)
 				{
 					game.lastDice = game.dice;
-					nextTurn(game);
+					if (game.dice !== 6)
+        				nextTurn(game);
 					setTimeout(async () => {
 						try
 						{

@@ -1,4 +1,3 @@
-
 export type PieceState =
   | "base"
   | "track"
@@ -21,7 +20,7 @@ export interface Piece {
 }
 
 export interface Player {
-  id: number
+  id: number;
 
   username: string;
 
@@ -38,6 +37,14 @@ export interface Player {
   abandoned: boolean;
 
   pieces: Piece[];
+}
+
+export interface Spectator {
+  id: number;
+
+  username: string;
+
+  avatar_url: string | null;
 }
 
 export type GameStatus =
@@ -59,4 +66,6 @@ export interface Game {
   winner?: number | null;
 
   players: Player[];
+
+  spectators?: Spectator[];
 }

@@ -53,9 +53,11 @@ function startTurnTimer(gameId)
 				.to(gameId)
 				.emit("game:turn_timeout",{ nextTurn: locked.game.turn });
 
+			const normalized = await normalizeGame(locked.game);
+
 			getIO()
 				.to(gameId)
-				.emit("game:update", normalizeGame(locked.game));
+				.emit("game:update", normalized);
 		}
 		catch (err)
 		{

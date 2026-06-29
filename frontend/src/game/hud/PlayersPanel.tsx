@@ -29,18 +29,26 @@ export default function PlayersPanel({ game }: any) {
               }
             `}
           >
-            <div
-              className="
-                w-14 h-14
+            <img
+              src={p.avatar_url || "/uploads/default-avatar.png"}
+              alt={p.username}
+              className={`
+                w-14
+                h-14
                 rounded-full
-                bg-slate-700
-                border-2 border-white/10
-              "
+                object-cover
+                border-2
+                ${
+                  isTurn
+                    ? "border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,.6)]"
+                    : "border-white/20"
+                }
+              `}
             />
 
             <div className="flex-1">
               <div className="font-semibold capitalize">
-                {p.color}
+                {p.username}
               </div>
 
               <div className="text-xs text-white/50">

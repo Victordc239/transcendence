@@ -25,7 +25,7 @@ exports.createGame = async (req, res) => {
 		if (!created)
 			return res.status(500).json({error: 'Database error creating game'});
 
-		const normalized = normalizeGame(game);
+		const normalized = await normalizeGame(game);
 
 		try
 		{
@@ -66,7 +66,7 @@ exports.getGame = async (req, res) => {
 		const game = await getGameById(req.params.id);
 		if (!game)
 			return res.status(404).json({error: 'Game not found'});
-		return res.json(normalizeGame(game));
+		return res.json(await normalizeGame(game));
 	}
 	catch (error)
 	{
@@ -82,7 +82,7 @@ exports.joinGame = async (req, res) => {
 		const userId = Number(req.user.id);
 		const gameId = String(req.params.id);
 
-		const locked =await withGameLock(gameId,
+		const locked = await withGameLock(gameId,
 			async (game) => {
 				if (!game)
 					return {error: 'Game not found'};
@@ -123,18 +123,24 @@ exports.joinGame = async (req, res) => {
 		if (locked.result?.error)
 			return res.status(400).json({error: locked.result.error});
 
+		const normalized = await normalizeGame(locked.game);
+
+		if (!normalized)
+			return res.status(500).json({error: 'Invalid game state'});
+
 		// 🔥 SOCKET UPDATE
 		try
 		{
+			const normalized = await normalizeGame(locked.game);
 			getIO()
 				.to(gameId)
-				.emit('game:update', normalizeGame(locked.game));
+				.emit('game:update', normalized);
 		}
 		catch (socketError)
 		{
 			console.error('SOCKET ERROR:', socketError);
 		}
-		return res.json(normalizeGame(locked.game));
+		return res.json(normalized);
 	}
 	catch (error)
 	{
@@ -172,8 +178,41 @@ exports.rollDice = async (req, res) => {
 				if (availableMoves.length === 0)
 				{
 					game.lastDice = game.dice;
-					if (game.dice !== 6)
-        				nextTurn(game);
+					if (game.dice === 6)
+					{
+						if (!game.consecutiveSixes)
+							game.consecutiveSixes = {};
+						if (!game.consecutiveSixes[userId])
+							game.consecutiveSixes[userId] = 0;
+
+						game.consecutiveSixes[userId]++;
+						if (game.consecutiveSixes[userId] >= 3)
+						{
+							const info = game.lastMovedPiece;
+							if (info)
+							{
+								const penaltyPlayer = game.players.find(p => p.id === info.playerId);
+								if (penaltyPlayer)
+								{
+									const penaltyPiece = penaltyPlayer.pieces[info.pieceIndex];
+									if (penaltyPiece)
+									{
+										penaltyPiece.steps = -1;
+										penaltyPiece.state = 'base';
+									}
+								}
+							}
+							game.consecutiveSixes[userId] = 0;
+							game.lastMovedPiece = null;
+						}
+					}
+					else
+					{
+						if (!game.consecutiveSixes)
+							game.consecutiveSixes = {};
+						game.consecutiveSixes[userId] = 0;
+						nextTurn(game);
+					}
 					setTimeout(async () => {
 						try
 						{
@@ -190,7 +229,7 @@ exports.rollDice = async (req, res) => {
 							{
 								getIO()
 									.to(gameId)
-									.emit('game:update', normalizeGame(refreshed));
+									.emit('game:update', await normalizeGame(refreshed));
 							}
 						}
 						catch (err)
@@ -213,7 +252,7 @@ exports.rollDice = async (req, res) => {
 			return res.status(400).json({error: locked.result.error});
 
 		// 🔥 FIX: SIEMPRE NORMALIZADO
-		const normalized = normalizeGame(locked.game);
+		const normalized = await normalizeGame(locked.game);
 		getIO()
 			.to(gameId)
 			.emit('game:update', normalized);
@@ -249,11 +288,13 @@ exports.movePiece = async (req, res) => {
 		if (!locked.result?.ok)
 			return res.status(400).json({error: locked.result?.error || 'Move failed'});
 
+		const normalized = await normalizeGame(locked.game);
+
 		getIO()
 			.to(gameId)
-			.emit('game:update', normalizeGame(locked.game));
+			.emit('game:update', normalized);
 
-		return res.json(normalizeGame(locked.game));
+		return res.json(normalized);
 	}
 	catch (error)
 	{

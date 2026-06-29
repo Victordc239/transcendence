@@ -39,7 +39,7 @@ function registerGameSocket(io, socket)
 				if (locked.result.error)
 					return socket.emit('error',{ message: locked.result.error });
 
-				const normalized = normalizeGame(locked.game);
+				const normalized = await normalizeGame(locked.game);
 				socket.emit('game:update', normalized);
 
 				io.to(String(gameId)
@@ -69,7 +69,7 @@ function registerGameSocket(io, socket)
 					return socket.emit('error', {message: 'Game not found'});
 
 				io.to(String(gameId)
-					).emit('game:update', normalizeGame(game));
+					).emit('game:update', await normalizeGame(game));
 			}
 			catch (err)
 			{
@@ -128,7 +128,7 @@ function registerGameSocket(io, socket)
 					if (!locked)
 						continue;
 
-					const normalized = normalizeGame(locked.game);
+					const normalized = await normalizeGame(locked.game);
 					io.to(String(gameId)).emit('game:update', normalized);
 
 					io.to(String(gameId)
@@ -169,7 +169,7 @@ function registerGameSocket(io, socket)
 									});
 
 							io.to(String(gameId)
-								).emit('game:update', normalizeGame(updatedGame));
+								).emit('game:update', await normalizeGame(updatedGame));
 						}
 						catch (err)
 						{

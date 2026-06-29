@@ -28,7 +28,7 @@ async function createGame(game, hostId)
 }
 
 // GET GAME:
-async function getGame(gameId) {
+/*async function getGame(gameId) {
 	try
 	{
 		const result = await pool.query(
@@ -65,6 +65,28 @@ async function getGame(gameId) {
 		console.error('getGame error:', err);
 		return null;
 	}
+}*/
+
+async function getGame(gameId) {
+  const result = await pool.query(
+    `SELECT state FROM games WHERE id = $1`,
+    [gameId]
+  );
+
+  if (result.rows.length === 0) return null;
+
+  const state = result.rows[0].state;
+
+  if (typeof state === 'string') {
+    try {
+      return JSON.parse(state);
+    } catch (e) {
+      console.error('Corrupted game state', e);
+      return null;
+    }
+  }
+
+  return state;
 }
 
 // SAVE GAME:

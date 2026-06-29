@@ -21,7 +21,11 @@ export interface Piece {
 }
 
 export interface Player {
-  id: number;
+  id: number
+
+  username: string;
+
+  avatar_url: string;
 
   color:
     | "pink"

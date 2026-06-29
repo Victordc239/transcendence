@@ -1,7 +1,7 @@
 - Cuando sacas 6 al inicio puedes volver a tirar ✓
 - Turno de los jugadores en sentido antihorario
 - Cuando comes te sumas 20 y cuando llegas a meta te sumas 10
-- cuando sacas 6 debes abrir barrera
+- Cuando sacas 6 debes abrir barrera
 - No se pueden poner 3 fichas en una casa 
 - Cuando hay barrera no pueden pasar las fichas
 - Cuando sacas 3 veces 6 la ultima ficha movida se va para casa directamente
@@ -16,7 +16,7 @@
 - Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera
 - Implementar un boton para salir/abandonar una partida
 - Poner foto a los jugadores 
-- arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una alado de otra
-- hacer el README
-- hacer paginas de Privacy Policy and Terms of Service footer
-- revisar cuantos modulos tenemos y cuantos puntos nos faltan para llegar a 21-22 puntos
+- Arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una al lado de otra
+- Hacer el README
+- Hacer paginas de Privacy Policy and Terms of Service footer
+- Revisar cuantos módulos tenemos y cuántos puntos nos faltan para llegar a 21-22 puntos

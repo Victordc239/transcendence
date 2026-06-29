@@ -4,7 +4,7 @@ const getRealBoardPosition = require('./getRealBoardPosition');
 function getDistanceToHomeEntry(color, steps)
 {
 	const current = getRealBoardPosition(color, steps);
-	const entry = HOME_ENTRIES[color];
+	const entry = HOME_ENTRIES[color] % MAIN_TRACK_SIZE;
 	if (current <= entry)
 		return entry - current;
 

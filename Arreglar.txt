@@ -15,7 +15,7 @@
 - Arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una al lado de otra
 - Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend)
 - Implementar un boton para salir/abandonar una partida
-- Cambiar el color del circulo de la foto de los jugadores según el color de las fichas y añadir la opción de cambiar foto de perfil 
+- Cambiar el color del circulo de la foto de los jugadores según el color de las fichas
 - Hacer el README
 - Hacer páginas de Privacy Policy and Terms of Service footer
 

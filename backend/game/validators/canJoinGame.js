@@ -2,8 +2,8 @@ const { GAME_STATUS } = require('../constants');
 
 function canJoinGame(game, userId)
 {
-	// 🔥 SI YA ESTÁ EN LA PARTIDA PERMITIR REJOIN
 	const alreadyInGame = game.players.find(player => player.id === userId);
+
 	if (alreadyInGame)
 	{
 		return {
@@ -12,27 +12,42 @@ function canJoinGame(game, userId)
 		};
 	}
 
-	if (game.players.length >= 4)
+	if (game.status === GAME_STATUS.FINISHED)
 	{
 		return {
 			ok: false,
-			error: 'Game full'
+			error: 'Game finished'
 		};
 	}
 
 	if (game.status === GAME_STATUS.WAITING)
-		return { ok: true };
-
-	// 🔥 SOLO bloquear si ya empezó Y no pertenece a la partida
-	if (game.status === GAME_STATUS.PLAYING || game.status === GAME_STATUS.PAUSED || game.status === GAME_STATUS.FINISHED)
 	{
+		if (game.players.length < 4)
+		{
+			return {
+				ok: true,
+				asSpectator: false
+			};
+		}
+
 		return {
-			ok: false,
-			error: 'Game already started'
+			ok: true,
+			asSpectator: true
 		};
 	}
 
-	return { ok: true };
+	if (
+		game.status === GAME_STATUS.PLAYING ||
+		game.status === GAME_STATUS.PAUSED
+	)
+	{
+		return {
+			ok: true,
+			asSpectator: true
+		};
+	}
+
+	return { ok: false };
 }
 
 module.exports = canJoinGame;

@@ -86,7 +86,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createGame, joinGame } from "../api/game.api";
 import { useAuth } from "../context/AuthContext";
-//import MainLayout from "../layouts/MainLayout";
+import LobbyChat from "../components/ui/LobbyChat";
 
 function LobbyPage() {
   const navigate = useNavigate();
@@ -109,13 +109,11 @@ function LobbyPage() {
 
       const game = await createGame(token);
 
-      console.log("GAME CREATED:", game);
-
       if (game?.id) {
         navigate(`/game/${game.id}`);
       }
     } catch (err) {
-      console.error("CREATE GAME ERROR:", err);
+      console.error(err);
       alert("Error creando partida");
     } finally {
       setLoadingCreate(false);
@@ -135,13 +133,11 @@ function LobbyPage() {
 
       const game = await joinGame(token, gameId.trim());
 
-      console.log("JOIN GAME:", game);
-
       if (game?.id) {
         navigate(`/game/${game.id}`);
       }
     } catch (err) {
-      console.error("JOIN GAME ERROR:", err);
+      console.error(err);
       alert(
         err instanceof Error
           ? err.message
@@ -154,36 +150,27 @@ function LobbyPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white">
-
-      {/* HEADER */}
       <div className="mx-auto flex max-w-7xl items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent">
             Parchís Online
           </h1>
+
           <p className="text-white/60 text-sm mt-2">
             Lobby social competitivo
           </p>
         </div>
 
         <div className="flex gap-6 items-center">
-          <button
-            onClick={() => navigate("/profile")}
-          >
+          <button onClick={() => navigate("/profile")}>
             Perfil
           </button>
 
-          <button
-            onClick={() => navigate("/friends")}
-          >
+          <button onClick={() => navigate("/friends")}>
             Amigos
           </button>
 
-          <button
-            onClick={() =>
-              navigate("/friend-requests")
-            }
-          >
+          <button onClick={() => navigate("/friend-requests")}>
             Solicitudes
           </button>
 
@@ -196,7 +183,6 @@ function LobbyPage() {
         </div>
       </div>
 
-      {/* HERO */}
       <div className="mx-auto mt-6 max-w-7xl rounded-3xl border border-white/10 bg-white/5 p-10 backdrop-blur-xl">
         <h2 className="text-5xl font-bold">
           Bienvenida al Parchís Online
@@ -206,10 +192,7 @@ function LobbyPage() {
           Sistema multiplayer con sockets, matchmaking y partidas en tiempo real.
         </p>
 
-        {/* CREATE + JOIN */}
         <div className="mt-8 flex flex-col gap-4">
-
-          {/* CREATE */}
           <button
             onClick={handleCreateGame}
             disabled={loadingCreate}
@@ -218,7 +201,6 @@ function LobbyPage() {
             {loadingCreate ? "Creando..." : "Crear partida"}
           </button>
 
-          {/* JOIN INPUT */}
           <div className="flex gap-3">
             <input
               value={gameId}
@@ -236,6 +218,10 @@ function LobbyPage() {
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl">
+        <LobbyChat />
       </div>
     </div>
   );

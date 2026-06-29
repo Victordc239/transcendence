@@ -9,56 +9,58 @@ const {DISCONNECT_TIMEOUT} = require('../game/constants');
 
 function registerGameSocket(io, socket)
 {
-	socket.on('game:join',
-		async ({ gameId }) => {
-			try
-			{
-				if (socket.rooms.has(String(gameId)))
-					return;
-				socket.join(String(gameId));
-				clearDisconnectTimer(gameId, socket.user.id);
-				console.log('SOCKET JOIN', gameId,socket.user.id);
+	socket.on('game:join', async ({ gameId }) => {
+		try
+		{
+			if (socket.rooms.has(String(gameId)))
+				return;
 
-				const locked = await withGameLock(gameId,
-					async (game) => {
+			socket.join(String(gameId));
+			clearDisconnectTimer(gameId, socket.user.id);
 
-						const player = game.players.find(p => p.id === socket.user.id);
-						console.log('SOCKET PLAYER CHECK', socket.user.id, game.players.map(p => p.id));
+			const locked = await withGameLock(gameId, async (game) => {
+				const player = game.players.find(p => p.id === socket.user.id);
 
-						if (!player)
-							return { error: 'You are not part of this game' };
-						setPlayerConnection(game, socket.user.id, true);
-						checkPausedState(game);
+				if (player)
+				{
+					setPlayerConnection(game, socket.user.id, true);
+					checkPausedState(game);
+					return { ok: true };
+				}
 
-						return { ok: true };
-					});
+				if (game.status === 'FINISHED')
+					return { error: 'Game finished' };
 
-				if (!locked)
-					return socket.emit('error',{ message: 'Game not found' });
+				if (!game.spectators)
+					game.spectators = [];
 
-				if (locked.result.error)
-					return socket.emit('error',{ message: locked.result.error });
+				const alreadySpectator = game.spectators.includes(socket.user.id);
 
-				const normalized = await normalizeGame(locked.game);
-				socket.emit('game:update', normalized);
+				if (!alreadySpectator)
+					game.spectators.push(socket.user.id);
 
-				io.to(String(gameId)
-					).emit('game:player_reconnected',
-						{
-							userId:
-								socket.user.id
-						}
-					);
+				return {
+					ok: true,
+					spectator: true
+				};
+			});
 
-				io.to(String(gameId)).emit('game:update', normalized);
-			}
-			catch (err)
-			{
-				console.error('game:join error:', err);
-				socket.emit('error',{ message: 'Socket join error'});
-			}
+			if (!locked)
+				return socket.emit('error', { message: 'Game not found' });
+
+			if (locked.result.error)
+				return socket.emit('error', { message: locked.result.error });
+
+			const normalized = await normalizeGame(locked.game);
+			socket.emit('game:update', normalized);
+			io.to(String(gameId)).emit('game:update', normalized);
 		}
-	);
+		catch (err)
+		{
+			console.error('game:join error:', err);
+			socket.emit('error',{ message: 'Socket join error'});
+		}
+	});
 
 	socket.on('game:state',
 		async ({ gameId }) => {

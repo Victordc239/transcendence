@@ -15,6 +15,7 @@ function createNewGame(hostId)
 				pieces: createPieces()
 			}
 		],
+		spectators: [],
 		turn: hostId,
 		dice: null,
 		lastDice: null,

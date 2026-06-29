@@ -1,4 +1,4 @@
-- Cuando sacas 6 al inicio puedes volver a tirar ✓
+- Cuando sacas 6 al inicio puedes volver a tirar ✅
 - Turno de los jugadores en sentido antihorario
 - Cuando comes te sumas 20 y cuando llegas a meta te sumas 10
 - Cuando sacas 6 debes abrir barrera
@@ -10,12 +10,13 @@
 - Solucionar que cuando hay en casa 2 fichas de otro color la ficha rosa no puede sacar (error)
 - Solucionar que en la casa rosa se ponen 3 fichas de distintos colores
 - Solucionar que cuando hay 3 fichas haciendo barrera las fichas de atrás pasan 
-- No puede haber 4 fichas en la misma casilla ✓
-- Hay un error con las fichas cuando llegan a meta, algunas no cuentan bien las casillas que faltan y suben a meta con un numero mayor
-- Cuando un jugador gana no puede seguir tirando el dado ✓
+- No puede haber 4 fichas en la misma casilla ✅
+- Hay un error con las fichas cuando llegan a meta, algunas no cuentan bien las casillas que faltan y suben a meta con un numero mayor ✅
+- Cuando un jugador gana no puede seguir tirando el dado ✅
 - Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera
 - Implementar un boton para salir/abandonar una partida
-- Poner foto a los jugadores 
+- Poner foto a los jugadores ✅
+- Cambiar el color del circulo de la foto de los jugadores según el color de las fichas y añadir la opción de cambiar foto de perfil 
 - Arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una al lado de otra
 - Hacer el README
 - Hacer paginas de Privacy Policy and Terms of Service footer

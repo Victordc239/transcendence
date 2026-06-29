@@ -23,8 +23,20 @@ export default function ProfilePage() {
   const [username, setUsername] =
     useState("");
 
-  const [avatarUrl, setAvatarUrl] =
-    useState("");
+  const avatars = [
+    "/uploads/default-avatar.png",
+    "/uploads/default-avatar1.png",
+    "/uploads/default-avatar2.png",
+    "/uploads/default-avatar3.png",
+    "/uploads/default-avatar4.png",
+    "/uploads/default-avatar5.png",
+    "/uploads/default-avatar6.png",
+    "/uploads/default-avatar7.png",
+    "/uploads/default-avatar8.png",
+    "/uploads/default-avatar9.png",
+  ];
+
+  const [selectedAvatar, setSelectedAvatar] = useState("");
 
   useEffect(() => {
     loadProfile();
@@ -34,13 +46,12 @@ export default function ProfilePage() {
     try {
       const data = await getMe();
 
+      setSelectedAvatar(data.avatar_url || "/uploads/default-avatar.png");
+
       setUser(data);
 
       setUsername(data.username);
 
-      setAvatarUrl(
-        data.avatar_url || ""
-      );
     } catch (err) {
       console.error(err);
     }
@@ -50,7 +61,7 @@ export default function ProfilePage() {
     try {
       await updateProfile(
         username,
-        avatarUrl
+        selectedAvatar
       );
 
       await loadProfile();
@@ -78,19 +89,27 @@ export default function ProfilePage() {
 
         {editing ? (
           <>
+            <div className="grid grid-cols-5 gap-3 my-4">
+              {avatars.map((avatar) => (
+                <img
+                  key={avatar}
+                  src={avatar}
+                  onClick={() => setSelectedAvatar(avatar)}
+                  className={`
+                    w-16 h-16 rounded-full cursor-pointer border-2 object-cover
+                    ${selectedAvatar === avatar
+                      ? "border-cyan-400 shadow-lg"
+                      : "border-white/10"
+                    }
+                  `}
+                />
+              ))}
+            </div>
+
             <Input
               value={username}
               onChange={(e) =>
                 setUsername(
-                  e.target.value
-                )
-              }
-            />
-
-            <Input
-              value={avatarUrl}
-              onChange={(e) =>
-                setAvatarUrl(
                   e.target.value
                 )
               }
@@ -104,6 +123,14 @@ export default function ProfilePage() {
           </>
         ) : (
           <>
+            <div className="flex justify-center mb-6">
+              <img
+                src={selectedAvatar || "/uploads/default-avatar.png"}
+                className="w-24 h-24 rounded-full object-cover border border-white/20"
+                alt="avatar"
+              />
+            </div>
+
             <p>
               <strong>
                 Usuario:

@@ -1,23 +1,100 @@
 - Cuando sacas 6 al inicio puedes volver a tirar ✅
-- Turno de los jugadores en sentido antihorario
-- Cuando comes te sumas 20 y cuando llegas a meta te sumas 10
-- Cuando sacas 6 debes abrir barrera
-- No se pueden poner 3 fichas en una casa 
-- Cuando hay barrera no pueden pasar las fichas
-- Cuando sacas 3 veces 6 la ultima ficha movida se va para casa directamente
-- Solucionar que en la barrera morada pasan fichas
-- Cuando sacas 5 y sacas ficha si hay dos fichas en tu casa comes una 
-- Solucionar que cuando hay en casa 2 fichas de otro color la ficha rosa no puede sacar (error)
-- Solucionar que en la casa rosa se ponen 3 fichas de distintos colores
-- Solucionar que cuando hay 3 fichas haciendo barrera las fichas de atrás pasan 
 - No puede haber 4 fichas en la misma casilla ✅
 - Hay un error con las fichas cuando llegan a meta, algunas no cuentan bien las casillas que faltan y suben a meta con un numero mayor ✅
 - Cuando un jugador gana no puede seguir tirando el dado ✅
-- Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera
-- Implementar un boton para salir/abandonar una partida
 - Poner foto a los jugadores ✅
-- Cambiar el color del circulo de la foto de los jugadores según el color de las fichas y añadir la opción de cambiar foto de perfil 
+- Turno de los jugadores en sentido antihorario
+- Cuando comes puedes mover una ficha disponible 20 posiciones (comprobar que fichas pueden moverse +20 posiciones) y cuando llegas a meta puedes mover una ficha disponible 10 posiciones (comprobar que fichas pueden moverse +10 posiciones)
+- Cuando sacas 6 debes abrir barrera (es obligatorio mover una de las fichas que estan formando barrera con otra ficha)
+- No se pueden poner 3 fichas en una misma casilla de casa (máximo 2 fichas)
+- Solucionar que cuando hay barrera no pueden pasar las fichas 
+- Cuando sacas 3 veces 6 la última ficha que has movido se va para casa directamente
+- Cuando sacas 5 con el dado y puedes sacar una ficha de casa, si hay dos fichas de distinto color en tu casa puedes comer la última ficha posicionada ahí 
+- Cuando sacas 5 con el dado y puedes sacar una ficha de casa, si hay una ficha de tu color y otra ficha de distinto color puedes comer la ficha de distinto color
+- Solucionar que cuando hay en casa 2 fichas de otro color la ficha rosa no puede sacar (error)
 - Arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una al lado de otra
+- Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend)
+- Implementar un boton para salir/abandonar una partida
+- Cambiar el color del circulo de la foto de los jugadores según el color de las fichas y añadir la opción de cambiar foto de perfil 
 - Hacer el README
-- Hacer paginas de Privacy Policy and Terms of Service footer
-- Revisar cuantos módulos tenemos y cuántos puntos nos faltan para llegar a 21-22 puntos
+- Hacer páginas de Privacy Policy and Terms of Service footer
+
+MÓDULO BONUS:
+
+IV.1 Web
+	• Major: Use a framework for both the frontend and backend.✅ +2
+		◦ Use a frontend framework (React, Vue, Angular, Svelte, etc.).
+		◦ Use a backend framework (Express, NestJS, Django, Flask, Ruby on Rails, etc.).
+		◦ Full-stack frameworks (Next.js, Nuxt.js, SvelteKit) count as both if you use both their frontend and backend capabilities.
+	• Minor: Use a frontend framework (React, Vue, Angular, Svelte, etc.).✅ +1
+	• Minor: Use a backend framework (Express, Fastify, NestJS, Django, etc.).✅ +1
+	• Major: Implement real-time features using WebSockets or similar technology.✅ +2
+		◦ Real-time updates across clients.
+		◦ Handle connection/disconnection gracefully.
+		◦ Efficient message broadcasting.
+	• Major: Allow users to interact with other users. The minimum requirements are:
+		◦ A basic chat system (send/receive messages between users).✅
+		◦ A profile system (view user information).
+		◦ A friends system (add/remove friends, see friends list).✅
+
+IV.2 Accessibility and Internationalization
+
+	• Minor: Support for multiple languages (at least 3 languages).
+		◦ Implement i18n (internationalization) system.✅
+		◦ At least 3 complete language translations.
+		◦ Language switcher in the UI.
+		◦ All user-facing text must be translatable.
+
+IV.3 User Management
+	• Major: Standard user management and authentication.
+		◦ Users can update their profile information.✅
+		◦ Users can upload an avatar (with a default avatar if none provided).
+		◦ Users can add other users as friends and see their online status.✅
+		◦ Users have a profile page displaying their information.
+
+IV.5 Cybersecurity
+	• Major: Implement WAF/ModSecurity (hardened) + HashiCorp Vault for secrets:
+		◦ Configure strict ModSecurity/WAF.
+		◦ Manage secrets in Vault (API keys, credentials, environment variables), encrypted and isolated.
+
+IV.6 Gaming and user experience
+	• Major: Implement a complete web-based game where users can play against each other.✅ +2
+		◦ The game can be real-time multiplayer (e.g., Pong, Chess, Tic-Tac-Toe, Card games, etc.).
+		◦ Players must be able to play live matches.
+		◦ The game must have clear rules and win/loss conditions.
+		◦ The game can be 2D or 3D.
+	• Major: Remote players — Enable two players on separate computers to play the same game in real-time.
+		◦ Handle network latency and disconnections gracefully.✅
+		◦ Provide a smooth user experience for remote gameplay.✅
+		◦ Implement reconnection logic.
+	• Major: Multiplayer game (more than two players).✅ +2
+		◦ Support for three or more players simultaneously.
+		◦ Fair gameplay mechanics for all participants.
+		◦ Proper synchronization across all clients.
+	• Minor: Advanced chat features (enhances the basic chat from "User interaction" module).
+		◦ Ability to block users from messaging you.
+		◦ Invite users to play games directly from chat.
+		◦ Game/tournament notifications in chat.
+		◦ Access to user profiles from chat interface.
+		◦ Chat history persistence.
+		◦ Typing indicators and read receipts.
+	• Minor: Implement spectator mode for games.✅ +1
+		◦ Allow users to watch ongoing games.
+		◦ Real-time updates for spectators.
+		◦ Optional: spectator chat.
+
+IV.10 Modules of choice
+	• Major: Implement a custom module that is not listed above.
+		◦ The module must be substantial and demonstrate technical complexity.
+		◦ You must provide proper justification in your README.md explaining:
+			∗ Why you chose this module.
+			∗ What technical challenges it addresses.
+			∗ How it adds value to your project.
+			∗ Why it deserves Major module status (2 points).
+		◦ Taking shortcuts or implementing trivial features will result in rejection.
+		◦ Be creative and think outside the box.
+		◦ The module should be relevant to your project context.
+	• Minor: Same as the major module but smaller in scope and less complex.
+		◦ Must still demonstrate technical skill and creativity.
+		◦ Should add meaningful value to your project.
+		◦ Requires justification in README.md (similar to Major, but for 1 point)

@@ -4,17 +4,20 @@ const HOME_STRETCH_MAP = require('./homeStretchMap');
 const { MAIN_TRACK_SIZE } = require('../constants');
 const pool = require('../../db');
 
-//function normalizeGame(game)
 async function normalizeGame(game)
 {
 	if (!game || !Array.isArray(game.players))
 	{
 		console.error('Invalid game passed to normalizeGame:', game);
-		return (null);
+		return null;
 	}
 
-	/*if (!game)
-		return game;*/
+	const spectatorIds = game.spectators || [];
+
+	const allUserIds = [
+		...game.players.map(player => player.id),
+		...spectatorIds
+	];
 
 	const usersResult = await pool.query(
 		`
@@ -25,7 +28,7 @@ async function normalizeGame(game)
 		FROM users
 		WHERE id = ANY($1)
 		`,
-		[game.players.map(player => player.id)]
+		[allUserIds]
 	);
 
 	const users = new Map(
@@ -46,8 +49,18 @@ async function normalizeGame(game)
 		winner: game.winner,
 		createdAt: game.createdAt,
 		updatedAt: game.updatedAt,
-		players: game.players.map(player => {
 
+		spectators: spectatorIds.map(id => {
+			const user = users.get(id);
+
+			return {
+				id,
+				username: user?.username ?? "Unknown",
+				avatar_url: user?.avatar_url ?? null
+			};
+		}),
+
+		players: game.players.map(player => {
 			const user = users.get(player.id);
 
 			return {
@@ -57,13 +70,13 @@ async function normalizeGame(game)
 				color: player.color,
 				connected: player.connected,
 				abandoned: player.abandoned,
-				pieces: player.pieces.map(piece => {
 
+				pieces: player.pieces.map(piece => {
 					let position = -1;
 					let coords = null;
+
 					if (piece.steps >= 0)
 					{
-						// recorrido exterior
 						if (piece.steps < MAIN_TRACK_SIZE)
 						{
 							position = getRealBoardPosition(player.color, piece.steps);
@@ -71,7 +84,6 @@ async function normalizeGame(game)
 						}
 						else
 						{
-							// pasillo final
 							const stretchIndex = piece.steps - MAIN_TRACK_SIZE;
 							coords = HOME_STRETCH_MAP[player.color]?.[stretchIndex] || null;
 							position = piece.steps;

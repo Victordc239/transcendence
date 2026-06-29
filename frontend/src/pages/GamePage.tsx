@@ -8,53 +8,20 @@ import GameScene from "../game/layout/GameScene";
 
 export default function GamePage() {
   const { id } = useParams();
-  const { token } = useAuth();
-
-  /*if (id && token)
-  {
-    useGameRealtime(
-      id,
-      token
-    );
-  }*/
-
+  const { token, user } = useAuth();
   const game = useGameStore((s) => s.game);
 
   const [rolling, setRolling] = useState(false);
 
   useGameRealtime(id ?? "", token ?? "");
 
-  /*useEffect(() => {
-    if (!token || !id) return;
-
-    const init = async () => {
-      await fetch(`${API_URL}/games/${id}/join`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      connectSocket(token);
-
-      socket.emit("game:join", { gameId: id });
-
-      socket.on("game:update", (state) => {
-        setGame(state);
-      });
-
-      //socket.emit("game:state", { gameId: id });
-    };
-
-    init();
-
-    return () => {
-      socket.off("game:update");
-    };
-  }, [id, token]);*/
+  const isSpectator = !!(
+    game &&
+    !game.players.some((p: any) => p.id === user?.id)
+  );
 
   const handleRoll = async () => {
-    if (!token || !id) return;
+    if (!token || !id || isSpectator) return;
 
     setRolling(true);
 
@@ -66,7 +33,7 @@ export default function GamePage() {
   };
 
   const handleMove = async (index: number) => {
-    if (!token || !id) return;
+    if (!token || !id || isSpectator) return;
     await movePiece(token, id, index);
   };
 
@@ -76,22 +43,24 @@ export default function GamePage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex">
-      
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center relative">
+        {isSpectator && (
+          <div className="absolute top-4 left-4 z-50 bg-yellow-500/20 text-yellow-300 px-4 py-2 rounded-xl">
+            👁 Spectator Mode
+          </div>
+        )}
+
         <GameScene
           game={game}
           onPieceClick={(playerId: number, pieceIndex: number) => {
+            if (isSpectator) return;
+
             const currentPlayer = game.players.find(
               (p: any) => p.id === game.turn
             );
 
-            if (!currentPlayer) {
-              return;
-            }
-
-            if (currentPlayer.id !== playerId) {
-              return;
-            }
+            if (!currentPlayer) return;
+            if (currentPlayer.id !== playerId) return;
 
             handleMove(pieceIndex);
           }}
@@ -99,13 +68,16 @@ export default function GamePage() {
       </div>
 
       <div className="w-80 p-4 space-y-4 bg-black/20 backdrop-blur-xl">
-        
         <h1 className="text-xl font-bold">
           Game {game.id}
         </h1>
 
         <div className="text-white/60">
           Turn: {game.turn}
+        </div>
+
+        <div className="text-white/60">
+          Spectators: {game.spectators?.length || 0}
         </div>
 
         <div
@@ -117,12 +89,16 @@ export default function GamePage() {
         </div>
 
         <button
+          disabled={isSpectator}
           onClick={handleRoll}
-          className="w-full py-2 bg-purple-500 rounded-xl"
+          className={`w-full py-2 rounded-xl ${
+            isSpectator
+              ? "bg-gray-500 cursor-not-allowed"
+              : "bg-purple-500"
+          }`}
         >
-          Roll Dice
+          {isSpectator ? "Spectating" : "Roll Dice"}
         </button>
-
       </div>
     </div>
   );

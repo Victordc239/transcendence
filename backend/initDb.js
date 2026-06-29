@@ -48,6 +48,26 @@ async function initDB()
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
 		`);
+
+		//lobby chat:
+		await pool.query(`
+			CREATE TABLE IF NOT EXISTS lobby_messages (
+			id SERIAL PRIMARY KEY,
+			user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+			message TEXT NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)
+		`);
+
+		//usuarios bloqueados en el chat:
+		await pool.query(`
+			CREATE TABLE IF NOT EXISTS blocked_users (
+			id SERIAL PRIMARY KEY,
+			blocker_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+			blocked_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+			UNIQUE(blocker_id, blocked_id)
+			)
+		`);
 		console.log('✅ Tablas listas');
 	}
 	catch (err)

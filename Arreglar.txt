@@ -3,7 +3,7 @@
 - Hay un error con las fichas cuando llegan a meta, algunas no cuentan bien las casillas que faltan y suben a meta con un numero mayor ✅
 - Cuando un jugador gana no puede seguir tirando el dado ✅
 - Poner foto a los jugadores ✅
-- Turno de los jugadores en sentido antihorario
+- Turno de los jugadores en sentido antihorario ✅
 - Cuando comes puedes mover una ficha disponible 20 posiciones (comprobar que fichas pueden moverse +20 posiciones) y cuando llegas a meta puedes mover una ficha disponible 10 posiciones (comprobar que fichas pueden moverse +10 posiciones)
 - Cuando sacas 6 debes abrir barrera (es obligatorio mover una de las fichas que estan formando barrera con otra ficha)
 - No se pueden poner 3 fichas en una misma casilla de casa (máximo 2 fichas)

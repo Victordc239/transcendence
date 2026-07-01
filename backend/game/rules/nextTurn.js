@@ -1,15 +1,22 @@
+const { TURN_ORDER } = require('../constants');
+
 function nextTurn(game)
 {
-	const currentIndex = game.players.findIndex(player => player.id === game.turn);
-	let nextIndex = currentIndex;
+	const currentPlayer = game.players.find(player => player.id === game.turn);
+	let colorIndex = TURN_ORDER.indexOf(currentPlayer.color);
+	let nextPlayer;
+
 	do
 	{
-		nextIndex = (nextIndex + 1) % game.players.length;
+		colorIndex = (colorIndex + 1) % TURN_ORDER.length;
+		nextPlayer = game.players.find(player => player.color === TURN_ORDER[colorIndex]);
 	}
 	while (
-		game.finishedPlayers.includes(game.players[nextIndex].id)
+		!nextPlayer
+		|| game.finishedPlayers.includes(nextPlayer.id)
 	);
-	game.turn = game.players[nextIndex].id;
+
+	game.turn = nextPlayer.id;
 }
 
 module.exports = nextTurn;

@@ -144,6 +144,13 @@ export async function getMe(token: string) {
   return res.json();
 }
 ==============================
+FILE: ./src/api/config.ts
+==============================
+const HOST = window.location.host;
+
+export const API_URL = `https://${HOST}/api`;
+export const SOCKET_URL = `https://${HOST}`;
+==============================
 FILE: ./src/api/friends.api.ts
 ==============================
 import { http } from "./http";
@@ -414,13 +421,6 @@ export function searchUsers(query: string) {
 }
 
 ==============================
-FILE: ./src/api/config.ts
-==============================
-const HOST = window.location.host;
-
-export const API_URL = `https://${HOST}/api`;
-export const SOCKET_URL = `https://${HOST}`;
-==============================
 FILE: ./src/auth/ProtectedRoute.tsx
 ==============================
 import type { ReactNode } from "react";
@@ -565,6 +565,122 @@ function Input({
 }
 
 export default Input;
+==============================
+FILE: ./src/components/ui/LobbyChat.tsx
+==============================
+import { useEffect, useState } from "react";
+import { socket } from "../../socket/socket";
+
+type LobbyMessage = {
+  id: number;
+  message: string;
+  created_at: string;
+  user: {
+    id: number;
+    username: string;
+    avatar_url?: string;
+  };
+};
+
+export default function LobbyChat() {
+  const [messages, setMessages] = useState<LobbyMessage[]>([]);
+  const [message, setMessage] = useState("");
+  const [typing, setTyping] = useState(false);
+
+  useEffect(() => {
+    socket.emit("lobby:getHistory");
+
+    const onHistory = (history: LobbyMessage[]) => {
+      setMessages(history);
+    };
+
+    const onMessage = (msg: LobbyMessage) => {
+      setMessages((prev) => [...prev, msg]);
+    };
+
+    const onTyping = () => {
+      setTyping(true);
+
+      setTimeout(() => {
+        setTyping(false);
+      }, 1000);
+    };
+
+    socket.on("lobby:history", onHistory);
+    socket.on("lobby:message", onMessage);
+    socket.on("lobby:typing", onTyping);
+
+    return () => {
+      socket.off("lobby:history", onHistory);
+      socket.off("lobby:message", onMessage);
+      socket.off("lobby:typing", onTyping);
+    };
+  }, []);
+
+  const send = () => {
+    if (!message.trim()) return;
+
+    socket.emit("lobby:send", {
+      message,
+    });
+
+    setMessage("");
+  };
+
+  return (
+    <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <h2 className="text-2xl font-bold mb-4">Lobby Chat</h2>
+
+      <div className="h-96 overflow-y-auto rounded-xl bg-black/20 p-4 space-y-3">
+        {messages.map((m) => (
+          <div key={m.id}>
+            <span className="font-bold text-purple-300">
+              {m.user.username}
+            </span>
+
+            <span className="mx-2 text-white/50">:</span>
+
+            <span>{m.message}</span>
+          </div>
+        ))}
+      </div>
+
+      {typing && (
+        <p className="text-xs text-white/50 mt-2">
+          Someone is typing...
+        </p>
+      )}
+
+      <div className="mt-4 flex gap-3">
+        <input
+          value={message}
+          onChange={(e) => {
+            setMessage(e.target.value);
+            socket.emit("lobby:typing");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              send();
+            }
+          }}
+          className="flex-1 rounded-xl bg-white/10 px-4 py-3"
+          placeholder="Write a message..."
+        />
+
+        <button
+          onClick={send}
+          className="rounded-xl bg-purple-500 px-6 py-3"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}
+==============================
+FILE: ./src/components/ui/PlayerAvatar.tsx
+==============================
+
 ==============================
 FILE: ./src/components/ui/ThemeToggle.tsx
 ==============================
@@ -1381,6 +1497,48 @@ export default function ChatPanel({
   );
 }
 ==============================
+FILE: ./src/game/hud/DicePanel.tsx
+==============================
+import { motion } from "framer-motion";
+
+export default function DicePanel({ game }: any) {
+  const dice = game.dice || 1;
+
+  return (
+    <div className="
+      glass-panel
+      rounded-3xl
+      p-6
+      flex
+      flex-col
+      items-center
+      justify-center
+      gap-4
+    ">
+      <motion.img
+        key={dice}
+        src={`/ui/dice-${dice}.svg`}
+        className="w-28 h-28 object-contain"
+        initial={{
+          rotate: -180,
+          scale: 0.4,
+          opacity: 0
+        }}
+        animate={{
+          rotate: 0,
+          scale: 1,
+          opacity: 1
+        }}
+        transition={{
+          duration: .6,
+          type: "spring"
+        }}
+      />
+
+    </div>
+  );
+}
+==============================
 FILE: ./src/game/hud/GameHUD.tsx
 ==============================
 import PlayersPanel from "./PlayersPanel";
@@ -1446,18 +1604,26 @@ export default function PlayersPanel({ game }: any) {
               }
             `}
           >
-            <div
-              className="
-                w-14 h-14
+            <img
+              src={p.avatar_url || "/uploads/default-avatar.png"}
+              alt={p.username}
+              className={`
+                w-14
+                h-14
                 rounded-full
-                bg-slate-700
-                border-2 border-white/10
-              "
+                object-cover
+                border-2
+                ${
+                  isTurn
+                    ? "border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,.6)]"
+                    : "border-white/20"
+                }
+              `}
             />
 
             <div className="flex-1">
               <div className="font-semibold capitalize">
-                {p.color}
+                {p.username}
               </div>
 
               <div className="text-xs text-white/50">
@@ -1471,48 +1637,6 @@ export default function PlayersPanel({ game }: any) {
           </div>
         );
       })}
-    </div>
-  );
-}
-==============================
-FILE: ./src/game/hud/DicePanel.tsx
-==============================
-import { motion } from "framer-motion";
-
-export default function DicePanel({ game }: any) {
-  const dice = game.dice || 1;
-
-  return (
-    <div className="
-      glass-panel
-      rounded-3xl
-      p-6
-      flex
-      flex-col
-      items-center
-      justify-center
-      gap-4
-    ">
-      <motion.img
-        key={dice}
-        src={`/ui/dice-${dice}.svg`}
-        className="w-28 h-28 object-contain"
-        initial={{
-          rotate: -180,
-          scale: 0.4,
-          opacity: 0
-        }}
-        animate={{
-          rotate: 0,
-          scale: 1,
-          opacity: 1
-        }}
-        transition={{
-          duration: .6,
-          type: "spring"
-        }}
-      />
-
     </div>
   );
 }
@@ -1655,97 +1779,6 @@ export default function AnimatedPiece({
         color={player.color}
       />
     </svg>
-  );
-}
-==============================
-FILE: ./src/game/pieces/Piece.tsx
-==============================
-/*import { motion } from "framer-motion";
-
-const glowClass: Record<string, string> = {
-  pink: "neon-pink",
-  blue: "neon-blue",
-  green: "neon-green",
-  purple: "neon-purple",
-};
-
-export default function Piece({
-  x,
-  y,
-  color,
-}: any) {
-  return (
-    <motion.img
-      src={`/pieces/${color}-piece.png`}
-      className={`
-        absolute
-        w-[42px]
-        h-[42px]
-        -translate-x-1/2
-        -translate-y-1/2
-        pointer-events-auto
-        ${glowClass[color]}
-      `}
-      animate={{
-        left: x,
-        top: y,
-      }}
-      transition={{
-        type: "spring",
-        damping: 14,
-        stiffness: 120,
-      }}
-      whileHover={{
-        scale: 1.08,
-      }}
-    />
-  );
-}*/
-
-type PieceProps = {
-  x: number;
-  y: number;
-  color: string;
-  onClick?: () => void;
-};
-
-export default function Piece({
-  x,
-  y,
-  color,
-  onClick,
-}: PieceProps) {
-  return (
-    <g
-      onClick={onClick}
-      style={{
-        transform: `translate(${x}px, ${y}px)`,
-        cursor: "pointer",
-      }}
-    >
-      <circle
-        r={28}
-        fill={color}
-        opacity={0.18}
-        style={{
-          filter: `blur(10px)`,
-        }}
-      />
-
-      <circle
-        r={18}
-        fill={color}
-        style={{
-          filter: `drop-shadow(0 0 18px ${color})`,
-        }}
-      />
-
-      <circle
-        cy={-5}
-        r={7}
-        fill="rgba(255,255,255,.65)"
-      />
-    </g>
   );
 }
 ==============================
@@ -1986,6 +2019,97 @@ export default function GamePieces({
         </g>
       ))}
     </svg>
+  );
+}
+==============================
+FILE: ./src/game/pieces/Piece.tsx
+==============================
+/*import { motion } from "framer-motion";
+
+const glowClass: Record<string, string> = {
+  pink: "neon-pink",
+  blue: "neon-blue",
+  green: "neon-green",
+  purple: "neon-purple",
+};
+
+export default function Piece({
+  x,
+  y,
+  color,
+}: any) {
+  return (
+    <motion.img
+      src={`/pieces/${color}-piece.png`}
+      className={`
+        absolute
+        w-[42px]
+        h-[42px]
+        -translate-x-1/2
+        -translate-y-1/2
+        pointer-events-auto
+        ${glowClass[color]}
+      `}
+      animate={{
+        left: x,
+        top: y,
+      }}
+      transition={{
+        type: "spring",
+        damping: 14,
+        stiffness: 120,
+      }}
+      whileHover={{
+        scale: 1.08,
+      }}
+    />
+  );
+}*/
+
+type PieceProps = {
+  x: number;
+  y: number;
+  color: string;
+  onClick?: () => void;
+};
+
+export default function Piece({
+  x,
+  y,
+  color,
+  onClick,
+}: PieceProps) {
+  return (
+    <g
+      onClick={onClick}
+      style={{
+        transform: `translate(${x}px, ${y}px)`,
+        cursor: "pointer",
+      }}
+    >
+      <circle
+        r={28}
+        fill={color}
+        opacity={0.18}
+        style={{
+          filter: `blur(10px)`,
+        }}
+      />
+
+      <circle
+        r={18}
+        fill={color}
+        style={{
+          filter: `drop-shadow(0 0 18px ${color})`,
+        }}
+      />
+
+      <circle
+        cy={-5}
+        r={7}
+        fill="rgba(255,255,255,.65)"
+      />
+    </g>
   );
 }
 ==============================
@@ -2848,53 +2972,20 @@ import GameScene from "../game/layout/GameScene";
 
 export default function GamePage() {
   const { id } = useParams();
-  const { token } = useAuth();
-
-  /*if (id && token)
-  {
-    useGameRealtime(
-      id,
-      token
-    );
-  }*/
-
+  const { token, user } = useAuth();
   const game = useGameStore((s) => s.game);
 
   const [rolling, setRolling] = useState(false);
 
   useGameRealtime(id ?? "", token ?? "");
 
-  /*useEffect(() => {
-    if (!token || !id) return;
-
-    const init = async () => {
-      await fetch(`${API_URL}/games/${id}/join`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      connectSocket(token);
-
-      socket.emit("game:join", { gameId: id });
-
-      socket.on("game:update", (state) => {
-        setGame(state);
-      });
-
-      //socket.emit("game:state", { gameId: id });
-    };
-
-    init();
-
-    return () => {
-      socket.off("game:update");
-    };
-  }, [id, token]);*/
+  const isSpectator = !!(
+    game &&
+    !game.players.some((p: any) => p.id === user?.id)
+  );
 
   const handleRoll = async () => {
-    if (!token || !id) return;
+    if (!token || !id || isSpectator) return;
 
     setRolling(true);
 
@@ -2906,7 +2997,7 @@ export default function GamePage() {
   };
 
   const handleMove = async (index: number) => {
-    if (!token || !id) return;
+    if (!token || !id || isSpectator) return;
     await movePiece(token, id, index);
   };
 
@@ -2916,22 +3007,24 @@ export default function GamePage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex">
-      
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center relative">
+        {isSpectator && (
+          <div className="absolute top-4 left-4 z-50 bg-yellow-500/20 text-yellow-300 px-4 py-2 rounded-xl">
+            👁 Spectator Mode
+          </div>
+        )}
+
         <GameScene
           game={game}
           onPieceClick={(playerId: number, pieceIndex: number) => {
+            if (isSpectator) return;
+
             const currentPlayer = game.players.find(
               (p: any) => p.id === game.turn
             );
 
-            if (!currentPlayer) {
-              return;
-            }
-
-            if (currentPlayer.id !== playerId) {
-              return;
-            }
+            if (!currentPlayer) return;
+            if (currentPlayer.id !== playerId) return;
 
             handleMove(pieceIndex);
           }}
@@ -2939,13 +3032,16 @@ export default function GamePage() {
       </div>
 
       <div className="w-80 p-4 space-y-4 bg-black/20 backdrop-blur-xl">
-        
         <h1 className="text-xl font-bold">
           Game {game.id}
         </h1>
 
         <div className="text-white/60">
           Turn: {game.turn}
+        </div>
+
+        <div className="text-white/60">
+          Spectators: {game.spectators?.length || 0}
         </div>
 
         <div
@@ -2957,17 +3053,20 @@ export default function GamePage() {
         </div>
 
         <button
+          disabled={isSpectator}
           onClick={handleRoll}
-          className="w-full py-2 bg-purple-500 rounded-xl"
+          className={`w-full py-2 rounded-xl ${
+            isSpectator
+              ? "bg-gray-500 cursor-not-allowed"
+              : "bg-purple-500"
+          }`}
         >
-          Roll Dice
+          {isSpectator ? "Spectating" : "Roll Dice"}
         </button>
-
       </div>
     </div>
   );
 }
-
 ==============================
 FILE: ./src/pages/HistoryPage.tsx
 ==============================
@@ -3071,7 +3170,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createGame, joinGame } from "../api/game.api";
 import { useAuth } from "../context/AuthContext";
-//import MainLayout from "../layouts/MainLayout";
+import LobbyChat from "../components/ui/LobbyChat";
 
 function LobbyPage() {
   const navigate = useNavigate();
@@ -3094,13 +3193,11 @@ function LobbyPage() {
 
       const game = await createGame(token);
 
-      console.log("GAME CREATED:", game);
-
       if (game?.id) {
         navigate(`/game/${game.id}`);
       }
     } catch (err) {
-      console.error("CREATE GAME ERROR:", err);
+      console.error(err);
       alert("Error creando partida");
     } finally {
       setLoadingCreate(false);
@@ -3120,13 +3217,11 @@ function LobbyPage() {
 
       const game = await joinGame(token, gameId.trim());
 
-      console.log("JOIN GAME:", game);
-
       if (game?.id) {
         navigate(`/game/${game.id}`);
       }
     } catch (err) {
-      console.error("JOIN GAME ERROR:", err);
+      console.error(err);
       alert(
         err instanceof Error
           ? err.message
@@ -3139,36 +3234,27 @@ function LobbyPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white">
-
-      {/* HEADER */}
       <div className="mx-auto flex max-w-7xl items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent">
             Parchís Online
           </h1>
+
           <p className="text-white/60 text-sm mt-2">
             Lobby social competitivo
           </p>
         </div>
 
         <div className="flex gap-6 items-center">
-          <button
-            onClick={() => navigate("/profile")}
-          >
+          <button onClick={() => navigate("/profile")}>
             Perfil
           </button>
 
-          <button
-            onClick={() => navigate("/friends")}
-          >
+          <button onClick={() => navigate("/friends")}>
             Amigos
           </button>
 
-          <button
-            onClick={() =>
-              navigate("/friend-requests")
-            }
-          >
+          <button onClick={() => navigate("/friend-requests")}>
             Solicitudes
           </button>
 
@@ -3181,7 +3267,6 @@ function LobbyPage() {
         </div>
       </div>
 
-      {/* HERO */}
       <div className="mx-auto mt-6 max-w-7xl rounded-3xl border border-white/10 bg-white/5 p-10 backdrop-blur-xl">
         <h2 className="text-5xl font-bold">
           Bienvenida al Parchís Online
@@ -3191,10 +3276,7 @@ function LobbyPage() {
           Sistema multiplayer con sockets, matchmaking y partidas en tiempo real.
         </p>
 
-        {/* CREATE + JOIN */}
         <div className="mt-8 flex flex-col gap-4">
-
-          {/* CREATE */}
           <button
             onClick={handleCreateGame}
             disabled={loadingCreate}
@@ -3203,7 +3285,6 @@ function LobbyPage() {
             {loadingCreate ? "Creando..." : "Crear partida"}
           </button>
 
-          {/* JOIN INPUT */}
           <div className="flex gap-3">
             <input
               value={gameId}
@@ -3222,12 +3303,15 @@ function LobbyPage() {
           </div>
         </div>
       </div>
+
+      <div className="mx-auto max-w-7xl">
+        <LobbyChat />
+      </div>
     </div>
   );
 }
 
 export default LobbyPage;
-
 ==============================
 FILE: ./src/pages/LoginPage.tsx
 ==============================
@@ -3452,8 +3536,20 @@ export default function ProfilePage() {
   const [username, setUsername] =
     useState("");
 
-  const [avatarUrl, setAvatarUrl] =
-    useState("");
+  const avatars = [
+    "/uploads/default-avatar.png",
+    "/uploads/default-avatar1.png",
+    "/uploads/default-avatar2.png",
+    "/uploads/default-avatar3.png",
+    "/uploads/default-avatar4.png",
+    "/uploads/default-avatar5.png",
+    "/uploads/default-avatar6.png",
+    "/uploads/default-avatar7.png",
+    "/uploads/default-avatar8.png",
+    "/uploads/default-avatar9.png",
+  ];
+
+  const [selectedAvatar, setSelectedAvatar] = useState("");
 
   useEffect(() => {
     loadProfile();
@@ -3463,13 +3559,12 @@ export default function ProfilePage() {
     try {
       const data = await getMe();
 
+      setSelectedAvatar(data.avatar_url || "/uploads/default-avatar.png");
+
       setUser(data);
 
       setUsername(data.username);
 
-      setAvatarUrl(
-        data.avatar_url || ""
-      );
     } catch (err) {
       console.error(err);
     }
@@ -3479,7 +3574,7 @@ export default function ProfilePage() {
     try {
       await updateProfile(
         username,
-        avatarUrl
+        selectedAvatar
       );
 
       await loadProfile();
@@ -3507,19 +3602,27 @@ export default function ProfilePage() {
 
         {editing ? (
           <>
+            <div className="grid grid-cols-5 gap-3 my-4">
+              {avatars.map((avatar) => (
+                <img
+                  key={avatar}
+                  src={avatar}
+                  onClick={() => setSelectedAvatar(avatar)}
+                  className={`
+                    w-16 h-16 rounded-full cursor-pointer border-2 object-cover
+                    ${selectedAvatar === avatar
+                      ? "border-cyan-400 shadow-lg"
+                      : "border-white/10"
+                    }
+                  `}
+                />
+              ))}
+            </div>
+
             <Input
               value={username}
               onChange={(e) =>
                 setUsername(
-                  e.target.value
-                )
-              }
-            />
-
-            <Input
-              value={avatarUrl}
-              onChange={(e) =>
-                setAvatarUrl(
                   e.target.value
                 )
               }
@@ -3533,6 +3636,14 @@ export default function ProfilePage() {
           </>
         ) : (
           <>
+            <div className="flex justify-center mb-6">
+              <img
+                src={selectedAvatar || "/uploads/default-avatar.png"}
+                className="w-24 h-24 rounded-full object-cover border border-white/20"
+                alt="avatar"
+              />
+            </div>
+
             <p>
               <strong>
                 Usuario:
@@ -4143,7 +4254,6 @@ export interface FriendRequestsResponse {
 ==============================
 FILE: ./src/types/game.ts
 ==============================
-
 export type PieceState =
   | "base"
   | "track"
@@ -4168,6 +4278,10 @@ export interface Piece {
 export interface Player {
   id: number;
 
+  username: string;
+
+  avatar_url: string;
+
   color:
     | "pink"
     | "purple"
@@ -4179,6 +4293,14 @@ export interface Player {
   abandoned: boolean;
 
   pieces: Piece[];
+}
+
+export interface Spectator {
+  id: number;
+
+  username: string;
+
+  avatar_url: string | null;
 }
 
 export type GameStatus =
@@ -4200,6 +4322,8 @@ export interface Game {
   winner?: number | null;
 
   players: Player[];
+
+  spectators?: Spectator[];
 }
 ==============================
 FILE: ./src/types/user.ts
@@ -4306,6 +4430,34 @@ export default {
   plugins: [],
 };
 ==============================
+FILE: ./tsconfig.app.json
+==============================
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src", "generatePieces.js"]
+}
+==============================
 FILE: ./tsconfig.json
 ==============================
 {
@@ -4360,31 +4512,3 @@ export default defineConfig({
     port: 5180,
   },
 });
-==============================
-FILE: ./tsconfig.app.json
-==============================
-{
-  "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "target": "es2023",
-    "lib": ["ES2023", "DOM"],
-    "module": "esnext",
-    "types": ["vite/client"],
-    "skipLibCheck": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "jsx": "react-jsx",
-
-    /* Linting */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
-  },
-  "include": ["src", "generatePieces.js"]
-}

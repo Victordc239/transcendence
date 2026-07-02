@@ -779,6 +779,7 @@ module.exports = pool;
 FILE: ./game/constants.js
 ==============================
 const COLORS = [ "pink", "purple", "green", "blue"];
+const TURN_ORDER = ["pink", "blue", "purple", "green"]; // sentido antihorario
 const GAME_STATUS = { WAITING: "waiting", PLAYING: "playing", PAUSED: "paused", FINISHED: "finished" };
 const MAIN_TRACK_SIZE = 68;
 const FINAL_STRETCH_SIZE = 7;
@@ -791,7 +792,7 @@ const DISCONNECT_TIMEOUT = 120000;
 const TURN_TIMEOUT = 60000;
 const HOME_ENTRIES = { pink: 34, purple: 68, green: 17, blue: 51 };
 
-module.exports = { COLORS, GAME_STATUS, MAIN_TRACK_SIZE, FINAL_STRETCH_SIZE, FINAL_POSITION, FINAL_STRETCH_START, BASE_POSITION, START_POSITIONS, SAFE_CELLS, HOME_ENTRIES, DISCONNECT_TIMEOUT, TURN_TIMEOUT };
+module.exports = { COLORS, TURN_ORDER, GAME_STATUS, MAIN_TRACK_SIZE, FINAL_STRETCH_SIZE, FINAL_POSITION, FINAL_STRETCH_START, BASE_POSITION, START_POSITIONS, SAFE_CELLS, HOME_ENTRIES, DISCONNECT_TIMEOUT, TURN_TIMEOUT };
 ==============================
 FILE: ./game/disconnectTimers.js
 ==============================
@@ -1478,18 +1479,25 @@ module.exports = isPositionBlocked;
 ==============================
 FILE: ./game/rules/nextTurn.js
 ==============================
+const { TURN_ORDER } = require('../constants');
+
 function nextTurn(game)
 {
-	const currentIndex = game.players.findIndex(player => player.id === game.turn);
-	let nextIndex = currentIndex;
+	const currentPlayer = game.players.find(player => player.id === game.turn);
+	let colorIndex = TURN_ORDER.indexOf(currentPlayer.color);
+	let nextPlayer;
+
 	do
 	{
-		nextIndex = (nextIndex + 1) % game.players.length;
+		colorIndex = (colorIndex + 1) % TURN_ORDER.length;
+		nextPlayer = game.players.find(player => player.color === TURN_ORDER[colorIndex]);
 	}
 	while (
-		game.finishedPlayers.includes(game.players[nextIndex].id)
+		!nextPlayer
+		|| game.finishedPlayers.includes(nextPlayer.id)
 	);
-	game.turn = game.players[nextIndex].id;
+
+	game.turn = nextPlayer.id;
 }
 
 module.exports = nextTurn;

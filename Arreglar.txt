@@ -72,7 +72,7 @@ IV.6 Gaming and user experience
 		◦ Fair gameplay mechanics for all participants.
 		◦ Proper synchronization across all clients.
 	• Minor: Advanced chat features (enhances the basic chat from "User interaction" module).
-		◦ Ability to block users from messaging you.
+		◦ Ability to block users from messaging you.✅
 		◦ Invite users to play games directly from chat.
 		◦ Game/tournament notifications in chat.
 		◦ Access to user profiles from chat interface.

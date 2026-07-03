@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { socket } from "../../socket/socket";
+import { useAuth } from "../../context/AuthContext";
 
 type LobbyMessage = {
   id: number;
@@ -13,9 +14,13 @@ type LobbyMessage = {
 };
 
 export default function LobbyChat() {
+  const { user } = useAuth();
+
   const [messages, setMessages] = useState<LobbyMessage[]>([]);
   const [message, setMessage] = useState("");
   const [typing, setTyping] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   useEffect(() => {
     socket.emit("lobby:getHistory");
@@ -25,36 +30,70 @@ export default function LobbyChat() {
     };
 
     const onMessage = (msg: LobbyMessage) => {
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => {
+        if (blockedUsers.includes(msg.user.id)) return prev;
+        return [...prev, msg];
+      });
     };
 
     const onTyping = () => {
       setTyping(true);
+      setTimeout(() => setTyping(false), 1000);
+    };
 
-      setTimeout(() => {
-        setTyping(false);
-      }, 1000);
+    const onBlocked = ({ blockedUserId }: { blockedUserId: number }) => {
+      setBlockedUsers((prev) => [...prev, blockedUserId]);
+
+      setMessages((prev) =>
+        prev.filter((m) => m.user.id !== blockedUserId)
+      );
+    };
+
+    const onInvite = (invite: any) => {
+      if (!user) return;
+      if (invite.targetUserId !== user.id) return;
+
+      alert(`${invite.from} invited you to play!`);
     };
 
     socket.on("lobby:history", onHistory);
     socket.on("lobby:message", onMessage);
     socket.on("lobby:typing", onTyping);
+    socket.on("lobby:userBlocked", onBlocked);
+    socket.on("lobby:invite", onInvite);
 
     return () => {
       socket.off("lobby:history", onHistory);
       socket.off("lobby:message", onMessage);
       socket.off("lobby:typing", onTyping);
+      socket.off("lobby:userBlocked", onBlocked);
+      socket.off("lobby:invite", onInvite);
     };
-  }, []);
+  }, [blockedUsers, user]);
 
   const send = () => {
     if (!message.trim()) return;
 
-    socket.emit("lobby:send", {
-      message,
-    });
-
+    socket.emit("lobby:send", { message });
     setMessage("");
+  };
+
+  const blockUser = (userId: number) => {
+    socket.emit("lobby:blockUser", {
+      blockedUserId: userId,
+    });
+    setSelectedUserId(null);
+  };
+
+  const inviteUser = (userId: number) => {
+    socket.emit("lobby:invite", {
+      targetUserId: userId,
+    });
+    setSelectedUserId(null);
+  };
+
+  const viewProfile = (userId: number) => {
+    window.location.href = `/profile/${userId}`;
   };
 
   return (
@@ -63,14 +102,47 @@ export default function LobbyChat() {
 
       <div className="h-96 overflow-y-auto rounded-xl bg-black/20 p-4 space-y-3">
         {messages.map((m) => (
-          <div key={m.id}>
-            <span className="font-bold text-purple-300">
-              {m.user.username}
-            </span>
+          <div key={m.id} className="relative">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() =>
+                  setSelectedUserId(
+                    selectedUserId === m.user.id ? null : m.user.id
+                  )
+                }
+                className="font-bold text-purple-300"
+              >
+                {m.user.username}
+              </button>
 
-            <span className="mx-2 text-white/50">:</span>
+              <span className="text-white/50">:</span>
+              <span>{m.message}</span>
+            </div>
 
-            <span>{m.message}</span>
+            {selectedUserId === m.user.id && (
+              <div className="mt-2 ml-4 bg-black rounded p-2 flex gap-2">
+                <button
+                  onClick={() => viewProfile(m.user.id)}
+                  className="bg-blue-500 px-2 py-1 rounded text-xs"
+                >
+                  Profile
+                </button>
+
+                <button
+                  onClick={() => inviteUser(m.user.id)}
+                  className="bg-green-500 px-2 py-1 rounded text-xs"
+                >
+                  Invite
+                </button>
+
+                <button
+                  onClick={() => blockUser(m.user.id)}
+                  className="bg-red-500 px-2 py-1 rounded text-xs"
+                >
+                  Block
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -89,9 +161,7 @@ export default function LobbyChat() {
             socket.emit("lobby:typing");
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              send();
-            }
+            if (e.key === "Enter") send();
           }}
           className="flex-1 rounded-xl bg-white/10 px-4 py-3"
           placeholder="Write a message..."

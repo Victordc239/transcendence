@@ -13,9 +13,14 @@ function registerLobbySocket(io, socket) {
 					u.avatar_url
 				FROM lobby_messages m
 				JOIN users u ON u.id = m.user_id
+				WHERE u.id NOT IN (
+					SELECT blocked_id
+					FROM blocked_users
+					WHERE blocker_id = $1
+				)
 				ORDER BY m.created_at ASC
 				LIMIT 50
-			`);
+			`, [socket.user.id]);
 
 			const messages = result.rows.map(row => ({
 				id: row.id,
@@ -65,6 +70,34 @@ function registerLobbySocket(io, socket) {
 		} catch (err) {
 			console.error('LOBBY SEND ERROR:', err);
 		}
+	});
+
+	socket.on('lobby:blockUser', async ({ blockedUserId }) => {
+		try {
+			if (!blockedUserId) return;
+			if (blockedUserId === socket.user.id) return;
+
+			await pool.query(
+				`
+				INSERT INTO blocked_users (blocker_id, blocked_id)
+				VALUES ($1, $2)
+				ON CONFLICT (blocker_id, blocked_id) DO NOTHING
+				`,
+				[socket.user.id, blockedUserId]
+			);
+
+			socket.emit('lobby:userBlocked', { blockedUserId });
+		} catch (err) {
+			console.error('BLOCK USER ERROR:', err);
+		}
+	});
+
+	socket.on('lobby:invite', ({ targetUserId }) => {
+		socket.broadcast.emit('lobby:invite', {
+			from: socket.user.username,
+			fromId: socket.user.id,
+			targetUserId
+		});
 	});
 
 	socket.on('lobby:typing', () => {

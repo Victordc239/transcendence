@@ -17,7 +17,7 @@
 - Implementar un boton para salir/abandonar una partida
 - Cambiar el color del circulo de la foto de los jugadores según el color de las fichas
 - Hacer el README
-- Hacer páginas de Privacy Policy and Terms of Service footer
+- Hacer páginas de Privacy Policy and Terms of Service footer ✅
 
 MÓDULO BONUS:
 

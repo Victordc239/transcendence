@@ -171,20 +171,6 @@ function LoginPage() {
             Regístrate
           </span>
         </p>
-
-        <div className="flex flex-col gap-3">
-          <Button className="bg-white/40 text-slate-700">
-            Continuar con Google
-          </Button>
-
-          <Button className="bg-white/40 text-slate-700">
-            Continuar con 42
-          </Button>
-
-          <Button className="bg-white/40 text-slate-700">
-            Continuar con GitHub
-          </Button>
-        </div>
       </div>
     </AuthLayout>
   );

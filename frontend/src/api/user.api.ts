@@ -28,3 +28,7 @@ export function searchUsers(query: string) {
     }[];
   }>(`/users/search?q=${encodeURIComponent(query)}`);
 }
+
+export function getUserById(id: number | string) {
+  return http<User>(`/users/${id}`);
+}

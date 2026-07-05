@@ -7,12 +7,15 @@ import MainLayout from "../layouts/MainLayout";
 
 import {
   getMe,
+  getUserById,
   updateProfile,
 } from "../api/user.api";
 
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import GlassPanel from "../components/ui/GlassPanel";
+import { useParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
@@ -35,16 +38,22 @@ export default function ProfilePage() {
     "/uploads/default-avatar8.png",
     "/uploads/default-avatar9.png",
   ];
-
+  const { id } = useParams();
+  const { user: me } = useAuth();
   const [selectedAvatar, setSelectedAvatar] = useState("");
+  const isMyProfile = Number(id) === me?.id;
 
   useEffect(() => {
     loadProfile();
-  }, []);
+  }, [id, me]);
 
   async function loadProfile() {
     try {
-      const data = await getMe();
+      let data;
+      if (isMyProfile)
+          data = await getMe();
+      else
+          data = await getUserById(id!);
 
       setSelectedAvatar(data.avatar_url || "/uploads/default-avatar.png");
 
@@ -59,6 +68,8 @@ export default function ProfilePage() {
 
   async function handleSave() {
     try {
+      if (!isMyProfile)
+        return;
       await updateProfile(
         username,
         selectedAvatar
@@ -84,10 +95,12 @@ export default function ProfilePage() {
     <MainLayout>
       <GlassPanel className="max-w-xl mx-auto p-6">
         <h2 className="text-2xl font-bold mb-6">
-          Mi Perfil
+          {isMyProfile
+          ? "Mi Perfil"
+          : `Perfil de ${user.username}`}
         </h2>
 
-        {editing ? (
+        {editing && isMyProfile ? (
           <>
             <div className="grid grid-cols-5 gap-3 my-4">
               {avatars.map((avatar) => (
@@ -138,10 +151,11 @@ export default function ProfilePage() {
               {user.username}
             </p>
 
-            <p>
-              <strong>Email:</strong>{" "}
-              {user.email}
-            </p>
+            {isMyProfile && (
+                <p>
+                    <strong>Email:</strong> {user.email}
+                </p>
+            )}
 
             <p>
               <strong>
@@ -152,13 +166,13 @@ export default function ProfilePage() {
               ).toLocaleDateString()}
             </p>
 
-            <Button
-              onClick={() =>
-                setEditing(true)
-              }
-            >
-              Editar Perfil
-            </Button>
+            {isMyProfile && (
+                <Button
+                    onClick={() => setEditing(true)}
+                >
+                    Editar Perfil
+                </Button>
+            )}
           </>
         )}
       </GlassPanel>

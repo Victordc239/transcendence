@@ -90,7 +90,7 @@ import LobbyChat from "../components/ui/LobbyChat";
 
 function LobbyPage() {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token , user } = useAuth();
 
   const [gameId, setGameId] = useState("");
   const [loadingCreate, setLoadingCreate] = useState(false);
@@ -162,7 +162,13 @@ function LobbyPage() {
         </div>
 
         <div className="flex gap-6 items-center">
-          <button onClick={() => navigate("/profile")}>
+          <button
+            onClick={() => {
+              if (user) {
+                navigate(`/profile/${user.id}`);
+              }
+            }}
+          >
             Perfil
           </button>
 

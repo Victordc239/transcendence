@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import ThemeToggle from "../components/ui/ThemeToggle";
+import Footer from "../components/ui/Footer";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -13,7 +14,9 @@ function AuthLayout({
     <div
       className="
         relative
-        flex min-h-screen
+        flex
+        min-h-screen
+        flex-col
         items-center
         justify-center
         overflow-hidden
@@ -40,6 +43,10 @@ function AuthLayout({
         "
       >
         {children}
+      </div>
+
+      <div className="w-full max-w-4xl">
+        <Footer />
       </div>
     </div>
   );

@@ -48,8 +48,7 @@ export default function MainLayout({
   const navigate =
     useNavigate();
 
-  const { logout } =
-    useAuth();
+  const { logout, user } = useAuth();
 
   function handleLogout() {
     logout();
@@ -71,7 +70,7 @@ export default function MainLayout({
                 Lobby
               </Link>
 
-              <Link to="/profile">
+              <Link to={`/profile/${user?.id}`}>
                 Perfil
               </Link>
 

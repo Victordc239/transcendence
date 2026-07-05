@@ -32,10 +32,10 @@ IV.1 Web
 		◦ Real-time updates across clients.
 		◦ Handle connection/disconnection gracefully.
 		◦ Efficient message broadcasting.
-	• Major: Allow users to interact with other users. The minimum requirements are:
-		◦ A basic chat system (send/receive messages between users).✅
+	• Major: Allow users to interact with other users. The minimum requirements are: ✅ +2
+		◦ A basic chat system (send/receive messages between users).
 		◦ A profile system (view user information).
-		◦ A friends system (add/remove friends, see friends list).✅
+		◦ A friends system (add/remove friends, see friends list).
 
 IV.2 Accessibility and Internationalization
 
@@ -46,10 +46,10 @@ IV.2 Accessibility and Internationalization
 		◦ All user-facing text must be translatable.
 
 IV.3 User Management
-	• Major: Standard user management and authentication.
-		◦ Users can update their profile information.✅
+	• Major: Standard user management and authentication. ✅ +2
+		◦ Users can update their profile information.
 		◦ Users can upload an avatar (with a default avatar if none provided).
-		◦ Users can add other users as friends and see their online status.✅
+		◦ Users can add other users as friends and see their online status.
 		◦ Users have a profile page displaying their information.
 
 IV.5 Cybersecurity
@@ -75,7 +75,7 @@ IV.6 Gaming and user experience
 		◦ Ability to block users from messaging you.✅
 		◦ Invite users to play games directly from chat.
 		◦ Game/tournament notifications in chat.
-		◦ Access to user profiles from chat interface.
+		◦ Access to user profiles from chat interface.✅
 		◦ Chat history persistence.
 		◦ Typing indicators and read receipts.
 	• Minor: Implement spectator mode for games.✅ +1

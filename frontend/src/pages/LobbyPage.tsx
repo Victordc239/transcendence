@@ -87,6 +87,7 @@ import { useNavigate } from "react-router-dom";
 import { createGame, joinGame } from "../api/game.api";
 import { useAuth } from "../context/AuthContext";
 import LobbyChat from "../components/ui/LobbyChat";
+import Footer from "../components/ui/Footer";
 
 function LobbyPage() {
   const navigate = useNavigate();
@@ -155,10 +156,6 @@ function LobbyPage() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent">
             Parchís Online
           </h1>
-
-          <p className="text-white/60 text-sm mt-2">
-            Lobby social competitivo
-          </p>
         </div>
 
         <div className="flex gap-6 items-center">
@@ -228,6 +225,10 @@ function LobbyPage() {
 
       <div className="mx-auto max-w-7xl">
         <LobbyChat />
+      </div>
+
+      <div className="mx-auto w-full max-w-7xl px-6">
+        <Footer />
       </div>
     </div>
   );

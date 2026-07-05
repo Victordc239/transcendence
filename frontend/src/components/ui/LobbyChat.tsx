@@ -20,7 +20,7 @@ export default function LobbyChat() {
   const [message, setMessage] = useState("");
   const [typing, setTyping] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
 
   useEffect(() => {
     socket.emit("lobby:getHistory");
@@ -82,17 +82,20 @@ export default function LobbyChat() {
     socket.emit("lobby:blockUser", {
       blockedUserId: userId,
     });
-    setSelectedUserId(null);
+
+    setSelectedMessageId(null);
   };
 
   const inviteUser = (userId: number) => {
     socket.emit("lobby:invite", {
       targetUserId: userId,
     });
-    setSelectedUserId(null);
+
+    setSelectedMessageId(null);
   };
 
   const viewProfile = (userId: number) => {
+    setSelectedMessageId(null);
     window.location.href = `/profile/${userId}`;
   };
 
@@ -103,11 +106,23 @@ export default function LobbyChat() {
       <div className="h-96 overflow-y-auto rounded-xl bg-black/20 p-4 space-y-3">
         {messages.map((m) => (
           <div key={m.id} className="relative">
-            <div className="flex items-center gap-2">
+
+            <div className="flex items-center gap-3">
+              <img
+                src={m.user.avatar_url || "/uploads/default-avatar.png"}
+                alt={m.user.username}
+                className="w-10 h-10 rounded-full object-cover border border-white/20 cursor-pointer"
+                onClick={() =>
+                  setSelectedMessageId(
+                    selectedMessageId === m.id ? null : m.id
+                  )
+                }
+              />
+
               <button
                 onClick={() =>
-                  setSelectedUserId(
-                    selectedUserId === m.user.id ? null : m.user.id
+                  setSelectedMessageId(
+                    selectedMessageId === m.id ? null : m.id
                   )
                 }
                 className="font-bold text-purple-300"
@@ -116,10 +131,13 @@ export default function LobbyChat() {
               </button>
 
               <span className="text-white/50">:</span>
-              <span>{m.message}</span>
+
+              <span className="break-words">
+                {m.message}
+              </span>
             </div>
 
-            {selectedUserId === m.user.id && (
+            {selectedMessageId === m.id && (
               <div className="mt-2 ml-4 bg-black rounded p-2 flex gap-2">
                 <button
                   onClick={() => viewProfile(m.user.id)}

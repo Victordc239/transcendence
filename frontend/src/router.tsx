@@ -1,6 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 
-import LoginPage from "./pages/LoginPage.tsx";
+import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import LobbyPage from "./pages/LobbyPage";
 import GamePage from "./pages/GamePage";
@@ -8,6 +8,8 @@ import ProfilePage from "./pages/ProfilePage";
 import HistoryPage from "./pages/HistoryPage";
 import FriendsPage from "./pages/FriendsPage";
 import FriendRequestsPage from "./pages/FriendRequestsPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
 import ProtectedRoute from "./auth/ProtectedRoute";
 
 export const router = createBrowserRouter([
@@ -19,7 +21,14 @@ export const router = createBrowserRouter([
     path: "/register",
     element: <RegisterPage />,
   },
-
+  {
+    path: "/privacy",
+    element: <PrivacyPolicyPage />,
+  },
+  {
+    path: "/terms",
+    element: <TermsOfServicePage />,
+  },
   {
     path: "/lobby",
     element: (

@@ -24,12 +24,21 @@ exports.createGame = async (req, res) => {
 			return res.status(500).json({ error: 'Database error creating game' });
 
 		const normalized = await normalizeGame(game);
+		const { sendLobbySystemMessage } = require("../sockets/lobbySocket");
+		const pool = require("../db");
 
 		try {
 			getIO().emit('game:created', normalized);
 		} catch (socketError) {
 			console.error('SOCKET ERROR:', socketError);
 		}
+
+		const userResult = await pool.query(
+			"SELECT username FROM users WHERE id = $1",
+			[userId]
+		);
+
+		sendLobbySystemMessage(`🎮 ${userResult.rows[0].username} has created a new game (ID: ${normalized.id})`);
 
 		return res.status(201).json({
 			id: normalized.id,
@@ -251,6 +260,10 @@ exports.movePiece = async (req, res) => {
 			return res.status(400).json({ error: locked.result?.error || 'Move failed' });
 
 		const normalized = await normalizeGame(locked.game);
+		if (normalized.status === "finished")
+		{
+			sendLobbySystemMessage(`🏁 Game ${normalized.id} has finished.`);
+		}
 
 		getIO()
 			.to(gameId)

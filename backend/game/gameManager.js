@@ -138,4 +138,26 @@ async function deleteGame(gameId)
 	}
 }
 
-module.exports = {createGame, getGame, saveGame, deleteGame};
+async function getGameByPlayer(userId)
+{
+	const result = await pool.query(`
+		SELECT id, state
+		FROM games
+		WHERE status != 'FINISHED'
+	`);
+
+	for (const row of result.rows)
+	{
+		const game =
+			typeof row.state === "string"
+				? JSON.parse(row.state)
+				: row.state;
+
+		if (game.players.some(p => p.id === userId))
+			return game;
+	}
+
+	return null;
+}
+
+module.exports = {createGame, getGame, saveGame, deleteGame, getGameByPlayer};

@@ -28,4 +28,9 @@ function getOnlineUsers()
 	return Array.from(onlineUsers.keys());
 }
 
-module.exports = {addUserSocket, removeUserSocket, isUserOnline, getOnlineUsers};
+function getUserSockets(userId)
+{
+	return onlineUsers.get(userId) || new Set();
+}
+
+module.exports = {addUserSocket, removeUserSocket, isUserOnline, getOnlineUsers, getUserSockets};

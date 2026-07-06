@@ -4,7 +4,7 @@ const { createNewGame } = require('../game/gameState');
 const { rollDice, addPlayerToGame, executeMove } = require('../game/gameEngine');
 const canJoinGame = require('../game/validators/canJoinGame');
 const canRollDice = require('../game/validators/canRollDice');
-const { getGame: getGameById, createGame: createGameInDB } = require('../game/gameManager');
+const { getGame: getGameById, createGame: createGameInDB, getGameByPlayer } = require('../game/gameManager');
 const withGameLock = require('../game/withGameLock');
 const { getIO } = require('../socket');
 const normalizeGame = require('../game/utils/normalizeGame');
@@ -17,6 +17,13 @@ exports.createGame = async (req, res) => {
 		if (!userId)
 			return res.status(401).json({ error: 'Invalid user' });
 
+		const existing = await getGameByPlayer(userId);
+		if (existing)
+		{
+			return res.status(400).json({
+				error: "Already in a game"
+			});
+		}
 		const game = createNewGame(userId);
 
 		const created = await createGameInDB(game, userId);
@@ -72,6 +79,13 @@ exports.joinGame = async (req, res) => {
 	try {
 		const userId = Number(req.user.id);
 		const gameId = String(req.params.id);
+		const existing = await getGameByPlayer(userId);
+		if (existing)
+		{
+			return res.status(400).json({
+				error: "Already in a game"
+			});
+		}
 
 		const locked = await withGameLock(gameId, async (game) => {
 			if (!game)

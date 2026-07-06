@@ -52,10 +52,12 @@ async function initDB()
 		//lobby chat:
 		await pool.query(`
 			CREATE TABLE IF NOT EXISTS lobby_messages (
-			id SERIAL PRIMARY KEY,
-			user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-			message TEXT NOT NULL,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				id SERIAL PRIMARY KEY,
+				user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+				message TEXT NOT NULL,
+				expected_reads INTEGER NOT NULL DEFAULT 0,
+				read_by INTEGER[] NOT NULL DEFAULT '{}',
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			)
 		`);
 

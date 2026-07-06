@@ -78,7 +78,7 @@ IV.6 Gaming and user experience
 		◦ Game/tournament notifications in chat. ✅
 		◦ Access to user profiles from chat interface.✅
 		◦ Chat history persistence.
-		◦ Typing indicators ✅ and read receipts.
+		◦ Typing indicators and read receipts. ✅
 	• Minor: Implement spectator mode for games.✅ +1
 		◦ Allow users to watch ongoing games.
 		◦ Real-time updates for spectators.

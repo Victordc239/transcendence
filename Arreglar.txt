@@ -2,7 +2,6 @@
 - No puede haber 4 fichas en la misma casilla ✅
 - Hay un error con las fichas cuando llegan a meta, algunas no cuentan bien las casillas que faltan y suben a meta con un numero mayor ✅
 - Cuando un jugador gana no puede seguir tirando el dado ✅
-- Poner foto a los jugadores ✅
 - Turno de los jugadores en sentido antihorario ✅
 - Cuando comes puedes mover una ficha disponible 20 posiciones (comprobar que fichas pueden moverse +20 posiciones) y cuando llegas a meta puedes mover una ficha disponible 10 posiciones (comprobar que fichas pueden moverse +10 posiciones)
 - Cuando sacas 6 debes abrir barrera (es obligatorio mover una de las fichas que estan formando barrera con otra ficha)
@@ -15,6 +14,8 @@
 - Arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una al lado de otra
 - Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend)
 - Implementar un boton para salir/abandonar una partida
+- Implementar en el frontend lo de ganar
+- Añadir en el frontend una imagen de +10 (cuando gana una ficha) y +20 (cuando comen fichas)
 - Cambiar el color del circulo de la foto de los jugadores según el color de las fichas
 - Hacer el README
 - Hacer páginas de Privacy Policy and Terms of Service footer ✅

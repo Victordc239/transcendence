@@ -131,9 +131,8 @@ export default function GamePieces({
   const groups = new Map<string, PieceRenderData[]>();
 
   for (const piece of piecesToRender) {
-    // IMPORTANTE:
-    // agrupamos SOLO por coordenada para detectar
-    // fichas de distintos colores en la misma safe cell.
+
+    // Agrupamos SOLO por coordenada para detectar fichas de distintos colores en la misma safe cell
     const key = `${Math.round(piece.x)}-${Math.round(piece.y)}`;
 
     if (!groups.has(key)) {

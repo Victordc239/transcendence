@@ -1,4 +1,15 @@
-export default function PlayersPanel({ game }: any) {
+import type { Game } from "../../types/game";
+
+export default function PlayersPanel({ game }: { game: Game }) {
+//export default function PlayersPanel({ game }: any) {
+
+  const avatarBorderColors = {
+    pink: "border-pink-500",
+    purple: "border-purple-500",
+    blue: "border-blue-500",
+    green: "border-green-500",
+  };
+
   return (
     <div className="
       rounded-3xl
@@ -9,7 +20,7 @@ export default function PlayersPanel({ game }: any) {
     ">
       <h3 className="font-bold mb-2">Players</h3>
 
-      {game.players.map((p: any) => {
+      {game.players.map((p) => {
         const isTurn = game.turn === p.id;
 
         return (
@@ -40,8 +51,8 @@ export default function PlayersPanel({ game }: any) {
                 border-2
                 ${
                   isTurn
-                    ? "border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,.6)]"
-                    : "border-white/20"
+                    ? `${avatarBorderColors[p.color]} shadow-[0_0_15px_rgba(255,255,255,.25)]`
+                    : avatarBorderColors[p.color]
                 }
               `}
             />

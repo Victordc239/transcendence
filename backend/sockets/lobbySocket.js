@@ -1,6 +1,12 @@
-const pool = require('../db');
+const pool = require("../db");
 const { getIO } = require("../socket");
-const { getOnlineUsers } = require("./presence");
+const {getOnlineUsers, getUserSockets, isUserOnline} = require("./presence");
+const {getGameByPlayer, createGame: createGameInDB} = require("../game/gameManager");
+const {createInvitation, getInvitation, deleteInvitation, removeInvitationsByUser} = require("./invitations");
+const crypto = require("crypto");
+const { createNewGame } = require("../game/gameState");
+const { addPlayerToGame } = require("../game/gameEngine");
+const normalizeGame = require("../game/utils/normalizeGame");
 
 function sendLobbySystemMessage(message) {
 	getIO().emit("lobby:system", {
@@ -157,12 +163,146 @@ function registerLobbySocket(io, socket) {
 		}
 	});
 
-	socket.on('lobby:invite', ({ targetUserId }) => {
-		socket.broadcast.emit('lobby:invite', {
-			from: socket.user.username,
-			fromId: socket.user.id,
-			targetUserId
-		});
+	socket.on("lobby:invite", async ({ targetUserId }) => {
+		try
+		{
+			if (!targetUserId)
+				return;
+
+			if (targetUserId === socket.user.id)
+				return;
+
+			// El invitador no puede estar jugando
+			const senderGame = await getGameByPlayer(socket.user.id);
+
+			if (senderGame)
+			{
+				socket.emit("invite:error", {
+					message: "You are already in a game."
+				});
+				return;
+			}
+
+			// El invitado no puede estar jugando
+			const targetGame = await getGameByPlayer(targetUserId);
+
+			if (targetGame)
+			{
+				socket.emit("invite:error", {
+					message: "That player is already in a game."
+				});
+				return;
+			}
+
+			// Debe estar conectado
+			if (!isUserOnline(targetUserId))
+			{
+				socket.emit("invite:error", {
+					message: "That player is offline."
+				});
+				return;
+			}
+
+			const invite = {
+				id: crypto.randomUUID(),
+				from: socket.user.id,
+				fromUsername: socket.user.username,
+				to: targetUserId,
+				createdAt: Date.now()
+			};
+
+			createInvitation(invite);
+
+			const sockets = getUserSockets(targetUserId);
+
+			for (const socketId of sockets)
+			{
+				io.to(socketId).emit("invite:received", invite);
+			}
+
+			socket.emit("invite:sent", {
+				inviteId: invite.id
+			});
+		}
+		catch (err)
+		{
+			console.error(err);
+		}
+	});
+
+	socket.on("invite:accept", async ({ inviteId }) => {
+		try
+		{
+			const invite = getInvitation(inviteId);
+			if (!invite)
+			{
+				socket.emit("invite:expired");
+				return;
+			}
+			// Solo puede aceptar el destinatario
+			if (invite.to !== socket.user.id)
+				return;
+			// Comprobar que ninguno está ya en una partida
+			const senderGame = await getGameByPlayer(invite.from);
+			const receiverGame = await getGameByPlayer(invite.to);
+			if (senderGame || receiverGame)
+			{
+				deleteInvitation(invite.id);
+				socket.emit("invite:expired");
+				return;
+			}
+			// Crear partida nueva
+			const game = createNewGame(invite.from);
+			addPlayerToGame(game, invite.to);
+			await createGameInDB(game, invite.from);
+			// Eliminar todas las invitaciones pendientes
+			removeInvitationsByUser(invite.from);
+			removeInvitationsByUser(invite.to);
+			// Avisar al creador
+			const senderSockets = getUserSockets(invite.from);
+			for (const socketId of senderSockets)
+			{
+				io.to(socketId).emit("game:start", {
+					gameId: game.id,
+				});
+			}
+			// Avisar al invitado
+			const receiverSockets = getUserSockets(invite.to);
+			for (const socketId of receiverSockets)
+			{
+				io.to(socketId).emit("game:start", {
+					gameId: game.id,
+				});
+			}
+		}
+		catch (err)
+		{
+			console.error("invite:accept error:", err);
+		}
+	});
+
+	socket.on("invite:reject", ({ inviteId }) => {
+		try
+		{
+			const invite = getInvitation(inviteId);
+			if (!invite)
+				return;
+			// Solo el destinatario puede rechazarla
+			if (invite.to !== socket.user.id)
+				return;
+			deleteInvitation(inviteId);
+			const senderSockets = getUserSockets(invite.from);
+			for (const socketId of senderSockets)
+			{
+				io.to(socketId).emit("invite:rejected", {
+					fromUserId: invite.to,
+				});
+			}
+		}
+		catch (err)
+		{
+			console.error("invite:reject error:", err);
+		}
 	});
 
 	socket.on('lobby:typing', () => {

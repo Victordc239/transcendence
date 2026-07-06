@@ -3,14 +3,15 @@ import { socket } from "../../socket/socket";
 import { useAuth } from "../../context/AuthContext";
 
 type LobbyMessage = {
-  id: number;
-  message: string;
-  created_at: string;
-  user: {
-    id: number;
-    username: string;
-    avatar_url?: string;
-  };
+	id: number;
+	message: string;
+	created_at: string;
+	user?: {
+		id: number;
+		username: string;
+		avatar_url?: string;
+	};
+	system?: boolean;
 };
 
 export default function LobbyChat() {
@@ -31,9 +32,20 @@ export default function LobbyChat() {
 
     const onMessage = (msg: LobbyMessage) => {
       setMessages((prev) => {
-        if (blockedUsers.includes(msg.user.id)) return prev;
+        if (msg.user && blockedUsers.includes(msg.user.id))
+          return prev;
         return [...prev, msg];
       });
+    };
+
+    const onSystem = (msg: LobbyMessage) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          ...msg,
+          system: true,
+        },
+      ]);
     };
 
     const onTyping = () => {
@@ -45,7 +57,7 @@ export default function LobbyChat() {
       setBlockedUsers((prev) => [...prev, blockedUserId]);
 
       setMessages((prev) =>
-        prev.filter((m) => m.user.id !== blockedUserId)
+        prev.filter((m) => !m.user || m.user.id !== blockedUserId)
       );
     };
 
@@ -58,6 +70,7 @@ export default function LobbyChat() {
 
     socket.on("lobby:history", onHistory);
     socket.on("lobby:message", onMessage);
+    socket.on("lobby:system", onSystem);
     socket.on("lobby:typing", onTyping);
     socket.on("lobby:userBlocked", onBlocked);
     socket.on("lobby:invite", onInvite);
@@ -65,6 +78,7 @@ export default function LobbyChat() {
     return () => {
       socket.off("lobby:history", onHistory);
       socket.off("lobby:message", onMessage);
+      socket.off("lobby:system", onSystem);
       socket.off("lobby:typing", onTyping);
       socket.off("lobby:userBlocked", onBlocked);
       socket.off("lobby:invite", onInvite);
@@ -104,65 +118,80 @@ export default function LobbyChat() {
       <h2 className="text-2xl font-bold mb-4">Lobby Chat</h2>
 
       <div className="h-96 overflow-y-auto rounded-xl bg-black/20 p-4 space-y-3">
-        {messages.map((m) => (
-          <div key={m.id} className="relative">
-
-            <div className="flex items-center gap-3">
-              <img
-                src={m.user.avatar_url || "/uploads/default-avatar.png"}
-                alt={m.user.username}
-                className="w-10 h-10 rounded-full object-cover border border-white/20 cursor-pointer"
-                onClick={() =>
-                  setSelectedMessageId(
-                    selectedMessageId === m.id ? null : m.id
-                  )
-                }
-              />
-
-              <button
-                onClick={() =>
-                  setSelectedMessageId(
-                    selectedMessageId === m.id ? null : m.id
-                  )
-                }
-                className="font-bold text-purple-300"
+        {messages.map((m) => {
+          if (m.system) {
+            return (
+              <div
+                key={m.id}
+                className="text-center text-yellow-400 italic py-2"
               >
-                {m.user.username}
-              </button>
-
-              <span className="text-white/50">:</span>
-
-              <span className="break-words">
                 {m.message}
-              </span>
-            </div>
-
-            {selectedMessageId === m.id && (
-              <div className="mt-2 ml-4 bg-black rounded p-2 flex gap-2">
-                <button
-                  onClick={() => viewProfile(m.user.id)}
-                  className="bg-blue-500 px-2 py-1 rounded text-xs"
-                >
-                  Profile
-                </button>
-
-                <button
-                  onClick={() => inviteUser(m.user.id)}
-                  className="bg-green-500 px-2 py-1 rounded text-xs"
-                >
-                  Invite
-                </button>
-
-                <button
-                  onClick={() => blockUser(m.user.id)}
-                  className="bg-red-500 px-2 py-1 rounded text-xs"
-                >
-                  Block
-                </button>
               </div>
-            )}
-          </div>
-        ))}
+            );
+          }
+          if (!m.user)
+	          return null;
+          const chatUser = m.user;
+          return (
+            <div key={m.id} className="relative">
+
+              <div className="flex items-center gap-3">
+                <img
+                  src={chatUser.avatar_url || "/uploads/default-avatar.png"}
+                  alt={chatUser.username}
+                  className="w-10 h-10 rounded-full object-cover border border-white/20 cursor-pointer"
+                  onClick={() =>
+                    setSelectedMessageId(
+                      selectedMessageId === m.id ? null : m.id
+                    )
+                  }
+                />
+
+                <button
+                  onClick={() =>
+                    setSelectedMessageId(
+                      selectedMessageId === m.id ? null : m.id
+                    )
+                  }
+                  className="font-bold text-purple-300"
+                >
+                  {chatUser.username}
+                </button>
+
+                <span className="text-white/50">:</span>
+
+                <span className="break-words">
+                  {m.message}
+                </span>
+              </div>
+
+              {selectedMessageId === m.id && (
+                <div className="mt-2 ml-4 bg-black rounded p-2 flex gap-2">
+                  <button
+                    onClick={() => viewProfile(chatUser.id)}
+                    className="bg-blue-500 px-2 py-1 rounded text-xs"
+                  >
+                    Profile
+                  </button>
+
+                  <button
+                    onClick={() => inviteUser(chatUser.id)}
+                    className="bg-green-500 px-2 py-1 rounded text-xs"
+                  >
+                    Invite
+                  </button>
+
+                  <button
+                    onClick={() => blockUser(chatUser.id)}
+                    className="bg-red-500 px-2 py-1 rounded text-xs"
+                  >
+                    Block
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {typing && (

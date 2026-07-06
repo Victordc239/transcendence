@@ -16,7 +16,7 @@
 - Implementar un boton para salir/abandonar una partida
 - Implementar en el frontend lo de ganar
 - Añadir en el frontend una imagen de +10 (cuando gana una ficha) y +20 (cuando comen fichas)
-- Cambiar el color del circulo de la foto de los jugadores según el color de las fichas
+- Cambiar el color del circulo de la foto de los jugadores según el color de las fichas ✅
 - Hacer el README
 - Hacer páginas de Privacy Policy and Terms of Service footer ✅
 
@@ -78,7 +78,7 @@ IV.6 Gaming and user experience
 		◦ Game/tournament notifications in chat. ✅
 		◦ Access to user profiles from chat interface.✅
 		◦ Chat history persistence.
-		◦ Typing indicators and read receipts.
+		◦ Typing indicators ✅ and read receipts.
 	• Minor: Implement spectator mode for games.✅ +1
 		◦ Allow users to watch ongoing games.
 		◦ Real-time updates for spectators.

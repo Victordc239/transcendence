@@ -1,4 +1,13 @@
 const pool = require('../db');
+const { getIO } = require("../socket");
+
+function sendLobbySystemMessage(message) {
+	getIO().emit("lobby:system", {
+		id: Date.now(),
+		message,
+		created_at: new Date().toISOString()
+	});
+}
 
 function registerLobbySocket(io, socket) {
 	socket.on('lobby:getHistory', async () => {
@@ -107,4 +116,7 @@ function registerLobbySocket(io, socket) {
 	});
 }
 
-module.exports = registerLobbySocket;
+module.exports = {
+	registerLobbySocket,
+	sendLobbySystemMessage
+};

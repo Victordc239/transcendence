@@ -43,7 +43,7 @@
   <rect x="300" y="467" width="46" height="65" rx="12"
   fill="#00d9ff55" stroke="#00d9ff" stroke-width="3"/>
 
-   <rect x="349" y="467" width="46" height="65" rx="12"
+  <rect x="349" y="467" width="46" height="65" rx="12"
   fill="#00d9ff55" stroke="#00d9ff" stroke-width="2"/>
 
   <!-- RIGHT SIDE -->
@@ -128,20 +128,23 @@
 <g opacity="0.9">
 
   <!-- GREEN -->
+  <rect x="606" y="467" width="46" height="65" rx="12"
+  fill="#00ff9cff"/>
+
   <rect x="655" y="467" width="46" height="65" rx="12"
   fill="#00ff9cff"/>
 
   <rect x="704" y="467" width="46" height="65" rx="12"
-  fill="#00ff9dd6"/>
+  fill="#00ff9cff"/>
 
   <rect x="753" y="467" width="46" height="65" rx="12"
-  fill="#00ff9d84"/>
+  fill="#00ff9cff"/>
 
   <rect x="802" y="467" width="46" height="65" rx="12"
-  fill="#00ff9d84"/>
+  fill="#00ff9cff"/>
 
   <rect x="851" y="467" width="46" height="65" rx="12"
-  fill="#00ff9dd6"/>
+  fill="#00ff9cff"/>
 
   <rect x="900" y="467" width="46" height="65" rx="12"
   fill="#00ff9cff"/>
@@ -151,35 +154,41 @@
   fill="#ff21cfff"/>
 
   <rect x="467" y="104" width="65" height="46" rx="12"
-  fill="#ff21cfce"/>
+  fill="#ff21cfff"/>
 
   <rect x="467" y="153" width="65" height="46" rx="12"
-  fill="#ff21cf90"/>
+  fill="#ff21cfff"/>
 
   <rect x="467" y="202" width="65" height="46" rx="12"
-  fill="#ff21cf90"/>
+  fill="#ff21cfff"/>
 
   <rect x="467" y="251" width="65" height="46" rx="12"
-  fill="#ff21cfce"/>
+  fill="#ff21cfff"/>
 
   <rect x="467" y="300" width="65" height="46" rx="12"
   fill="#ff21cfff"/>
 
+  <rect x="467" y="349" width="65" height="46" rx="12"
+  fill="#ff21cfff"/>
+
   <!-- PURPLE -->
+  <rect x="467" y="606" width="65" height="46" rx="12"
+  fill="#c86cff"/>
+
   <rect x="467" y="655" width="65" height="46" rx="12"
   fill="#c86cff"/>
 
   <rect x="467" y="704" width="65" height="46" rx="12"
-  fill="#c86cffcc"/>
+  fill="#c86cff"/>
 
   <rect x="467" y="753" width="65" height="46" rx="12"
-  fill="#c86cff88"/>
+  fill="#c86cff"/>
 
   <rect x="467" y="802" width="65" height="46" rx="12"
-  fill="#c86cff88"/>
+  fill="#c86cff"/>
 
   <rect x="467" y="851" width="65" height="46" rx="12"
-  fill="#c86cffcc"/>
+  fill="#c86cff"/>
 
   <rect x="467" y="900" width="65" height="46" rx="12"
   fill="#c86cff"/>
@@ -189,18 +198,21 @@
   fill="#00d9ff"/>
 
   <rect x="104" y="467" width="46" height="65" rx="12"
-  fill="#00d9ffcc"/>
+  fill="#00d9ff"/>
 
   <rect x="153" y="467" width="46" height="65" rx="12"
-  fill="#00d9ff88"/>
+  fill="#00d9ff"/>
 
   <rect x="202" y="467" width="46" height="65" rx="12"
-  fill="#00d9ff88"/>
+  fill="#00d9ff"/>
 
   <rect x="251" y="467" width="46" height="65" rx="12"
-  fill="#00d9ffcc"/>
+  fill="#00d9ff"/>
 
   <rect x="300" y="467" width="46" height="65" rx="12"
+  fill="#00d9ff"/>
+
+  <rect x="349" y="467" width="46" height="65" rx="12"
   fill="#00d9ff"/>
 
 </g>

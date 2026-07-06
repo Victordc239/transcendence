@@ -59,7 +59,7 @@
 <rect x="290" y="585" width="50" height="36" rx="4" fill="#ffffffff" stroke="#6f7190ff" stroke-width="1" opacity="0.9"/>
 <text x="330.0" y="603" font-size="11" font-weight="bold" fill="#000000ff" text-anchor="middle" dominant-baseline="central">64</text>
 
-<rect x="290" y="549" width="50" height="36" rx="4" fill="#0a2a3a" stroke="#00d9ff" stroke-width="1" opacity="0.9"/>
+<rect x="290" y="549" width="50" height="36" rx="4" fill="#00d9ff55" stroke="#00d9ff" stroke-width="1" opacity="0.9"/>
 <text x="330.0" y="567" font-size="11" font-weight="bold" fill="#00d9ff" text-anchor="middle" dominant-baseline="central">63</text>
 
 <rect x="290" y="513" width="50" height="36" rx="4" fill="#ffffffff" stroke="#6f7190ff" stroke-width="1" opacity="0.9"/>
@@ -111,7 +111,7 @@
 <rect x="111" y="291" width="36" height="50" rx="4" fill="#ffffffff" stroke="#6f7190ff" stroke-width="1" opacity="0.9"/>
 <text x="129" y="330.0" font-size="11" font-weight="bold" fill="#000000ff" text-anchor="middle" dominant-baseline="central">47</text>
 
-<rect x="147" y="291" width="36" height="50" rx="4" fill="#0a2a3a" stroke="#ff3bd4" stroke-width="1" opacity="0.9"/>
+<rect x="147" y="291" width="36" height="50" rx="4" fill="#ff3bd422" stroke="#ff3bd4" stroke-width="1" opacity="0.9"/>
 <text x="165" y="330.0" font-size="11" font-weight="bold" fill="#ff3bd4" text-anchor="middle" dominant-baseline="central">46</text>
 
 <rect x="183" y="291" width="36" height="50" rx="4" fill="#ffffffff" stroke="#6f7190ff" stroke-width="1" opacity="0.9"/>
@@ -163,7 +163,7 @@
 <rect x="391" y="111" width="50" height="36" rx="4" fill="#ffffffff" stroke="#6f7190ff" stroke-width="1" opacity="0.9"/>
 <text x="402.0" y="129" font-size="11" font-weight="bold" fill="#000000ff" text-anchor="middle" dominant-baseline="central">30</text>
 
-<rect x="391" y="147" width="50" height="36" rx="4" fill="#0a2a3a" stroke="#00ff9d" stroke-width="1" opacity="0.9"/>
+<rect x="391" y="147" width="50" height="36" rx="4" fill="#00ff9d55" stroke="#00ff9d" stroke-width="1" opacity="0.9"/>
 <text x="402.0" y="165" font-size="11" font-weight="bold" fill="#00ff9d" text-anchor="middle" dominant-baseline="central">29</text>
 
 <rect x="391" y="183" width="50" height="36" rx="4" fill="#ffffffff" stroke="#6f7190ff" stroke-width="1" opacity="0.9"/>
@@ -215,7 +215,7 @@
 <rect x="585" y="391" width="36" height="50" rx="4" fill="#ffffffff" stroke="#6f7190ff" stroke-width="1" opacity="0.9"/>
 <text x="603" y="402.0" font-size="11" font-weight="bold" fill="#000000ff" text-anchor="middle" dominant-baseline="central">13</text>
 
-<rect x="549" y="391" width="36" height="50" rx="4" fill="#0a2a3a" stroke="#c86cff" stroke-width="1" opacity="0.9"/>
+<rect x="549" y="391" width="36" height="50" rx="4" fill="#c86cff55" stroke="#c86cff" stroke-width="1" opacity="0.9"/>
 <text x="567" y="402.0" font-size="11" font-weight="bold" fill="#c86cff" text-anchor="middle" dominant-baseline="central">12</text>
 
 <rect x="513" y="391" width="36" height="50" rx="4" fill="#ffffffff" stroke="#6f7190ff" stroke-width="1" opacity="0.9"/>

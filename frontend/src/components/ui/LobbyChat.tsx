@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
 import { socket } from "../../socket/socket";
 import { useAuth } from "../../context/AuthContext";
+import { useEffect, useRef, useState } from "react";
 
 type LobbyMessage = {
 	id: number;
@@ -22,6 +22,7 @@ export default function LobbyChat() {
   const [typing, setTyping] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
   const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     socket.emit("lobby:getHistory");
@@ -50,7 +51,14 @@ export default function LobbyChat() {
 
     const onTyping = () => {
       setTyping(true);
-      setTimeout(() => setTyping(false), 1000);
+
+      if (typingTimeout.current) {
+        clearTimeout(typingTimeout.current);
+      }
+
+      typingTimeout.current = setTimeout(() => {
+        setTyping(false);
+      }, 2000);
     };
 
     const onBlocked = ({ blockedUserId }: { blockedUserId: number }) => {
@@ -76,6 +84,9 @@ export default function LobbyChat() {
     socket.on("lobby:invite", onInvite);
 
     return () => {
+      if (typingTimeout.current) {
+        clearTimeout(typingTimeout.current);
+      }
       socket.off("lobby:history", onHistory);
       socket.off("lobby:message", onMessage);
       socket.off("lobby:system", onSystem);
@@ -196,7 +207,7 @@ export default function LobbyChat() {
 
       {typing && (
         <p className="text-xs text-white/50 mt-2">
-          Someone is typing...
+          Alguien esta escribiendo...
         </p>
       )}
 

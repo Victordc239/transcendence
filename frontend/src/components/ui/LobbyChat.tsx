@@ -6,6 +6,8 @@ type LobbyMessage = {
 	id: number;
 	message: string;
 	created_at: string;
+	expected_reads?: number;
+	read_by?: number[];
 	user?: {
 		id: number;
 		username: string;
@@ -29,14 +31,28 @@ export default function LobbyChat() {
 
     const onHistory = (history: LobbyMessage[]) => {
       setMessages(history);
-    };
 
+      history.forEach((msg) => {
+        if (msg.user?.id !== user?.id) {
+          socket.emit("lobby:read", {
+            messageId: msg.id,
+          });
+        }
+      });
+    };
     const onMessage = (msg: LobbyMessage) => {
       setMessages((prev) => {
         if (msg.user && blockedUsers.includes(msg.user.id))
           return prev;
+
         return [...prev, msg];
       });
+
+      if (msg.user?.id !== user?.id) {
+        socket.emit("lobby:read", {
+          messageId: msg.id,
+        });
+      }
     };
 
     const onSystem = (msg: LobbyMessage) => {
@@ -61,6 +77,26 @@ export default function LobbyChat() {
       }, 2000);
     };
 
+    const onReadUpdate = (
+      update: {
+        id: number;
+        expected_reads: number;
+        read_by: number[];
+      }
+    ) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === update.id
+            ? {
+                ...m,
+                expected_reads: update.expected_reads,
+                read_by: update.read_by,
+              }
+            : m
+        )
+      );
+    };
+
     const onBlocked = ({ blockedUserId }: { blockedUserId: number }) => {
       setBlockedUsers((prev) => [...prev, blockedUserId]);
 
@@ -80,6 +116,7 @@ export default function LobbyChat() {
     socket.on("lobby:message", onMessage);
     socket.on("lobby:system", onSystem);
     socket.on("lobby:typing", onTyping);
+    socket.on("lobby:readUpdate", onReadUpdate);
     socket.on("lobby:userBlocked", onBlocked);
     socket.on("lobby:invite", onInvite);
 
@@ -91,6 +128,7 @@ export default function LobbyChat() {
       socket.off("lobby:message", onMessage);
       socket.off("lobby:system", onSystem);
       socket.off("lobby:typing", onTyping);
+      socket.off("lobby:readUpdate", onReadUpdate);
       socket.off("lobby:userBlocked", onBlocked);
       socket.off("lobby:invite", onInvite);
     };
@@ -171,9 +209,21 @@ export default function LobbyChat() {
 
                 <span className="text-white/50">:</span>
 
-                <span className="break-words">
-                  {m.message}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="break-words">
+                    {m.message}
+                  </span>
+
+                  {chatUser.id === user?.id && (
+                    <span className="text-xs text-white/50 select-none">
+                      {m.read_by &&
+                      m.expected_reads &&
+                      m.read_by.length >= m.expected_reads
+                        ? "✓✓"
+                        : "✓"}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {selectedMessageId === m.id && (

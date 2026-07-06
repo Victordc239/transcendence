@@ -1,7 +1,7 @@
 const { Server } = require('socket.io');
 const authSocket = require('./authSocket');
 const registerGameSocket = require('./gameSocket');
-const registerLobbySocket = require('./lobbySocket');
+const { registerLobbySocket } = require("./lobbySocket");
 
 const { setIO } = require('../socket');
 const {

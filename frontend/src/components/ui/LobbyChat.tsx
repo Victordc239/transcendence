@@ -1,6 +1,7 @@
 import { socket } from "../../socket/socket";
 import { useAuth } from "../../context/AuthContext";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 type LobbyMessage = {
 	id: number;
@@ -18,6 +19,7 @@ type LobbyMessage = {
 
 export default function LobbyChat() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [messages, setMessages] = useState<LobbyMessage[]>([]);
   const [message, setMessage] = useState("");
@@ -25,6 +27,7 @@ export default function LobbyChat() {
   const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
   const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pendingInvite, setPendingInvite] = useState<any>(null);
 
   useEffect(() => {
     socket.emit("lobby:getHistory");
@@ -106,10 +109,28 @@ export default function LobbyChat() {
     };
 
     const onInvite = (invite: any) => {
-      if (!user) return;
-      if (invite.targetUserId !== user.id) return;
+        if (!user)
+          return;
+        if (invite.to !== user.id)
+          return;
+        setPendingInvite(invite);
+      };
 
-      alert(`${invite.from} invited you to play!`);
+    const onGameStart = ({
+      gameId,
+    }: {
+      gameId: string;
+    }) => {
+      navigate(`/game/${gameId}`);
+    };
+
+    const onInviteExpired = () => {
+      setPendingInvite(null);
+      alert("Invitation expired.");
+    };
+
+    const onInviteRejected = () => {
+      alert("Your invitation was rejected.");
     };
 
     socket.on("lobby:history", onHistory);
@@ -118,7 +139,10 @@ export default function LobbyChat() {
     socket.on("lobby:typing", onTyping);
     socket.on("lobby:readUpdate", onReadUpdate);
     socket.on("lobby:userBlocked", onBlocked);
-    socket.on("lobby:invite", onInvite);
+    socket.on("invite:received", onInvite);
+    socket.on("game:start", onGameStart);
+    socket.on("invite:expired", onInviteExpired);
+    socket.on("invite:rejected", onInviteRejected);
 
     return () => {
       if (typingTimeout.current) {
@@ -130,7 +154,10 @@ export default function LobbyChat() {
       socket.off("lobby:typing", onTyping);
       socket.off("lobby:readUpdate", onReadUpdate);
       socket.off("lobby:userBlocked", onBlocked);
-      socket.off("lobby:invite", onInvite);
+      socket.off("invite:received", onInvite);
+      socket.off("game:start", onGameStart);
+      socket.off("invite:expired", onInviteExpired);
+      socket.off("invite:rejected", onInviteRejected);
     };
   }, [blockedUsers, user]);
 
@@ -139,6 +166,28 @@ export default function LobbyChat() {
 
     socket.emit("lobby:send", { message });
     setMessage("");
+  };
+
+  const acceptInvite = () => {
+    if (!pendingInvite)
+      return;
+
+    socket.emit("invite:accept", {
+      inviteId: pendingInvite.id,
+    });
+
+    setPendingInvite(null);
+  };
+
+  const rejectInvite = () => {
+    if (!pendingInvite)
+      return;
+
+    socket.emit("invite:reject", {
+      inviteId: pendingInvite.id,
+    });
+
+    setPendingInvite(null);
   };
 
   const blockUser = (userId: number) => {
@@ -259,6 +308,48 @@ export default function LobbyChat() {
         <p className="text-xs text-white/50 mt-2">
           Alguien esta escribiendo...
         </p>
+      )}
+
+      {pendingInvite && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+
+          <div className="bg-slate-900 rounded-2xl p-6 w-96 space-y-4">
+
+            <h2 className="text-xl font-bold">
+              Game invitation
+            </h2>
+
+            <p>
+
+              <strong>
+                {pendingInvite.fromUsername}
+              </strong>
+
+              {" "}wants to play with you.
+
+            </p>
+
+            <div className="flex justify-end gap-3">
+
+              <button
+                onClick={rejectInvite}
+                className="bg-red-600 px-4 py-2 rounded-lg"
+              >
+                Reject
+              </button>
+
+              <button
+                onClick={acceptInvite}
+                className="bg-green-600 px-4 py-2 rounded-lg"
+              >
+                Accept
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
       )}
 
       <div className="mt-4 flex gap-3">

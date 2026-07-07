@@ -3,11 +3,11 @@
 - Hay un error con las fichas cuando llegan a meta, algunas no cuentan bien las casillas que faltan y suben a meta con un numero mayor ✅
 - Cuando un jugador gana no puede seguir tirando el dado ✅
 - Turno de los jugadores en sentido antihorario ✅
-- Cuando comes puedes mover una ficha disponible 20 posiciones (comprobar que fichas pueden moverse +20 posiciones) y cuando llegas a meta puedes mover una ficha disponible 10 posiciones (comprobar que fichas pueden moverse +10 posiciones)
-- Cuando sacas 6 debes abrir barrera (es obligatorio mover una de las fichas que estan formando barrera con otra ficha)
-- No se pueden poner 3 fichas en una misma casilla de casa (máximo 2 fichas)
-- Solucionar que cuando hay barrera no pueden pasar las fichas 
-- Cuando sacas 3 veces 6 la última ficha que has movido se va para casa directamente
+- Cuando comes o llegas a meta si el movimiento original fue con un 6, después de hacer el +20 o +10 el jugador vuelve a tirar (Soraya)
+- Cuando sacas 6 debes abrir barrera (es obligatorio mover una de las fichas que estan formando barrera con otra ficha) ✅
+- No se pueden poner 3 fichas en una misma casilla de casa (máximo 2 fichas) ✅
+- Solucionar que cuando hay barrera no pueden pasar las fichas ✅
+- Cuando sacas 3 veces 6 la última ficha que has movido se va para casa directamente ✅
 - Cuando sacas 5 con el dado y puedes sacar una ficha de casa, si hay dos fichas de distinto color en tu casa puedes comer la última ficha posicionada ahí 
 - Cuando sacas 5 con el dado y puedes sacar una ficha de casa, si hay una ficha de tu color y otra ficha de distinto color puedes comer la ficha de distinto color
 - Solucionar que cuando hay en casa 2 fichas de otro color la ficha rosa no puede sacar (error)

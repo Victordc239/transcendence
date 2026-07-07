@@ -13,7 +13,7 @@
 - Solucionar que cuando hay en casa 2 fichas de otro color la ficha rosa no puede sacar (error)
 - Arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una al lado de otra
 - Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend)
-- Implementar un boton para salir/abandonar una partida o cuando le damos a atras en el navegador y volvemos al lobby abandonemos la partida automaticamente.
+- Implementar un boton para salir/abandonar una partida o cuando le damos a atras en el navegador y volvemos al lobby abandonemos la partida automaticamente. ✅
 - Implementar en el frontend lo de ganar
 - Añadir en el frontend una imagen de +10 (cuando gana una ficha) y +20 (cuando comen fichas)
 - Hacer el README

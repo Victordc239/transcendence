@@ -80,35 +80,42 @@ exports.joinGame = async (req, res) => {
 		const userId = Number(req.user.id);
 		const gameId = String(req.params.id);
 		const existing = await getGameByPlayer(userId);
-		if (existing)
+		if (existing && existing.id !== gameId)
 		{
-			return res.status(400).json({
-				error: "Already in a game"
-			});
+			return res.status(400).json({error: "Already in another game"});
 		}
-
 		const locked = await withGameLock(gameId, async (game) => {
 			if (!game)
 				return { error: 'Game not found' };
-
 			const validation = canJoinGame(game, userId);
 			if (!validation.ok)
 				return { error: validation.error };
-
-			if (!validation.rejoin) {
-				if (validation.asSpectator) {
+			if (validation.rejoin)
+			{
+				const player = game.players.find(p => p.id === userId);
+				if (player)
+				{
+					player.connected = true;
+					player.abandoned = false;
+					player.disconnectedAt = null;
+				}
+			}
+			else
+			{
+				if (validation.asSpectator)
+				{
 					if (!game.spectators)
 						game.spectators = [];
-
 					if (!game.spectators.includes(userId))
 						game.spectators.push(userId);
-				} else {
+				}
+				else
+				{
 					const addResult = addPlayerToGame(game, userId);
 					if (addResult && addResult.error)
 						return { error: addResult.error };
 				}
 			}
-
 			game.updatedAt = Date.now();
 			return { ok: true };
 		});

@@ -19,6 +19,7 @@
 - Hacer el README
 - Hacer la página responsive
 - Hacer páginas de Privacy Policy and Terms of Service footer ✅
+- No warnings or errors should appear in the browser console.
 
 MÓDULO BONUS:
 

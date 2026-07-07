@@ -153,7 +153,8 @@ async function getGameByPlayer(userId)
 				? JSON.parse(row.state)
 				: row.state;
 
-		if (game.players.some(p => p.id === userId))
+		const player = game.players.find(p => p.id === userId);
+		if (player && !player.abandoned)
 			return game;
 	}
 

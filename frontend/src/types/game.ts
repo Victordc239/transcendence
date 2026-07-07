@@ -68,4 +68,12 @@ export interface Game {
   players: Player[];
 
   spectators?: Spectator[];
+
+  bonusMove?: number | null;
+
+  bonusReason?: "capture" | "goal" | null;
+
+  pendingBonus?: number | null;
+
+  pendingBonusPlayer?: number | null;
 }

@@ -46,6 +46,18 @@ async function normalizeGame(game)
 		lastDice: game.lastDice,
 		consecutiveSixes: game.consecutiveSixes || {},
 		lastMovedPiece: game.lastMovedPiece || null,
+		pendingBonus: game.pendingBonus ?? null,
+		pendingBonusPlayer: game.pendingBonusPlayer ?? null,
+		bonusMove:
+			game.pendingBonusPlayer === game.turn
+				? game.pendingBonus
+				: null,
+		bonusReason:
+			game.pendingBonus === 20
+				? "capture"
+				: game.pendingBonus === 10
+					? "goal"
+					: null,
 		winner: game.winner,
 		createdAt: game.createdAt,
 		updatedAt: game.updatedAt,

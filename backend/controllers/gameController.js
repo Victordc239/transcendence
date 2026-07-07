@@ -289,3 +289,68 @@ exports.movePiece = async (req, res) => {
 		return res.status(500).json({ error: 'Server error' });
 	}
 };
+
+exports.moveBonusPiece = async (req, res) => {
+	try {
+		const userId = req.user.id;
+		const gameId = req.params.id;
+		const { pieceIndex } = req.body;
+
+		const locked = await withGameLock(gameId, async (game) => {
+			const isPlayer = game.players.some(
+				p => p.id === userId
+			);
+
+			if (!isPlayer)
+				return {
+					error: "Spectators cannot move pieces"
+				};
+
+			const {
+				executeBonusMove
+			} = require("../game/gameEngine");
+
+			const result = executeBonusMove(
+				game,
+				userId,
+				pieceIndex
+			);
+
+			if (!result.ok)
+				return result;
+
+			game.updatedAt = Date.now();
+
+			return result;
+		});
+
+		if (!locked)
+			return res.status(404).json({
+				error: "Game not found"
+			});
+
+		if (!locked.result.ok)
+			return res.status(400).json({
+				error:
+					locked.result.error ||
+					"Move failed"
+			});
+
+		const normalized =
+			await normalizeGame(locked.game);
+
+		getIO()
+			.to(gameId)
+			.emit("game:update", normalized);
+
+		return res.json(normalized);
+	}
+	catch (error)
+	{
+		console.error(error);
+
+		return res.status(500).json({
+			error: "Server error"
+		});
+	}
+};

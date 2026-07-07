@@ -3,7 +3,7 @@ import { useGameRealtime } from "../game/realtime/useGameRealtime";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useGameStore } from "../store/gameStore";
-import { rollDice, movePiece } from "../api/game.api";
+import { rollDice, movePiece, moveBonusPiece } from "../api/game.api";
 import GameScene from "../game/layout/GameScene";
 import Footer from "../components/ui/Footer";
 
@@ -34,8 +34,23 @@ export default function GamePage() {
   };
 
   const handleMove = async (index: number) => {
-    if (!token || !id || isSpectator) return;
-    await movePiece(token, id, index);
+
+    if (!token || !id || isSpectator || !game)
+      return;
+
+    if (game.pendingBonus != null) {
+      await moveBonusPiece(
+        token,
+        id,
+        index
+      );
+    } else {
+      await movePiece(
+        token,
+        id,
+        index
+      );
+    }
   };
 
   if (!game) {
@@ -90,10 +105,17 @@ export default function GamePage() {
             }`}
           >
             {game.dice ?? "🎲"}
+            {
+                game.pendingBonus && (
+                    <div className="text-3xl font-bold text-yellow-400 animate-pulse">
+                        +{game.pendingBonus}
+                    </div>
+                )
+            }
           </div>
 
           <button
-            disabled={isSpectator}
+            disabled={isSpectator || game.pendingBonus != null}
             onClick={handleRoll}
             className={`w-full py-2 rounded-xl ${
               isSpectator

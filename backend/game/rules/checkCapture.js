@@ -6,25 +6,25 @@ function checkCapture(game, currentPlayerId, movedPiece)
 {
 	const currentPlayer = game.players.find(p => p.id === currentPlayerId);
 	if (!currentPlayer)
-		return;
+		return false;
 	if (!movedPiece)
-		return;
+		return false;
 	// Casa
 	if (movedPiece.steps < 0)
-		return;
+		return  false;
 	// Pasillo final
 	if (movedPiece.steps >= MAIN_TRACK_SIZE)
-		return;
+		return false;
 	const currentPosition = getRealBoardPosition(currentPlayer.color, movedPiece.steps);
 	// Casilla segura
 	if (SAFE_CELLS.includes(currentPosition))
-		return;
+		return false;
 
 	const blockades = getBlockades(game);
 	// Nunca capturar sobre una barrera
 	const isBlockadeCell =blockades.some(blockade => blockade.position === currentPosition);
 	if (isBlockadeCell)
-		return;
+		return false;
 
 	for (const enemy of game.players)
 	{
@@ -43,19 +43,20 @@ function checkCapture(game, currentPlayerId, movedPiece)
 
 			const enemyPiecesOnCell =enemy.pieces.filter(p => {
 				if (p.steps < 0)
-					return false;
+					return;
 				if (p.steps >= MAIN_TRACK_SIZE)
-					return false;
+					return;
 				return (getRealBoardPosition(enemy.color, p.steps) === currentPosition);
 			});
 			// barrera enemiga
 			if (enemyPiecesOnCell.length >= 2)
-				return;
+				return false;
 			enemyPiece.steps = -1;
 			enemyPiece.state = 'base';
-			return;
+			return true;
 		}
 	}
+	return false;
 }
 
 module.exports = checkCapture;

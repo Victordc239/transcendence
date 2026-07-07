@@ -1,4 +1,4 @@
-const { COLORS, GAME_STATUS } = require('./constants');
+const { COLORS, GAME_STATUS, CAPTURE_BONUS, GOAL_BONUS } = require('./constants');
 const canMovePiece = require('./validators/canMovePiece');
 const applyMove = require('./rules/applyMove');
 const nextTurn = require('./rules/nextTurn');
@@ -69,12 +69,26 @@ function executeMove(game, playerId, pieceIndex)
 		return { error: "Invalid game state (players missing)" };
 	}
 
+	if (game.pendingBonus)
+	{
+		return {
+			ok: false,
+			error: "Bonus move pending"
+		};
+	}
+
 	const validation = canMovePiece(game, playerId, pieceIndex);
 	if (!validation.ok)
 		return validation;
-	const movedPiece = applyMove(game, playerId, pieceIndex);
+	const moveResult = applyMove(game, playerId, pieceIndex);
 	game.lastMovedPiece = { playerId, pieceIndex};
-	checkCapture(game, playerId, movedPiece);
+
+	const captured = checkCapture(
+		game,
+		playerId,
+		moveResult.piece
+	);
+	const reachedGoal = moveResult.reachedGoal;
 
 	const player = game.players.find(p => p.id === playerId);
 
@@ -123,6 +137,41 @@ function executeMove(game, playerId, pieceIndex)
 			finished: false
 		};
 	}
+
+	// BONUS POR COMER
+
+	if (captured)
+	{
+		game.pendingBonus = CAPTURE_BONUS;
+		game.pendingBonusPlayer = playerId;
+
+		game.dice = null;
+		game.updatedAt = Date.now();
+
+		return {
+			ok: true,
+			pendingBonus: true,
+			bonus: CAPTURE_BONUS
+		};
+	}
+
+	// BONUS POR LLEGAR A META
+
+	if (reachedGoal)
+	{
+		game.pendingBonus = GOAL_BONUS;
+		game.pendingBonusPlayer = playerId;
+
+		game.dice = null;
+		game.updatedAt = Date.now();
+
+		return {
+			ok: true,
+			pendingBonus: true,
+			bonus: GOAL_BONUS
+		};
+	}
+
 	// Inicializar contador
 	if (!game.consecutiveSixes)
 		game.consecutiveSixes = {};
@@ -159,4 +208,142 @@ function executeMove(game, playerId, pieceIndex)
 	return { ok: true };
 }
 
-module.exports = { rollDice, addPlayerToGame, executeMove };
+function executeBonusMove(
+	game,
+	playerId,
+	pieceIndex
+)
+{
+	if (
+		game.pendingBonusPlayer !== playerId
+	)
+	{
+		return {
+			ok:false,
+			error:'No pending bonus'
+		};
+	}
+
+	const validation =
+		canMovePiece(
+			game,
+			playerId,
+			pieceIndex,
+			game.pendingBonus
+		);
+
+	if (!validation.ok)
+		return validation;
+
+	const moveResult =
+		applyMove(
+			game,
+			playerId,
+			pieceIndex,
+			game.pendingBonus
+		);
+
+	game.lastMovedPiece = {
+		playerId,
+		pieceIndex
+	};
+
+	const captured = checkCapture(
+		game,
+		playerId,
+		moveResult.piece
+	);
+
+	const reachedGoal =
+		moveResult.reachedGoal;
+
+	const won =
+		checkWin(game,playerId);
+
+	if (won)
+	{
+		if (!game.finishedPlayers)
+			game.finishedPlayers = [];
+
+		if (!game.ranking)
+			game.ranking = [];
+
+		if (!game.finishedPlayers.includes(playerId))
+		{
+			game.finishedPlayers.push(playerId);
+			game.ranking.push(playerId);
+		}
+
+		//const activePlayers = game.players.length - game.finishedPlayers.length;
+		const activePlayers = game.players.length - (game.finishedPlayers?.length || 0);
+		if (activePlayers === 1)
+		{
+			const lastPlayer = game.players.find(p => !game.finishedPlayers.includes(p.id));
+			if (lastPlayer)
+			{
+				game.finishedPlayers.push(lastPlayer.id);
+				game.ranking.push(lastPlayer.id);
+			}
+			game.pendingBonus = null;
+			game.pendingBonusPlayer = null;
+			clearTurnTimer(game.id);
+			game.status = GAME_STATUS.FINISHED;
+			game.winner = game.ranking[0];
+			return {
+				ok: true,
+				finished: true
+			};
+		}
+
+		if (captured)
+		{
+			game.pendingBonus = CAPTURE_BONUS;
+			game.pendingBonusPlayer = playerId;
+
+			game.updatedAt = Date.now();
+
+			return {
+				ok: true,
+				pendingBonus: true
+			};
+		}
+
+		if (reachedGoal)
+		{
+			game.pendingBonus = GOAL_BONUS;
+			game.pendingBonusPlayer = playerId;
+
+			game.updatedAt = Date.now();
+
+			return {
+				ok: true,
+				pendingBonus: true
+			};
+		}
+
+		game.pendingBonus = null;
+		game.pendingBonusPlayer = null;
+
+		nextTurn(game);
+		return {
+			ok: true,
+			playerFinished: true,
+			finished: false
+		};
+	}
+
+	game.pendingBonus = null;
+	game.pendingBonusPlayer = null;
+
+	nextTurn(game);
+
+	game.updatedAt = Date.now();
+
+	startTurnTimer(game.id);
+
+	return {
+		ok:true
+	};
+}
+
+module.exports = { rollDice, addPlayerToGame, executeMove, executeBonusMove };

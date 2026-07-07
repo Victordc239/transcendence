@@ -59,6 +59,17 @@ function canRollDice(game, userId)
 		};
 	}
 
+	if (
+		game.pendingBonus &&
+		game.pendingBonusPlayer === userId
+	)
+	{
+		return {
+			ok: false,
+			error: 'You must play the bonus first'
+		};
+	}
+
 	return { ok: true };
 }
 

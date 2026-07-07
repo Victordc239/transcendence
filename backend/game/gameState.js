@@ -21,6 +21,8 @@ function createNewGame(hostId)
 		lastDice: null,
 		consecutiveSixes: {},
 		lastMovedPiece: null,
+		pendingBonus: null,
+		pendingBonusPlayer: null,
 		winner: null,
 		finishedPlayers: [],
 		ranking: [],

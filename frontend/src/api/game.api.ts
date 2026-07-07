@@ -73,3 +73,20 @@ export async function movePiece(
 
   return safeFetch(res);
 }
+
+export async function moveBonusPiece(
+  token: string,
+  id: string,
+  pieceIndex: number
+) {
+  const res = await fetch(
+    `${API_URL}/games/${id}/bonus`,
+    {
+      method: "POST",
+      headers: getAuthHeader(token),
+      body: JSON.stringify({ pieceIndex }),
+    }
+  );
+
+  return safeFetch(res);
+}

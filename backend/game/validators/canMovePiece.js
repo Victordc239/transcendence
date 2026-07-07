@@ -31,7 +31,8 @@ function countPiecesOnPosition(game, globalPosition)
 // obligación de abrir barrera al sacar un 6. Se mantiene separada de
 // canMovePiece para poder comprobar, sin recursividad, si alguna ficha de
 // una barrera propia puede moverse.
-function checkBasicMove(game, playerId, pieceIndex)
+//function checkBasicMove(game, playerId, pieceIndex)
+function checkBasicMove(game, playerId, pieceIndex, steps)
 {
 	if (game.turn !== playerId)
 	{
@@ -56,7 +57,7 @@ function checkBasicMove(game, playerId, pieceIndex)
 			error: 'Piece not found'
 		};
 	}
-	if (game.dice === null)
+	if (steps === null)
 	{
 		return {
 			ok: false,
@@ -67,7 +68,7 @@ function checkBasicMove(game, playerId, pieceIndex)
 	/// SALIR DE CASA
 	if (piece.state === 'base')
 	{
-		if (game.dice !== 5)
+		if (steps !== 5)
 		{
 			return {
 				ok: false,
@@ -115,7 +116,7 @@ function checkBasicMove(game, playerId, pieceIndex)
 	// PASILLO FINAL
 	if (piece.steps >= MAIN_TRACK_SIZE)
 	{
-		if (piece.steps + game.dice > FINAL_POSITION)
+		if (piece.steps + steps > FINAL_POSITION)
 		{
 			return {
 				ok: false,
@@ -130,7 +131,7 @@ function checkBasicMove(game, playerId, pieceIndex)
 	const startPosition = getRealBoardPosition(player.color, piece.steps);
 
 	// VALIDAR RECORRIDO
-	for (let step = 1; step <= game.dice; step++)
+	for (let step = 1; step <= steps; step++)
 	{
 		if (isEnteringHomeStretch(player.color, piece.steps, step))
 			break;
@@ -148,10 +149,10 @@ function checkBasicMove(game, playerId, pieceIndex)
 	}
 
 	// ENTRADA AL PASILLO FINAL
-	if (isEnteringHomeStretch(player.color, piece.steps, game.dice))
+	if (isEnteringHomeStretch(player.color, piece.steps, steps))
 	{
 		const distanceToEntry = getDistanceToHomeEntry(player.color, piece.steps);
-		const overshoot = game.dice - distanceToEntry - 1;
+		const overshoot = steps - distanceToEntry - 1;
 		const target = MAIN_TRACK_SIZE + overshoot;
 
 		if (target > FINAL_POSITION)
@@ -165,7 +166,7 @@ function checkBasicMove(game, playerId, pieceIndex)
 		return { ok: true };
 	}
 
-	const targetSteps = piece.steps + game.dice;
+	const targetSteps = piece.steps + steps;
 	const targetPosition = getRealBoardPosition(player.color, targetSteps);
 	// NO se puede terminar encima de una barrera
 	if (isDestinationBlocked(game, targetPosition))
@@ -216,14 +217,15 @@ function getOwnBlockadePieceIndices(game, player)
 	return indices;
 }
 
-function canMovePiece(game, playerId, pieceIndex)
+//function canMovePiece(game, playerId, pieceIndex)
+function canMovePiece(game, playerId, pieceIndex, steps = game.dice)
 {
-	const basic = checkBasicMove(game, playerId, pieceIndex);
+	const basic = checkBasicMove(game, playerId, pieceIndex, steps);
 	if (!basic.ok)
 		return basic;
 
 	// REGLA DEL 6
-	if (game.dice === 6)
+	if (steps === 6)
 	{
 		const player = getPlayer(game, playerId);
 
@@ -234,7 +236,7 @@ function canMovePiece(game, playerId, pieceIndex)
 			if (blockadeIndices.length > 0 && !blockadeIndices.includes(pieceIndex))
 			{
 				const canOpenBlockade = blockadeIndices.some(
-					blockadeIndex => checkBasicMove(game, playerId, blockadeIndex).ok
+					blockadeIndex => checkBasicMove(game, playerId, blockadeIndex, steps).ok
 				);
 
 				if (canOpenBlockade)

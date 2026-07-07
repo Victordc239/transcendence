@@ -8,6 +8,7 @@ function setPlayerConnection(game, playerId, connected)
 	if (connected)
 	{
 		player.disconnectedAt = null;
+		player.abandoned = false;
 		return;
 	}
 

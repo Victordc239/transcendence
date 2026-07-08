@@ -20,6 +20,8 @@
 - Hacer la página responsive
 - Hacer páginas de Privacy Policy and Terms of Service footer ✅
 - No warnings or errors should appear in the browser console.
+- Store credentials (API keys, environment variables, etc.) in a local .env file that is ignored by Git, and provide an .env.example file.
+
 
 MÓDULO BONUS:
 
@@ -65,9 +67,9 @@ IV.6 Gaming and user experience
 		◦ Players must be able to play live matches.
 		◦ The game must have clear rules and win/loss conditions.
 		◦ The game can be 2D or 3D.
-	• Major: Remote players — Enable two players on separate computers to play the same game in real-time.
-		◦ Handle network latency and disconnections gracefully.✅
-		◦ Provide a smooth user experience for remote gameplay.✅
+	• Major: Remote players — Enable two players on separate computers to play the same game in real-time. ✅ +2
+		◦ Handle network latency and disconnections gracefully.
+		◦ Provide a smooth user experience for remote gameplay.
 		◦ Implement reconnection logic.
 	• Major: Multiplayer game (more than two players).✅ +2
 		◦ Support for three or more players simultaneously.

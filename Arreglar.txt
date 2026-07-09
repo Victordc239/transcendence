@@ -9,9 +9,9 @@
 - Cuando sacas 3 veces 6 la última ficha que has movido se va para casa directamente ✅
 
 - Cuando comes o llegas a meta si el movimiento original fue con un 6, después de hacer el +20 o +10 el jugador vuelve a tirar (Soraya)
+- Manejar que cuando comes (+20) o subes ficha (+10) si tienes el resto de fichas en casa no puedes mover ficha y pierdes turno (Soraya)
 - Cambiar/Mejorar distribución página game (Soraya)
 - Implementar en el frontend lo de ganar (Soraya)
-- Añadir en el frontend una imagen de +10 (cuando gana una ficha) y +20 (cuando comen fichas) (Soraya)
 
 - Cuando sacas 5 con el dado y puedes sacar una ficha de casa (BASE), si hay dos fichas de distinto color en tu START_POSITIONS puedes comer la última ficha posicionada ahí (Santi)
 - Cuando sacas 5 con el dado y puedes sacar una ficha de casa (BASE), si hay una ficha de tu color y otra ficha de distinto color en tu START_POSITIONS puedes comer la ficha de distinto color (Santi)

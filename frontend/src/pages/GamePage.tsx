@@ -163,7 +163,7 @@ export default function GamePage() {
           />
         </div>
 
-        <div className="w-80 p-4 space-y-4 bg-black/20 backdrop-blur-xl">
+        <div className="w-80 m-5 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl shadow-2xl p-6 space-y-6">
           <h1 className="text-xl font-bold">
             Game {game.id}
           </h1>

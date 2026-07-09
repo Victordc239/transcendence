@@ -9,6 +9,7 @@
 - Cuando sacas 3 veces 6 la última ficha que has movido se va para casa directamente ✅
 - Cuando comes o llegas a meta si el movimiento original fue con un 6, después de hacer el +20 o +10 el jugador vuelve a tirar (Soraya)
 - Mejorar esteticamente botón de abandonar la partida (Soraya)
+- Cambiar distribución página game 
 - Cuando sacas 5 con el dado y puedes sacar una ficha de casa, si hay dos fichas de distinto color en tu casa puedes comer la última ficha posicionada ahí 
 - Cuando sacas 5 con el dado y puedes sacar una ficha de casa, si hay una ficha de tu color y otra ficha de distinto color puedes comer la ficha de distinto color
 - Solucionar que cuando hay en casa 2 fichas de otro color la ficha rosa no puede sacar (error)

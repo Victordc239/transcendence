@@ -2,6 +2,7 @@ import { socket } from "../../socket/socket";
 import { useAuth } from "../../context/AuthContext";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { validateText } from "../../utils/validation";
 
 type LobbyMessage = {
 	id: number;
@@ -162,9 +163,17 @@ export default function LobbyChat() {
   }, [blockedUsers, user]);
 
   const send = () => {
-    if (!message.trim()) return;
-
-    socket.emit("lobby:send", { message });
+    const validation = validateText(message, {
+      maxLength: 500,
+      fieldName: "Message",
+    });
+    if (!validation.ok) {
+      alert(validation.error);
+      return;
+    }
+    socket.emit("lobby:send", {
+      message: validation.value,
+    });
     setMessage("");
   };
 
@@ -351,13 +360,18 @@ export default function LobbyChat() {
 
         </div>
       )}
-
+      <div className="mt-2 text-right text-xs text-white/50">
+        {message.length}/500
+      </div>
       <div className="mt-4 flex gap-3">
         <input
           value={message}
           onChange={(e) => {
-            setMessage(e.target.value);
-            socket.emit("lobby:typing");
+            const value = e.target.value;
+            if (value.length <= 500) {
+              setMessage(value);
+              socket.emit("lobby:typing");
+            }
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") send();

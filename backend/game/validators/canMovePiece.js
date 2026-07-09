@@ -7,7 +7,6 @@ const getRealBoardPosition = require('../utils/getRealBoardPosition');
 const isPositionBlocked = require('../rules/isPositionBlocked');
 const isDestinationBlocked = require('../rules/isDestinationBlocked');
 const isEnemyBlockade = require('../rules/isEnemyBlockade');
-const getBlockades = require('../rules/getBlockades');
 
 function countPiecesOnPosition(game, globalPosition)
 {
@@ -189,68 +188,10 @@ function checkBasicMove(game, playerId, pieceIndex, steps)
 	return { ok: true };
 }
 
-// Índices de las fichas propias del jugador que forman parte de alguna de
-// sus propias barreras (dos fichas suyas juntas en la misma casilla del
-// recorrido principal).
-function getOwnBlockadePieceIndices(game, player)
-{
-	const ownBlockadePositions = getBlockades(game)
-		.filter(blockade => blockade.color === player.color)
-		.map(blockade => blockade.position);
-
-	if (ownBlockadePositions.length === 0)
-		return [];
-
-	const indices = [];
-
-	player.pieces.forEach((piece, index) => {
-		if (piece.steps < 0)
-			return;
-		if (piece.steps >= MAIN_TRACK_SIZE)
-			return;
-
-		const position = getRealBoardPosition(player.color, piece.steps);
-		if (ownBlockadePositions.includes(position))
-			indices.push(index);
-	});
-
-	return indices;
-}
-
 //function canMovePiece(game, playerId, pieceIndex)
 function canMovePiece(game, playerId, pieceIndex, steps = game.dice)
 {
-	const basic = checkBasicMove(game, playerId, pieceIndex, steps);
-	if (!basic.ok)
-		return basic;
-
-	// REGLA DEL 6
-	if (steps === 6)
-	{
-		const player = getPlayer(game, playerId);
-
-		if (player)
-		{
-			const blockadeIndices = getOwnBlockadePieceIndices(game, player);
-
-			if (blockadeIndices.length > 0 && !blockadeIndices.includes(pieceIndex))
-			{
-				const canOpenBlockade = blockadeIndices.some(
-					blockadeIndex => checkBasicMove(game, playerId, blockadeIndex, steps).ok
-				);
-
-				if (canOpenBlockade)
-				{
-					return {
-						ok: false,
-						error: 'Debes mover una ficha de tu barrera para abrirla'
-					};
-				}
-			}
-		}
-	}
-
-	return basic;
+	return checkBasicMove(game, playerId, pieceIndex, steps);
 }
 
 module.exports = canMovePiece;

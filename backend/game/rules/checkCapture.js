@@ -2,7 +2,7 @@ const {SAFE_CELLS, MAIN_TRACK_SIZE} = require('../constants');
 const getRealBoardPosition = require('../utils/getRealBoardPosition');
 const getBlockades = require('./getBlockades');
 
-function checkCapture(game, currentPlayerId, movedPiece)
+function checkCapture(game, currentPlayerId, movedPiece, justLeftBase = false)
 {
 	const currentPlayer = game.players.find(p => p.id === currentPlayerId);
 	if (!currentPlayer)
@@ -16,8 +16,9 @@ function checkCapture(game, currentPlayerId, movedPiece)
 	if (movedPiece.steps >= MAIN_TRACK_SIZE)
 		return false;
 	const currentPosition = getRealBoardPosition(currentPlayer.color, movedPiece.steps);
-	// Casilla segura
-	if (SAFE_CELLS.includes(currentPosition))
+	// Casilla segura (excepto la propia salida al sacar ficha de casa)
+	const isOwnExitOnLeaveBase = justLeftBase && movedPiece.steps === 0;
+	if (SAFE_CELLS.includes(currentPosition) && !isOwnExitOnLeaveBase)
 		return false;
 
 	const blockades = getBlockades(game);

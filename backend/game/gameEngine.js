@@ -86,7 +86,8 @@ function executeMove(game, playerId, pieceIndex)
 	const captured = checkCapture(
 		game,
 		playerId,
-		moveResult.piece
+		moveResult.piece,
+		moveResult.leftBase
 	);
 	const reachedGoal = moveResult.reachedGoal;
 
@@ -251,7 +252,8 @@ function executeBonusMove(
 	const captured = checkCapture(
 		game,
 		playerId,
-		moveResult.piece
+		moveResult.piece,
+		moveResult.leftBase
 	);
 
 	const reachedGoal =

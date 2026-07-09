@@ -26,7 +26,8 @@ function applyMove(game, playerId, pieceIndex, steps = game.dice)
 
 		return {
 			piece,
-			reachedGoal
+			reachedGoal,
+			leftBase: true
 		};
 	}
 

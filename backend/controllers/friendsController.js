@@ -1,13 +1,22 @@
 const pool = require('../db');
 const { isUserOnline } = require('../sockets/presence');
+const {validateId} = require('../utils/validation');
 
 exports.sendRequest = async (req, res) => {
 	try
 	{
 		const requesterId = req.user.id;
-		const addresseeId = parseInt(req.params.id, 10);
+		const idValidation = validateId(req.params.id);
+		if (!idValidation.ok)
+			return res.status(400).json({
+				error: idValidation.error
+			});
+
+		const addresseeId = idValidation.value;
 		if (requesterId === addresseeId)
-			return res.status(400).json({error: 'No puedes agregarte'});
+			return res.status(400).json({
+				error: 'No puedes agregarte'
+			});
 
 		const existing = await pool.query(
 			`
@@ -18,11 +27,16 @@ exports.sendRequest = async (req, res) => {
 				OR
 				(requester_id = $2 AND addressee_id = $1)
 			`,
-			[requesterId, addresseeId]
+			[
+				requesterId,
+				addresseeId
+			]
 		);
 
 		if (existing.rows.length > 0)
-			return res.status(400).json({ error: 'La relación ya existe'});
+			return res.status(400).json({
+				error: 'La relación ya existe'
+			});
 
 		const result = await pool.query(
 			`
@@ -34,15 +48,24 @@ exports.sendRequest = async (req, res) => {
 			VALUES ($1, $2, 'pending')
 			RETURNING *
 			`,
-			[requesterId, addresseeId]
+			[
+				requesterId,
+				addresseeId
+			]
 		);
 
-		return res.status(201).json({success: true, request: result.rows[0]});
+		return res.status(201).json({
+			success: true,
+			request: result.rows[0]
+		});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({error: 'Error en el servidor'});
+
+		return res.status(500).json({
+			error: 'Error en el servidor'
+		});
 	}
 };
 
@@ -50,7 +73,15 @@ exports.acceptRequest = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
-		const requesterId = parseInt(req.params.id, 10);
+
+		const idValidation = validateId(req.params.id);
+
+		if (!idValidation.ok)
+			return res.status(400).json({
+				error: idValidation.error
+			});
+
+		const requesterId = idValidation.value;
 
 		const result = await pool.query(
 			`
@@ -64,18 +95,29 @@ exports.acceptRequest = async (req, res) => {
 				AND status = 'pending'
 			RETURNING *
 			`,
-			[requesterId, userId]
+			[
+				requesterId,
+				userId
+			]
 		);
 
 		if (result.rows.length === 0)
-			return res.status(404).json({error: 'Solicitud no encontrada'});
+			return res.status(404).json({
+				error: 'Solicitud no encontrada'
+			});
 
-		return res.json({success: true, friendship: result.rows[0]});
+		return res.json({
+			success: true,
+			friendship: result.rows[0]
+		});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({error: 'Error en el servidor'});
+
+		return res.status(500).json({
+			error: 'Error en el servidor'
+		});
 	}
 };
 
@@ -111,12 +153,17 @@ exports.getFriends = async (req, res) => {
 			online: isUserOnline(friend.id)
 		}));
 
-		return res.json({friends});
+		return res.json({
+			friends
+		});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({error: 'Error en el servidor'});
+
+		return res.status(500).json({
+			error: 'Error en el servidor'
+		});
 	}
 };
 
@@ -141,12 +188,17 @@ exports.getPendingRequests = async (req, res) => {
 			[userId]
 		);
 
-		return res.json({requests: result.rows});
+		return res.json({
+			requests: result.rows
+		});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({error: 'Error en el servidor'});
+
+		return res.status(500).json({
+			error: 'Error en el servidor'
+		});
 	}
 };
 
@@ -154,7 +206,15 @@ exports.removeFriend = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
-		const friendId = parseInt(req.params.id, 10);
+
+		const idValidation = validateId(req.params.id);
+
+		if (!idValidation.ok)
+			return res.status(400).json({
+				error: idValidation.error
+			});
+
+		const friendId = idValidation.value;
 
 		const result = await pool.query(
 			`
@@ -171,7 +231,10 @@ exports.removeFriend = async (req, res) => {
 				)
 			RETURNING *
 			`,
-			[userId, friendId]
+			[
+				userId,
+				friendId
+			]
 		);
 
 		if (result.rows.length === 0)

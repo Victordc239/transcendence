@@ -1,7 +1,7 @@
 const getAvailableMoves = require('../game/rules/getAvailableMoves');
 const nextTurn = require('../game/rules/nextTurn');
 const { createNewGame } = require('../game/gameState');
-const { rollDice, addPlayerToGame, executeMove } = require('../game/gameEngine');
+const { rollDice, addPlayerToGame, executeMove, executeBonusMove} = require('../game/gameEngine');
 const canJoinGame = require('../game/validators/canJoinGame');
 const canRollDice = require('../game/validators/canRollDice');
 const { getGame: getGameById, createGame: createGameInDB, getGameByPlayer } = require('../game/gameManager');
@@ -9,6 +9,9 @@ const withGameLock = require('../game/withGameLock');
 const { getIO } = require('../socket');
 const normalizeGame = require('../game/utils/normalizeGame');
 const { startTurnTimer } = require('../game/turnTimer');
+const { sendLobbySystemMessage } = require("../sockets/lobbySocket");
+const pool = require("../db");
+const {validateId, validatePieceIndex} = require("../utils/validation");
 
 // CREATE GAME:
 exports.createGame = async (req, res) => {
@@ -31,9 +34,6 @@ exports.createGame = async (req, res) => {
 			return res.status(500).json({ error: 'Database error creating game' });
 
 		const normalized = await normalizeGame(game);
-		const { sendLobbySystemMessage } = require("../sockets/lobbySocket");
-		const pool = require("../db");
-
 		try {
 			getIO().emit('game:created', normalized);
 		} catch (socketError) {
@@ -63,7 +63,14 @@ exports.createGame = async (req, res) => {
 // GET GAME:
 exports.getGame = async (req, res) => {
 	try {
-		const game = await getGameById(req.params.id);
+		const gameIdValidation = validateId(req.params.id);
+		if (!gameIdValidation.ok)
+		{
+			return res.status(400).json({
+				error: gameIdValidation.error
+			});
+		}
+		const game = await getGameById(gameIdValidation.value);
 		if (!game)
 			return res.status(404).json({ error: 'Game not found' });
 
@@ -78,7 +85,14 @@ exports.getGame = async (req, res) => {
 exports.joinGame = async (req, res) => {
 	try {
 		const userId = Number(req.user.id);
-		const gameId = String(req.params.id);
+		const gameIdValidation = validateId(req.params.id);
+		if (!gameIdValidation.ok)
+		{
+			return res.status(400).json({
+				error: gameIdValidation.error
+			});
+		}
+		const gameId = String(gameIdValidation.value);
 		const existing = await getGameByPlayer(userId);
 		if (existing && existing.id !== gameId)
 		{
@@ -144,8 +158,14 @@ exports.joinGame = async (req, res) => {
 exports.rollDice = async (req, res) => {
 	try {
 		const userId = req.user.id;
-		const gameId = req.params.id;
-
+		const gameIdValidation = validateId(req.params.id);
+		if (!gameIdValidation.ok)
+		{
+			return res.status(400).json({
+				error: gameIdValidation.error
+			});
+		}
+		const gameId = String(gameIdValidation.value);
 		const locked = await withGameLock(gameId, async (game) => {
 			const isPlayer = game.players.some(p => p.id === userId);
 			if (!isPlayer)
@@ -257,16 +277,28 @@ exports.rollDice = async (req, res) => {
 exports.movePiece = async (req, res) => {
 	try {
 		const userId = req.user.id;
-		const gameId = req.params.id;
 		const { pieceIndex } = req.body;
-
+		const gameIdValidation = validateId(req.params.id);
+		if (!gameIdValidation.ok)
+		{
+			return res.status(400).json({
+				error: gameIdValidation.error
+			});
+		}
+		const pieceValidation = validatePieceIndex(pieceIndex);
+		if (!pieceValidation.ok)
+		{
+			return res.status(400).json({
+				error: pieceValidation.error
+			});
+		}
+		const gameId = String(gameIdValidation.value);
 		const locked = await withGameLock(gameId, async (game) => {
 			const isPlayer = game.players.some(p => p.id === userId);
 			if (!isPlayer)
 				return { error: 'Spectators cannot move pieces' };
 
-			const result = executeMove(game, userId, pieceIndex);
-
+			const result = executeMove(game, userId, pieceValidation.value);
 			if (!result.ok)
 				return result;
 
@@ -300,9 +332,22 @@ exports.movePiece = async (req, res) => {
 exports.moveBonusPiece = async (req, res) => {
 	try {
 		const userId = req.user.id;
-		const gameId = req.params.id;
 		const { pieceIndex } = req.body;
-
+		const gameIdValidation = validateId(req.params.id);
+		if (!gameIdValidation.ok)
+		{
+			return res.status(400).json({
+				error: gameIdValidation.error
+			});
+		}
+		const pieceValidation = validatePieceIndex(pieceIndex);
+		if (!pieceValidation.ok)
+		{
+			return res.status(400).json({
+				error: pieceValidation.error
+			});
+		}
+		const gameId = String(gameIdValidation.value);
 		const locked = await withGameLock(gameId, async (game) => {
 			const isPlayer = game.players.some(
 				p => p.id === userId
@@ -313,16 +358,8 @@ exports.moveBonusPiece = async (req, res) => {
 					error: "Spectators cannot move pieces"
 				};
 
-			const {
-				executeBonusMove
-			} = require("../game/gameEngine");
 
-			const result = executeBonusMove(
-				game,
-				userId,
-				pieceIndex
-			);
-
+			const result = executeBonusMove(game, userId, pieceValidation.value);
 			if (!result.ok)
 				return result;
 

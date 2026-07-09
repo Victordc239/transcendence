@@ -1,5 +1,6 @@
 const pool = require('../db');
 const { isUserOnline } = require('../sockets/presence');
+const {validateUsername, validateId, validateText} = require('../utils/validation');
 
 exports.getMe = async (req, res) => {
 	try
@@ -21,9 +22,12 @@ exports.getMe = async (req, res) => {
 		);
 
 		if (result.rows.length === 0)
-			return res.status(404).json({error: 'Usuario no encontrado'});
+			return res.status(404).json({
+				error: 'Usuario no encontrado'
+			});
 
 		const user = result.rows[0];
+
 		return res.json({
 			...user,
 			online: true
@@ -32,7 +36,10 @@ exports.getMe = async (req, res) => {
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({error: 'Error en el servidor'});
+
+		return res.status(500).json({
+			error: 'Error en el servidor'
+		});
 	}
 };
 
@@ -40,12 +47,28 @@ exports.updateMe = async (req, res) => {
 	try
 	{
 		const userId = req.user.id;
-		const { username, avatar_url } = req.body;
+		let { username, avatar_url } = req.body;
+
 		if (!username && !avatar_url)
-			return res.status(400).json({error: 'No hay datos para actualizar'});
+		{
+			return res.status(400).json({
+				error: 'No hay datos para actualizar'
+			});
+		}
 
 		if (username)
 		{
+			const usernameValidation = validateUsername(username);
+
+			if (!usernameValidation.ok)
+			{
+				return res.status(400).json({
+					error: usernameValidation.error
+				});
+			}
+
+			username = usernameValidation.value;
+
 			const usernameExists = await pool.query(
 				`
 				SELECT id
@@ -53,10 +76,37 @@ exports.updateMe = async (req, res) => {
 				WHERE username = $1
 				AND id != $2
 				`,
-				[username, userId]);
+				[
+					username,
+					userId
+				]
+			);
 
 			if (usernameExists.rows.length > 0)
-				return res.status(400).json({error: 'El nombre de usuario ya está en uso'});
+			{
+				return res.status(400).json({
+					error: 'El nombre de usuario ya está en uso'
+				});
+			}
+		}
+
+		if (avatar_url)
+		{
+			if (typeof avatar_url !== 'string')
+			{
+				return res.status(400).json({
+					error: 'Avatar inválido'
+				});
+			}
+
+			avatar_url = avatar_url.trim();
+
+			if (avatar_url.length > 255)
+			{
+				return res.status(400).json({
+					error: 'Avatar demasiado largo'
+				});
+			}
 		}
 
 		const result = await pool.query(
@@ -82,19 +132,33 @@ exports.updateMe = async (req, res) => {
 			]
 		);
 
-		return res.json({	success: true,user: result.rows[0]});
+		return res.json({
+			success: true,
+			user: result.rows[0]
+		});
 	}
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({error: 'Error en el servidor'});
+
+		return res.status(500).json({
+			error: 'Error en el servidor'
+		});
 	}
 };
 
 exports.getUserById = async (req, res) => {
 	try
 	{
-		const { id } = req.params;
+		const idValidation = validateId(req.params.id);
+
+		if (!idValidation.ok)
+		{
+			return res.status(400).json({
+				error: idValidation.error
+			});
+		}
+
 		const result = await pool.query(
 			`
 			SELECT
@@ -105,13 +169,18 @@ exports.getUserById = async (req, res) => {
 			FROM users
 			WHERE id = $1
 			`,
-			[id]
+			[idValidation.value]
 		);
 
 		if (result.rows.length === 0)
-			return res.status(404).json({error: 'Usuario no encontrado'});
+		{
+			return res.status(404).json({
+				error: 'Usuario no encontrado'
+			});
+		}
 
 		const user = result.rows[0];
+
 		return res.json({
 			...user,
 			online: isUserOnline(user.id)
@@ -120,18 +189,30 @@ exports.getUserById = async (req, res) => {
 	catch (error)
 	{
 		console.error(error);
-		return res.status(500).json({error: 'Error en el servidor'});
+
+		return res.status(500).json({
+			error: 'Error en el servidor'
+		});
 	}
 };
 
 exports.searchUsers = async (req, res) => {
 	try
 	{
-		const query = req.query.q;
 		const userId = req.user.id;
+		const query = req.query.q;
 
-		if (!query || query.trim().length === 0)
-			return res.json({ users: [] });
+		if (!query)
+			return res.json({
+				users: []
+			});
+
+		const queryValidation = validateText(query, 50);
+
+		if (!queryValidation.ok)
+			return res.json({
+				users: []
+			});
 
 		const result = await pool.query(
 			`
@@ -147,7 +228,7 @@ exports.searchUsers = async (req, res) => {
 			LIMIT 20
 			`,
 			[
-				`%${query}%`,
+				`%${queryValidation.value}%`,
 				userId
 			]
 		);
@@ -157,11 +238,14 @@ exports.searchUsers = async (req, res) => {
 			online: isUserOnline(user.id)
 		}));
 
-		return res.json({ users });
+		return res.json({
+			users
+		});
 	}
 	catch (error)
 	{
 		console.error(error);
+
 		return res.status(500).json({
 			error: 'Error en el servidor'
 		});

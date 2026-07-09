@@ -94,21 +94,20 @@ export default function GamePage() {
             onClick={handleLeave}
             className="
               absolute top-4 left-4 z-50
-              flex items-center gap-2
               rounded-2xl
-              border border-red-400/30
-              bg-red-500/10
+              border border-white/10
+              bg-white/5
               backdrop-blur-xl
               px-5 py-2.5
-              font-semibold
-              text-red-300
-              shadow-lg
+              font-medium
+              text-white/80
+              shadow-xl
               transition-all duration-200
-              hover:bg-red-500/20
-              hover:border-red-400/50
-              hover:text-red-200
-              hover:scale-105
-              active:scale-95
+              hover:bg-red-500/15
+              hover:border-red-400/30
+              hover:text-red-300
+              hover:shadow-red-500/20
+              hover:shadow-xl
             "
           >
             Leave Game

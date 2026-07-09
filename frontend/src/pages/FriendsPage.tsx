@@ -1,26 +1,13 @@
-import {
-  useEffect,
-  useState,
-} from "react";
-
+import {useEffect, useState} from "react";
 import MainLayout from "../layouts/MainLayout";
 import GlassPanel from "../components/ui/GlassPanel";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-
-import {
-  getFriends,
-  sendFriendRequest,
-  removeFriend,
-} from "../api/friends.api";
-
+import {getFriends, sendFriendRequest, removeFriend} from "../api/friends.api";
 import { searchUsers } from "../api/user.api";
-
-import {
-  useFriendsStore,
-} from "../store/friendsStore";
-
+import {useFriendsStore} from "../store/friendsStore";
 import { socket } from "../socket/socket";
+import { validateText } from "../utils/validation";
 
 interface SearchUser {
   id: number;
@@ -70,17 +57,24 @@ export default function FriendsPage() {
   }
 
   async function handleSearch() {
-    if (!query.trim()) {
-      setResults([]);
+    const validation = validateText(query, {maxLength: 50, fieldName: "Search"});
+    if (!validation.ok)
+    {
+      if (!query.trim())
+      {
+        setResults([]);
+        return;
+      }
+      alert(validation.error);
       return;
     }
-
-    try {
-      const data =
-        await searchUsers(query);
-
+    try
+    {
+      const data = await searchUsers(validation.value);
       setResults(data.users);
-    } catch (err) {
+    }
+    catch (err)
+    {
       console.error(err);
     }
   }
@@ -122,10 +116,17 @@ export default function FriendsPage() {
           <Input
             placeholder="Buscar usuario..."
             value={query}
-            onChange={(e) =>
-              setQuery(e.target.value)
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+
+              if (value.length <= 50) {
+                setQuery(value);
+              }
+            }}
           />
+          <div className="text-right text-xs text-white/50">
+            {query.length}/50
+          </div>
 
           <Button onClick={handleSearch}>
             Buscar

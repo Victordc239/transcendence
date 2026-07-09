@@ -1,17 +1,15 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
-
 const initDB = require('./initDb');
 const initSockets = require('./sockets');
-
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const friendsRoutes = require('./routes/friendsRoutes');
 const gameRoutes = require('./routes/gameRoutes');
-
 const app = express();
-
 const path = require("path");
 
 app.use(cors({
@@ -21,24 +19,15 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
-app.use(
-    "/uploads",
-    express.static(path.join(__dirname, "uploads"))
-);
-
-app.get('/', (req, res) => {
-	res.json({ status: 'ok' });
-});
-
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.get('/', (req, res) => {res.json({ status: 'ok' });});
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/friends', friendsRoutes);
 app.use('/api/games', gameRoutes);
 
 const httpServer = http.createServer(app);
-
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 // 🔥 FIX: inicializar sockets DESPUÉS de DB
 initDB()

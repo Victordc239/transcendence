@@ -1,5 +1,5 @@
 
-comando backend:
+- Comando archivos backend:
 
 find . -type f \
 ! -name "package.json" \
@@ -17,11 +17,12 @@ find . -type f \
   done
 ' sh {} + > notasbackend.txt
 
+- Comando logs backend:
 
 docker logs -f transcendence_backend
 
 
-comando frontend:
+- Comandos archivos frontend:
 
 find . -type f \
 ! -name "README.md" \

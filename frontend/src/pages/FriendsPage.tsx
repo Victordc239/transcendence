@@ -178,8 +178,8 @@ export default function FriendsPage() {
 
         <div className="space-y-3">
           {friends.length === 0 && (
-            <p className="text-white/60">
-              No tienes amigos todavía.
+            <p className="text-gray-400">
+              No tienes amigos todavía
             </p>
           )}
 

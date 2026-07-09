@@ -3,27 +3,23 @@
 - Hay un error con las fichas cuando llegan a meta, algunas no cuentan bien las casillas que faltan y suben a meta con un numero mayor ✅
 - Cuando un jugador gana no puede seguir tirando el dado ✅
 - Turno de los jugadores en sentido antihorario ✅
-- Cuando comes o llegas a meta si el movimiento original fue con un 6, después de hacer el +20 o +10 el jugador vuelve a tirar (Soraya)
 - Cuando sacas 6 debes abrir barrera (es obligatorio mover una de las fichas que estan formando barrera con otra ficha) ✅
 - No se pueden poner 3 fichas en una misma casilla de casa (máximo 2 fichas) ✅
 - Solucionar que cuando hay barrera no pueden pasar las fichas ✅
 - Cuando sacas 3 veces 6 la última ficha que has movido se va para casa directamente ✅
+- Cuando comes o llegas a meta si el movimiento original fue con un 6, después de hacer el +20 o +10 el jugador vuelve a tirar (Soraya)
+- Mejorar esteticamente botón de abandonar la partida (Soraya)
 - Cuando sacas 5 con el dado y puedes sacar una ficha de casa, si hay dos fichas de distinto color en tu casa puedes comer la última ficha posicionada ahí 
 - Cuando sacas 5 con el dado y puedes sacar una ficha de casa, si hay una ficha de tu color y otra ficha de distinto color puedes comer la ficha de distinto color
 - Solucionar que cuando hay en casa 2 fichas de otro color la ficha rosa no puede sacar (error)
 - Arregar cuando se juntan dos fichas distintas en una misma safe cells se pone una encimna de otra en vez de ponerse una al lado de otra
-- Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend)
-- Implementar un boton para salir/abandonar una partida o cuando le damos a atras en el navegador y volvemos al lobby abandonemos la partida automaticamente. ✅
+- Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend), modificar las coordenadas de las fichas en el tablero
 - Implementar en el frontend lo de ganar
 - Añadir en el frontend una imagen de +10 (cuando gana una ficha) y +20 (cuando comen fichas)
 - Hacer el README
-- Hacer la página responsive
-- Hacer páginas de Privacy Policy and Terms of Service footer ✅
+- Hacer la página responsive (Manuel)
 - No warnings or errors should appear in the browser console.
 - Store credentials (API keys, environment variables, etc.) in a local .env file that is ignored by Git, and provide an .env.example file.
-- All forms and user inputs must be properly validated in both the frontend and backend:✅
-	Prueba con entradas no válidas (campos vacíos, formatos incorrectos, intentos de inyección SQL, intentos XSS, etc.) para verificar la validación. Tanto la validación del lado del cliente como del lado del servidor deben estar presentes.✅
-- Comprobar la conexion entre dos ordenadores distintos de la misma red
 
 MÓDULO BONUS:
 

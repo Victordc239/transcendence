@@ -222,7 +222,7 @@ export default function LobbyChat() {
 
   return (
     <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-      <h2 className="text-2xl font-bold mb-4">Lobby Chat</h2>
+      <h2 className="text-2xl font-bold mb-4">Chat</h2>
 
       <div className="h-96 overflow-y-auto rounded-xl bg-black/20 p-4 space-y-3">
         {messages.map((m) => {

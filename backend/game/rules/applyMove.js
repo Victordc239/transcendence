@@ -17,12 +17,16 @@ function applyMove(game, playerId, pieceIndex, steps = game.dice)
 
 	let reachedGoal = false;
 
+	if (!game.moveCounter)
+		game.moveCounter = 0;
+
 	// SALIR DE CASA
 
 	if (piece.state === 'base' && steps === 5)
 	{
 		piece.state = 'track';
 		piece.steps = 0;
+		piece.arrivalOrder = ++game.moveCounter;
 
 		return {
 			piece,
@@ -36,6 +40,7 @@ function applyMove(game, playerId, pieceIndex, steps = game.dice)
 	if (piece.steps >= MAIN_TRACK_SIZE)
 	{
 		piece.steps += steps;
+		piece.arrivalOrder = ++game.moveCounter;
 
 		if (piece.steps === FINAL_POSITION)
 		{
@@ -58,6 +63,7 @@ function applyMove(game, playerId, pieceIndex, steps = game.dice)
 
 		piece.steps = MAIN_TRACK_SIZE + overshoot;
 		piece.state = 'final';
+		piece.arrivalOrder = ++game.moveCounter;
 
 		if (piece.steps === FINAL_POSITION)
 		{
@@ -74,6 +80,7 @@ function applyMove(game, playerId, pieceIndex, steps = game.dice)
 	// RECORRIDO NORMAL
 
 	piece.steps += steps;
+	piece.arrivalOrder = ++game.moveCounter;
 
 	return {
 		piece,

@@ -1,12 +1,11 @@
 const getPlayer = require('../utils/getPlayer');
 const getPiece = require('../utils/getPiece');
-const {FINAL_POSITION, MAIN_TRACK_SIZE} = require('../constants');
+const {FINAL_POSITION, MAIN_TRACK_SIZE, SAFE_CELLS} = require('../constants');
 const isEnteringHomeStretch = require('../utils/isEnteringHomeStretch');
 const getDistanceToHomeEntry = require('../utils/getDistanceToHomeEntry');
 const getRealBoardPosition = require('../utils/getRealBoardPosition');
 const isPositionBlocked = require('../rules/isPositionBlocked');
 const isDestinationBlocked = require('../rules/isDestinationBlocked');
-const isEnemyBlockade = require('../rules/isEnemyBlockade');
 
 function countPiecesOnPosition(game, globalPosition)
 {
@@ -26,10 +25,6 @@ function countPiecesOnPosition(game, globalPosition)
     return count;
 }
 
-// Lógica de legalidad "básica" de un movimiento, sin tener en cuenta la
-// obligación de abrir barrera al sacar un 6. Se mantiene separada de
-// canMovePiece para poder comprobar, sin recursividad, si alguna ficha de
-// una barrera propia puede moverse.
 //function checkBasicMove(game, playerId, pieceIndex)
 function checkBasicMove(game, playerId, pieceIndex, steps)
 {
@@ -75,13 +70,12 @@ function checkBasicMove(game, playerId, pieceIndex, steps)
 			};
 		}
 		const exitPosition = getRealBoardPosition(player.color, 0);
-		if (isEnemyBlockade(game, player.color, exitPosition))
-		{
-			return {
-				ok: false,
-				error: 'Exit blocked by enemy blockade'
-			};
-		}
+
+		// NOTA: ya NO se bloquea la salida por barrera enemiga en la
+		// propia casilla de salida (Regla 3). En su lugar se permite
+		// salir y, al aplicar el movimiento, checkCapture se encarga de
+		// romper esa barrera capturando una de sus dos fichas.
+
 		const ownPiecesOnExit = player.pieces.filter(p => {
 			if (p.steps < 0)
 				return false;
@@ -96,9 +90,19 @@ function checkBasicMove(game, playerId, pieceIndex, steps)
 			};
 		}
 
+		// CASILLA SEGURA: máximo 2 fichas, contando que una ficha
+		// enemiga suelta (o una de una barrera enemiga) en la salida
+		// será capturada por esta misma jugada y por tanto no ocupa sitio.
 		const totalOnExit = countPiecesOnPosition(game, exitPosition);
-    	if (totalOnExit >= 4)
-    	    return { ok: false, error: 'Cell is full (max 4 pieces)' };
+		const enemyPiecesOnExit = totalOnExit - ownPiecesOnExit.length;
+		const remainingAfterCapture = ownPiecesOnExit.length + Math.max(enemyPiecesOnExit - 1, 0);
+		if (remainingAfterCapture + 1 > 2)
+		{
+			return {
+				ok: false,
+				error: 'Casilla de salida llena (máx 2 fichas)'
+			};
+		}
 
 		return { ok: true };
 	}
@@ -176,12 +180,16 @@ function checkBasicMove(game, playerId, pieceIndex, steps)
 		};
 	}
 
+	// LÍMITE DE FICHAS POR CASILLA: 2 en casillas seguras/inicio, 4 en el resto.
 	const totalPiecesOnTarget = countPiecesOnPosition(game, targetPosition);
-	if (totalPiecesOnTarget >= 4)
+	const maxOnTarget = SAFE_CELLS.includes(targetPosition) ? 2 : 4;
+	if (totalPiecesOnTarget >= maxOnTarget)
 	{
 	    return {
 	        ok: false,
-	        error: 'Cell is full (max 4 pieces)'
+	        error: SAFE_CELLS.includes(targetPosition)
+	            ? 'Casilla segura llena (máx 2 fichas)'
+	            : 'Cell is full (max 4 pieces)'
 	    };
 	}
 

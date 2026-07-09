@@ -5,6 +5,7 @@ const nextTurn = require('./rules/nextTurn');
 const checkCapture = require('./rules/checkCapture');
 const checkWin = require('./rules/checkWin');
 const createPieces = require('./utils/createPieces');
+const getAvailableMoves = require('./rules/getAvailableMoves');
 const { startTurnTimer, clearTurnTimer } = require('./turnTimer');
 
 function rollDice()
@@ -140,37 +141,48 @@ function executeMove(game, playerId, pieceIndex)
 	}
 
 	// BONUS POR COMER
+	// Solo se concede si hay alguna ficha capaz de usarlo; si no, se
+	// continúa el flujo normal de fin de turno más abajo.
 
 	if (captured)
 	{
-		game.pendingBonus = CAPTURE_BONUS;
-		game.pendingBonusPlayer = playerId;
+		const hasMoves = getAvailableMoves(game, playerId, CAPTURE_BONUS).length > 0;
+		if (hasMoves)
+		{
+			game.pendingBonus = CAPTURE_BONUS;
+			game.pendingBonusPlayer = playerId;
 
-		game.dice = null;
-		game.updatedAt = Date.now();
+			game.dice = null;
+			game.updatedAt = Date.now();
 
-		return {
-			ok: true,
-			pendingBonus: true,
-			bonus: CAPTURE_BONUS
-		};
+			return {
+				ok: true,
+				pendingBonus: true,
+				bonus: CAPTURE_BONUS
+			};
+		}
 	}
 
 	// BONUS POR LLEGAR A META
+	// Misma comprobación: sin fichas disponibles, no se concede el bonus.
 
 	if (reachedGoal)
 	{
-		game.pendingBonus = GOAL_BONUS;
-		game.pendingBonusPlayer = playerId;
+		const hasMoves = getAvailableMoves(game, playerId, GOAL_BONUS).length > 0;
+		if (hasMoves)
+		{
+			game.pendingBonus = GOAL_BONUS;
+			game.pendingBonusPlayer = playerId;
 
-		game.dice = null;
-		game.updatedAt = Date.now();
+			game.dice = null;
+			game.updatedAt = Date.now();
 
-		return {
-			ok: true,
-			pendingBonus: true,
-			bonus: GOAL_BONUS
-		};
+			return {
+				ok: true,
+				pendingBonus: true,
+				bonus: GOAL_BONUS
+			};
+		}
 	}
 
 	// Inicializar contador
@@ -299,28 +311,36 @@ function executeBonusMove(
 
 		if (captured)
 		{
-			game.pendingBonus = CAPTURE_BONUS;
-			game.pendingBonusPlayer = playerId;
+			const hasMoves = getAvailableMoves(game, playerId, CAPTURE_BONUS).length > 0;
+			if (hasMoves)
+			{
+				game.pendingBonus = CAPTURE_BONUS;
+				game.pendingBonusPlayer = playerId;
 
-			game.updatedAt = Date.now();
+				game.updatedAt = Date.now();
 
-			return {
-				ok: true,
-				pendingBonus: true
-			};
+				return {
+					ok: true,
+					pendingBonus: true
+				};
+			}
 		}
 
 		if (reachedGoal)
 		{
-			game.pendingBonus = GOAL_BONUS;
-			game.pendingBonusPlayer = playerId;
+			const hasMoves = getAvailableMoves(game, playerId, GOAL_BONUS).length > 0;
+			if (hasMoves)
+			{
+				game.pendingBonus = GOAL_BONUS;
+				game.pendingBonusPlayer = playerId;
 
-			game.updatedAt = Date.now();
+				game.updatedAt = Date.now();
 
-			return {
-				ok: true,
-				pendingBonus: true
-			};
+				return {
+					ok: true,
+					pendingBonus: true
+				};
+			}
 		}
 
 		game.pendingBonus = null;

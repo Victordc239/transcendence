@@ -22,11 +22,15 @@ function checkCapture(game, currentPlayerId, movedPiece, justLeftBase = false)
 		return false;
 
 	const blockades = getBlockades(game);
-	// Nunca capturar sobre una barrera
-	const isBlockadeCell =blockades.some(blockade => blockade.position === currentPosition);
-	if (isBlockadeCell)
+	// Nunca capturar sobre una barrera, salvo la excepción de la propia
+	// salida al sacar ficha de casa: ahí sí se puede romper una barrera
+	// enemiga formada justo sobre tu casilla de salida (Regla 3).
+	const isBlockadeCell = blockades.some(blockade => blockade.position === currentPosition);
+	if (isBlockadeCell && !isOwnExitOnLeaveBase)
 		return false;
 
+	// Recopilar todas las fichas enemigas presentes en la casilla.
+	const candidates = [];
 	for (const enemy of game.players)
 	{
 		if (enemy.id === currentPlayerId)
@@ -41,23 +45,25 @@ function checkCapture(game, currentPlayerId, movedPiece, justLeftBase = false)
 			const enemyPosition = getRealBoardPosition(enemy.color, enemyPiece.steps);
 			if (enemyPosition !== currentPosition)
 				continue;
-
-			const enemyPiecesOnCell =enemy.pieces.filter(p => {
-				if (p.steps < 0)
-					return;
-				if (p.steps >= MAIN_TRACK_SIZE)
-					return;
-				return (getRealBoardPosition(enemy.color, p.steps) === currentPosition);
-			});
-			// barrera enemiga
-			if (enemyPiecesOnCell.length >= 2)
-				return false;
-			enemyPiece.steps = -1;
-			enemyPiece.state = 'base';
-			return true;
+			candidates.push(enemyPiece);
 		}
 	}
-	return false;
+
+	if (candidates.length === 0)
+		return false;
+
+	// Se captura la ficha enemiga colocada más recientemente en la
+	// casilla (Regla 1). Si solo hay una candidata, se captura esa.
+	let target = candidates[0];
+	for (const candidate of candidates)
+	{
+		if ((candidate.arrivalOrder || 0) > (target.arrivalOrder || 0))
+			target = candidate;
+	}
+
+	target.steps = -1;
+	target.state = 'base';
+	return true;
 }
 
 module.exports = checkCapture;

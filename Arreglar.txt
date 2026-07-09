@@ -13,9 +13,9 @@
 - Cambiar/Mejorar distribución página game (Soraya)
 - Implementar en el frontend lo de ganar (Soraya)
 
-- Cuando sacas 5 con el dado y puedes sacar una ficha de casa (BASE), si hay dos fichas de distinto color en tu START_POSITIONS puedes comer la última ficha posicionada ahí (Santi)
-- Cuando sacas 5 con el dado y puedes sacar una ficha de casa (BASE), si hay una ficha de tu color y otra ficha de distinto color en tu START_POSITIONS puedes comer la ficha de distinto color (Santi)
-- Solucionar que cuando hay en START_POSITIONS 2 fichas de otro color no puede sacar ficha de casa (BASE), y debe poder sacar ficha y comer una ficha del otro color (Santi)
+- Cuando sacas 5 con el dado y puedes sacar una ficha de casa (BASE), si hay dos fichas de distinto color en tu START_POSITIONS puedes comer la última ficha posicionada ahí (Santi)✅
+- Cuando sacas 5 con el dado y puedes sacar una ficha de casa (BASE), si hay una ficha de tu color y otra ficha de distinto color en tu START_POSITIONS puedes comer la ficha de distinto color (Santi)✅
+- Solucionar que cuando hay en START_POSITIONS 2 fichas de otro color no puede sacar ficha de casa (BASE), y debe poder sacar ficha y comer una ficha del otro color (Santi)✅
 
 - Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend), modificar las coordenadas de las fichas en el tablero (Manuel)
 - Hacer la página responsive (Manuel)

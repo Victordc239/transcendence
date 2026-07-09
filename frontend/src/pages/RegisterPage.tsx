@@ -1,77 +1,104 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import AuthLayout from "../layouts/AuthLayout";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
-
 import { register } from "../api/api";
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function RegisterPage() {
-  const navigate = useNavigate();
+	const navigate = useNavigate();
 
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+	const [username, setUsername] = useState("");
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
 
-  const handleRegister = async () => {
-    try {
-      const data = await register(username, email, password);
+	const handleRegister = async () => {
+		const cleanUsername = username.trim();
+		const cleanEmail = email.trim().toLowerCase();
 
-      if (data.user) {
-        navigate("/");
-      } else {
-        alert(data.error || "Error en registro");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error de conexión");
-    }
-  };
+		if (!cleanUsername || !cleanEmail || !password) {
+			alert("Todos los campos son obligatorios");
+			return;
+		}
 
-  return (
-    <AuthLayout>
-      <div className="flex flex-col gap-4">
-        <h1 className="text-3xl font-bold text-center text-pink-Primary">
-          Crear cuenta
-        </h1>
+		if (cleanUsername.length < 3 || cleanUsername.length > 20) {
+			alert("El nombre de usuario debe tener entre 3 y 20 caracteres");
+			return;
+		}
 
-        <Input
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
+		if (!EMAIL_REGEX.test(cleanEmail)) {
+			alert("Email inválido");
+			return;
+		}
 
-        <Input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+		if (password.length < 8) {
+			alert("La contraseña debe tener al menos 8 caracteres");
+			return;
+		}
 
-        <Input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+		try {
+			const data = await register(
+				cleanUsername,
+				cleanEmail,
+				password
+			);
 
-        <Button onClick={handleRegister}>
-          Registrarse
-        </Button>
+			if (data.user)
+				navigate("/");
+			else
+				alert(data.error || "Error en registro");
+		}
+		catch (err)
+		{
+			console.error(err);
+			alert("Error de conexión");
+		}
+	};
 
-        <p className="text-center text-sm">
-          ¿Ya tienes cuenta?{" "}
-          <span
-            onClick={() => navigate("/")}
-            className="cursor-pointer text-pink-Primary"
-          >
-            Inicia sesión
-          </span>
-        </p>
-      </div>
-    </AuthLayout>
-  );
+	return (
+		<AuthLayout>
+			<div className="flex flex-col gap-4">
+				<h1 className="text-3xl font-bold text-center text-pink-Primary">
+					Crear cuenta
+				</h1>
+
+				<Input
+					placeholder="Username"
+					value={username}
+					onChange={(e) => setUsername(e.target.value)}
+				/>
+
+				<Input
+					type="email"
+					placeholder="Email"
+					value={email}
+					onChange={(e) => setEmail(e.target.value)}
+				/>
+
+				<Input
+					type="password"
+					placeholder="Password"
+					value={password}
+					onChange={(e) => setPassword(e.target.value)}
+				/>
+
+				<Button onClick={handleRegister}>
+					Registrarse
+				</Button>
+
+				<p className="text-center text-sm">
+					¿Ya tienes cuenta?{" "}
+					<span
+						onClick={() => navigate("/")}
+						className="cursor-pointer text-pink-Primary"
+					>
+						Inicia sesión
+					</span>
+				</p>
+			</div>
+		</AuthLayout>
+	);
 }
 
 export default RegisterPage;

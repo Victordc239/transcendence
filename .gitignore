@@ -3,3 +3,8 @@ dist/
 build/
 .vscode/
 .DS_Store
+
+# DESCOMENTAR ANTES DE SUBIRLO AL REPO FINAL
+# .env
+# .env.*
+# !.env.example

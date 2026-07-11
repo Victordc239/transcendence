@@ -84,7 +84,7 @@ export default function GamePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950 text-white flex flex-col">
 
       <div className="flex flex-1">
 

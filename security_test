@@ -170,7 +170,7 @@ VAULT_AUTH_METHOD=approle (no root token expuesto)
 
 
 
-
+IMPORTANTE
 - Nota: db_data (volumen persistente) con password antiguo vs
   vault-init generando password nuevo en cada ejecucion
 - Fix de verdad pendiente, hacer: docker volume rm transcendence_db_data + docker

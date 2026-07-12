@@ -4,6 +4,11 @@ build/
 .vscode/
 .DS_Store
 
+# Vault initialization artifacts
+vault/keys.json
+vault/role-id.txt
+vault/secret-id.txt
+
 # DESCOMENTAR ANTES DE SUBIRLO AL REPO FINAL
 # .env
 # .env.*

@@ -1,0 +1,177 @@
+odulo: WAF/ModSecurity + HashiCorp Vault
+
+
+--------------------------------------------------------------------
+1. VERIFICACION DE CONFIGURACION - MODSECURITY
+--------------------------------------------------------------------
+
+>>
+docker exec transcendence_nginx cat /etc/nginx/modsecurity.d/modsecurity.conf | grep SecRuleEngine
+
+<<
+SecRuleEngine On
+
+Confirma que el motor esta en modo bloqueo activo, no en
+DetectionOnly.
+
+--------------------------------------------------------------------
+2. CARGA DE REGLAS OWASP CRS
+--------------------------------------------------------------------
+
+<<
+docker logs transcendence_nginx --tail 50
+
+>>
+ModSecurity-nginx cargado con reglas CRS (inline/local/remote)
+
+
+921 reglas locales cargadas (OWASP CRS), 0 remotas.
+
+--------------------------------------------------------------------
+3. TEST SQL INJECTION
+--------------------------------------------------------------------
+
+>>
+curl -k -i -G "https://localhost:8443/api/users" --data-urlencode "id=1' OR '1'='1"
+
+<<
+HTTP/1.1 403 Forbidden
+
+
+Log de ModSecurity (docker exec transcendence_nginx tail -20 /var/log/modsecurity/modsec_audit.log):
+ModSecurity: Access denied with code 403 (phase 2).
+Matched "Operator `Ge' with parameter `5' against variable `TX:ANOMALY_SCORE' (Value: `30')
+[file "/opt/owasp-crs/rules/REQUEST-949-BLOCKING-EVALUATION.conf"]
+[id "949110"] [msg "Inbound Anomaly Score Exceeded (Total Score: 30)"]
+[uri "/api/users"]
+
+
+--------------------------------------------------------------------
+4. TEST XSS (Cross-Site Scripting)
+--------------------------------------------------------------------
+
+>>
+curl -k -i -G "https://localhost:8443/api/search" --data-urlencode "q=<script>alert(1)</script>"
+
+<<
+HTTP/1.1 403 Forbidden
+
+
+--------------------------------------------------------------------
+5. TEST PATH TRAVERSAL / LFI
+--------------------------------------------------------------------
+
+>>
+curl -k -i -G "https://localhost:8443/api/file" --data-urlencode "name=../../../../etc/passwd"
+
+<<
+HTTP/1.1 403 Forbidden
+
+
+--------------------------------------------------------------------
+6. TEST COMMAND INJECTION
+--------------------------------------------------------------------
+
+>>
+curl -k -i -G "https://localhost:8443/api/ping" --data-urlencode "host=127.0.0.1;cat /etc/passwd"
+
+<<
+HTTP/1.1 403 Forbidden
+
+
+--------------------------------------------------------------------
+7. TEST FALSO POSITIVO - REGISTRO CON APOSTROFE
+--------------------------------------------------------------------
+
+>>
+curl -k -i -X POST "https://localhost:8443/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"OBrien","email":"obrien@test.com","password":"Test1234!"}'
+
+<<
+HTTP/1.1 201 Created (el WAF NO debe bloquear trafico legitimo)
+
+
+
+--------------------------------------------------------------------
+8. TEST FALSO POSITIVO - CAMPO LIBRE CON APOSTROFE
+--------------------------------------------------------------------
+
+>>
+curl -k -i -X POST "https://localhost:8443/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test2","email":"test2@test.com","password":"Test1234!","displayName":"Conor O'"'"'Malley"}'
+
+<<
+HTTP/1.1 201 Created
+
+
+--------------------------------------------------------------------
+9. LOGIN LEGITIMO (verificacion de campo correcto de la API)
+--------------------------------------------------------------------
+
+>>
+curl -k -i -X POST "https://localhost:8443/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"hola@test.com","password":"Test1234!"}'
+
+<<
+HTTP/1.1 200 OK con token JWT
+
+
+--------------------------------------------------------------------
+10. VAULT - ESTADO DEL SERVIDOR
+--------------------------------------------------------------------
+
+<<
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 transcendence_vault vault status
+
+>>
+Initialized: true / Sealed: false
+
+
+Nota : Total Shares=1, Threshold=1.
+Configuracion valida para entorno de desarrollo/defensa academica;
+en produccion real se recomendaria Shamir con multiples shares
+(ej. 5 shares / 3 threshold) o auto-unseal via KMS.
+
+--------------------------------------------------------------------
+11. VAULT - AUSENCIA DE SECRETOS EN VARIABLES DE ENTORNO
+--------------------------------------------------------------------
+
+>>
+docker inspect transcendence_backend --format '{{json .Config.Env}}' | tr ',' '\n'
+
+<<
+Solo config no sensible (host, puerto, metodo de auth) - SIN
+password ni credenciales reales de DB.
+
+--------------------------------------------------------------------
+12. VAULT - ACCESO DENEGADO SIN AUTENTICACION
+--------------------------------------------------------------------
+
+>>
+docker exec transcendence_vault vault kv get -address=http://127.0.0.1:8200 transcendence/data/db
+
+<<
+Error 403 - permission denied (sin token valido no se debe poder leer)
+
+
+--------------------------------------------------------------------
+13. VAULT - CONFIRMACION DE USO DE APPROLE EN BACKEND
+--------------------------------------------------------------------
+
+>>
+docker exec transcendence_backend env | grep -i vault
+
+<<
+VAULT_AUTH_METHOD=approle (no root token expuesto)
+
+
+
+
+IMPORTANTE
+- Nota: db_data (volumen persistente) con password antiguo vs
+  vault-init generando password nuevo en cada ejecucion
+- Fix de verdad pendiente, hacer: docker volume rm transcendence_db_data + docker
+  compose up -d (regenera DB con password actual de Vault)

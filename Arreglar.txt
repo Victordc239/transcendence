@@ -58,7 +58,7 @@ IV.3 User Management
 		◦ Users have a profile page displaying their information.
 
 IV.5 Cybersecurity
-	• Major: Implement WAF/ModSecurity (hardened) + HashiCorp Vault for secrets:
+	• Major: Implement WAF/ModSecurity (hardened) + HashiCorp Vault for secrets: ✅ +2
 		◦ Configure strict ModSecurity/WAF.
 		◦ Manage secrets in Vault (API keys, credentials, environment variables), encrypted and isolated.
 

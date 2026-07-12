@@ -5,7 +5,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: ${DB_USER:-user}
-      POSTGRES_PASSWORD_file: /vault/creds/db-password
+      POSTGRES_PASSWORD_FILE: /vault/creds/db-password
       POSTGRES_DB: transcendence
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -16,7 +16,7 @@ services:
     networks:
       - transcendence_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U user -d transcendence"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -60,6 +60,8 @@ services:
       - .env
     environment:
       - VAULT_ADDR=http://vault:8200
+    volumes:
+      - vault_creds:/vault/creds:ro
     depends_on:
       db:
         condition: service_healthy

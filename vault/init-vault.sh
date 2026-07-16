@@ -35,11 +35,16 @@ export VAULT_TOKEN="$ROOT_TOKEN"
 
 vault secrets enable -path=transcendence -version=2 kv 2>/dev/null || true
 
-DB_PASS=$(openssl rand -hex 16)
-JWT_SECRET=$(openssl rand -hex 32)
+if vault kv get transcendence/db >/dev/null 2>&1; then
+  echo "Secrets already exist in Vault. Skipping initialization."
+  DB_PASS=$(vault kv get -field=password transcendence/db)
+else
+	DB_PASS=$(openssl rand -hex 16)
+	JWT_SECRET=$(openssl rand -hex 32)
 
-vault kv put transcendence/db username="$DB_USER" password="$DB_PASS"
-vault kv put transcendence/jwt secret="$JWT_SECRET"
+	vault kv put transcendence/db username="$DB_USER" password="$DB_PASS"
+	vault kv put transcendence/jwt secret="$JWT_SECRET"
+fi
 
 cat > /tmp/policy.hcl <<POLICY
 path "transcendence/data/*" { capabilities = ["read"] }

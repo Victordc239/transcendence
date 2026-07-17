@@ -7,7 +7,7 @@ import Footer from "../components/ui/Footer";
 
 function LobbyPage() {
   const navigate = useNavigate();
-  const { token , user } = useAuth();
+  const { token, user } = useAuth();
 
   const [gameId, setGameId] = useState("");
   const [loadingCreate, setLoadingCreate] = useState(false);
@@ -56,9 +56,7 @@ function LobbyPage() {
     } catch (err) {
       console.error(err);
       alert(
-        err instanceof Error
-          ? err.message
-          : "Error uniéndose a la partida"
+        err instanceof Error ? err.message : "Error uniéndose a la partida",
       );
     } finally {
       setLoadingJoin(false);
@@ -66,80 +64,129 @@ function LobbyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6 text-white flex flex-col gap-6">
+      <div className="mx-auto w-full max-w-7xl flex flex-col md:flex-row gap-4 md:gap-0 items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-5 md:p-6 backdrop-blur-xl">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent text-center md:text-left">
             Parchís Online
           </h1>
         </div>
-
-        <div className="flex gap-6 items-center">
+        <div className="flex flex-wrap justify-center gap-4 md:gap-6 items-center text-sm md:text-base">
           <button
+            className="hover:text-purple-300 transition-colors"
             onClick={() => {
-              if (user) {
-                navigate(`/profile/${user.id}`);
-              }
+              if (user) navigate(`/profile/${user.id}`);
             }}
           >
             Perfil
           </button>
 
-          <button onClick={() => navigate("/friends")}>
+          <button
+            className="hover:text-purple-300 transition-colors"
+            onClick={() => navigate("/friends")}
+          >
             Amigos
           </button>
 
-          <button onClick={() => navigate("/friend-requests")}>
+          <button
+            className="hover:text-purple-300 transition-colors"
+            onClick={() => navigate("/friend-requests")}
+          >
             Solicitudes
           </button>
 
           <button
             onClick={handleLogout}
-            className="rounded-xl bg-red-500/10 px-4 py-2 text-red-200"
+            className="rounded-xl bg-red-500/10 px-4 py-2 text-red-200 hover:bg-red-500/20 transition-all text-xs md:text-sm"
           >
             Logout
           </button>
         </div>
       </div>
+      <div className="mx-auto w-full max-w-7xl rounded-3xl border border-white/10 bg-white/5 p-6 md:p-10 backdrop-blur-xl">
+        {/* CAMBIO CLAVE: flex-col en móvil, flex-row en pantallas grandes (lg:) para balancear el espacio */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+          {/* COLUMNA IZQUIERDA: Título de Bienvenida */}
+          <div className="max-w-xl text-center lg:text-left">
+            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-purple-200 bg-clip-text text-transparent">
+              Bienvenido al Parchís Online
+            </h2>
+            <p className="mt-2 text-sm text-center md:text-base text-white/50 hidden md:block">
+              Crea una sala privada para jugar con tus amigos o únete a una
+              partida activa ingresando su identificador.
+            </p>
+          </div>
 
-      <div className="mx-auto mt-6 max-w-7xl rounded-3xl border border-white/10 bg-white/5 p-10 backdrop-blur-xl">
-        <h2 className="text-5xl font-bold">
-          Bienvenido al Parchís Online
-        </h2>
-
-        <div className="mt-8 flex flex-col gap-4">
-          <button
-            onClick={handleCreateGame}
-            disabled={loadingCreate}
-            className="rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 px-6 py-3 font-semibold disabled:opacity-50"
-          >
-            {loadingCreate ? "Creando..." : "Crear partida"}
-          </button>
-
-          <div className="flex gap-3">
-            <input
-              value={gameId}
-              onChange={(e) => setGameId(e.target.value)}
-              placeholder="ID de partida"
-              className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white placeholder-white/40"
-            />
-
+          {/* COLUMNA DERECHA: Acciones (Crear / Unirse) */}
+          {/* Limitamos el ancho en PC (lg:max-w-md) para que los botones no se estiren infinitamente y se vean elegantes */}
+          <div className="w-full lg:max-w-md flex flex-col gap-4">
+            {/* Botón de Crear Partida */}
             <button
-              onClick={handleJoinGame}
-              disabled={loadingJoin}
-              className="rounded-xl border border-white/10 bg-white/10 px-6 py-2 disabled:opacity-50"
+              onClick={handleCreateGame}
+              disabled={loadingCreate}
+              className="
+          w-full
+          rounded-2xl 
+          bg-gradient-to-r from-pink-400 to-purple-400 
+          px-6 py-4 
+          font-bold 
+          shadow-lg shadow-purple-500/20 
+          active:scale-98 
+          transition-all duration-200
+          hover:brightness-110
+          disabled:opacity-50
+          text-sm md:text-base
+        "
             >
-              {loadingJoin ? "Uniéndose..." : "Unirse"}
+              {loadingCreate ? "Creando..." : "Crear partida"}
             </button>
+
+            {/* Inputs de Unirse a Partida */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                value={gameId}
+                onChange={(e) => setGameId(e.target.value)}
+                placeholder="ID de partida"
+                className="
+            flex-1 
+            rounded-xl 
+            border border-white/10 
+            bg-white/5 
+            px-4 py-3 
+            text-white 
+            placeholder-white/40 
+            focus:outline-none focus:border-purple-500 focus:bg-white/10
+            transition-all duration-200 
+            text-sm md:text-base
+          "
+              />
+              <button
+                onClick={handleJoinGame}
+                disabled={loadingJoin}
+                className="
+            rounded-xl 
+            border border-white/10 
+            bg-white/10 
+            px-6 py-3 sm:py-2 
+            font-semibold 
+            hover:bg-white/20 
+            active:scale-98
+            transition-all duration-200 
+            disabled:opacity-50 
+            text-sm md:text-base
+          "
+              >
+                {loadingJoin ? "Uniéndose..." : "Unirse"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto w-full max-w-7xl">
         <LobbyChat />
       </div>
 
-      <div className="mx-auto w-full max-w-7xl px-6">
+      <div className="mx-auto w-full max-w-7xl px-4 md:px-6">
         <Footer />
       </div>
     </div>

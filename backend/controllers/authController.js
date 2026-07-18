@@ -1,34 +1,27 @@
 const pool = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
-const {
-	validateUsername,
-	validateEmail,
-	validatePassword
-} = require('../utils/validation');
-
+const {validateUsername, validateEmail, validatePassword} = require('../utils/validation');
 const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.register = async (req, res) => {
 	try
 	{
 		const { username, email, password } = req.body;
-
 		if (!username || !email || !password)
-			return res.status(400).json({ error: 'Faltan datos' });
+			return res.json({success: false, error: "Faltan datos"});
 
 		const usernameValidation = validateUsername(username);
 		if (!usernameValidation.ok)
-			return res.status(400).json({ error: usernameValidation.error });
+			return res.json({success: false, error: usernameValidation.error});
 
 		const emailValidation = validateEmail(email);
 		if (!emailValidation.ok)
-			return res.status(400).json({ error: emailValidation.error });
+			return res.json({success: false, error: emailValidation.error});
 
 		const passwordValidation = validatePassword(password);
 		if (!passwordValidation.ok)
-			return res.status(400).json({ error: passwordValidation.error });
+			return res.json({success: false, error: passwordValidation.error});
 
 		const salt = await bcrypt.genSalt(10);
 		const hashedPassword = await bcrypt.hash(passwordValidation.value, salt);
@@ -55,23 +48,15 @@ exports.register = async (req, res) => {
 			]
 		);
 
-		return res.status(201).json({
-			message: 'Usuario creado',
-			user: newUser.rows[0]
-		});
+		return res.json({success: true, message: "Usuario creado", user: newUser.rows[0]});
 	}
 	catch (error)
 	{
 		console.error(error);
+		if (error.code === "23505")
+			return res.json({success: false, error: "El usuario o email ya existe"});
 
-		if (error.code === '23505')
-			return res.status(400).json({
-				error: 'El usuario o email ya existe'
-			});
-
-		return res.status(500).json({
-			error: 'Error en el servidor'
-		});
+		return res.status(500).json({error: 'Error en el servidor'});
 	}
 };
 
@@ -81,21 +66,15 @@ exports.login = async (req, res) => {
 		const { email, password } = req.body;
 
 		if (!email || !password)
-			return res.status(400).json({
-				error: 'Faltan datos'
-			});
+			return res.json({success: false, error: 'Faltan datos'});
 
 		const emailValidation = validateEmail(email);
 		if (!emailValidation.ok)
-			return res.status(400).json({
-				error: emailValidation.error
-			});
+			return res.json({success: false, error: emailValidation.error});
 
 		const passwordValidation = validatePassword(password);
 		if (!passwordValidation.ok)
-			return res.status(400).json({
-				error: passwordValidation.error
-			});
+			return res.json({success: false, error: passwordValidation.error});
 
 		const result = await pool.query(
 			`
@@ -107,21 +86,14 @@ exports.login = async (req, res) => {
 		);
 
 		if (result.rows.length === 0)
-			return res.status(400).json({
-				error: 'Credenciales inválidas'
-			});
+			return res.json({success: false, error: 'Credenciales inválidas'});
 
 		const user = result.rows[0];
 
-		const validPassword = await bcrypt.compare(
-			passwordValidation.value,
-			user.password
-		);
+		const validPassword = await bcrypt.compare(passwordValidation.value, user.password);
 
 		if (!validPassword)
-			return res.status(400).json({
-				error: 'Credenciales inválidas'
-			});
+			return res.json({success: false, error: 'Credenciales inválidas'});
 
 		const token = jwt.sign(
 			{
@@ -136,6 +108,7 @@ exports.login = async (req, res) => {
 		);
 
 		return res.json({
+			success: true,
 			message: 'Login correcto',
 			token,
 			user: {

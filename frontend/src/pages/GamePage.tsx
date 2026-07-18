@@ -28,24 +28,50 @@ export default function GamePage() {
   );
 
   const handleRoll = async () => {
-    if (!token || !id || isSpectator) return;
+    if (!token || !id || isSpectator)
+      return;
 
     setRolling(true);
 
-    try {
-      await rollDice(token, id);
-    } finally {
+    try
+    {
+      const result = await rollDice(token, id);
+
+      if (!result.success)
+      {
+        alert(result.error);
+        return;
+      }
+    }
+    finally
+    {
       setTimeout(() => setRolling(false), 500);
     }
   };
 
   const handleMove = async (index: number) => {
-    if (!token || !id || isSpectator || !game) return;
+    if (!token || !id || isSpectator || !game)
+      return;
 
-    if (game.pendingBonus != null) {
-      await moveBonusPiece(token, id, index);
-    } else {
-      await movePiece(token, id, index);
+    try
+    {
+      if (game.pendingBonus != null)
+        await moveBonusPiece(token, id, index);
+      else
+        await movePiece(token, id, index);
+    }
+    catch (err)
+    {
+        if (!(err instanceof Error))
+        {
+            console.error(err);
+            return;
+        }
+
+        if (err.message === "Roll dice first" || err.message === "Not your turn" || err.message === "Invalid move")
+            return;
+
+        console.error(err);
     }
   };
 

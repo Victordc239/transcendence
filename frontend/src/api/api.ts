@@ -21,6 +21,7 @@ export async function register(username: string, email: string, password: string
 }
 
 export async function getMe(token: string) {
+  //console.trace("api.ts -> getMe()");
   const res = await fetch(`${API_URL}/users/me`, {
     headers: {
       Authorization: `Bearer ${token}`,

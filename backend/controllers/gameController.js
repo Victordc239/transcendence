@@ -138,14 +138,16 @@ exports.joinGame = async (req, res) => {
 			return res.status(404).json({ error: 'Game not found' });
 
 		if (locked.result?.error)
-			return res.status(400).json({ error: locked.result.error });
+			return res.json({success: false, error: locked.result.error});
 
 		const normalized = await normalizeGame(locked.game);
 
 		getIO().to(gameId).emit('game:update', normalized);
 
 		return res.json(normalized);
-	} catch (error) {
+	}
+	catch (error)
+	{
 		console.error('JOIN GAME ERROR:', error);
 		return res.status(500).json({
 			error: 'Server error joining game',
@@ -258,7 +260,9 @@ exports.rollDice = async (req, res) => {
 			return res.status(404).json({ error: 'Game not found' });
 
 		if (locked.result?.error)
-			return res.status(400).json({ error: locked.result.error });
+		{
+			return res.json({success: false, error: locked.result.error});
+		}
 
 		const normalized = await normalizeGame(locked.game);
 
@@ -266,8 +270,10 @@ exports.rollDice = async (req, res) => {
 			.to(gameId)
 			.emit('game:update', normalized);
 
-		return res.json({ dice: locked.result.dice });
-	} catch (error) {
+		return res.json({success: true, dice: locked.result.dice});
+	}
+	catch (error)
+	{
 		console.error(error);
 		return res.status(500).json({ error: 'Server error' });
 	}

@@ -71,7 +71,7 @@ export function AuthProvider({
     setToken(newToken);
     setUser(user);
 
-    connectSocket(newToken);
+    //connectSocket(newToken);
   };
 
   const logout = () => {

@@ -29,9 +29,9 @@ function LoginPage() {
 
 		try {
 			const data = await login(cleanEmail, password);
-
-			if (!data.token) {
-				alert(data.error || "Error en login");
+			if (!data.success)
+			{
+				alert(data.error);
 				return;
 			}
 
@@ -43,7 +43,6 @@ function LoginPage() {
 		}
 		catch (err)
 		{
-			console.error(err);
 			alert("Error de conexión");
 		}
 	};

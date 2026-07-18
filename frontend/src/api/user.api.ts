@@ -2,6 +2,7 @@ import { http } from "./http";
 import type { User } from "../types/user";
 
 export function getMe() {
+  //console.trace("user.api.ts -> getMe()");
   return http<User>("/users/me");
 }
 

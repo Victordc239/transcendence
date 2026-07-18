@@ -38,20 +38,17 @@ function RegisterPage() {
 		}
 
 		try {
-			const data = await register(
-				cleanUsername,
-				cleanEmail,
-				password
-			);
+			const data = await register(cleanUsername, cleanEmail, password);
+			if (!data.success)
+			{
+				alert(data.error);
+				return;
+			}
 
-			if (data.user)
-				navigate("/");
-			else
-				alert(data.error || "Error en registro");
+			navigate("/");
 		}
 		catch (err)
 		{
-			console.error(err);
 			alert("Error de conexión");
 		}
 	};

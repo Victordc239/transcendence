@@ -187,7 +187,9 @@ function registerGameSocket(io, socket)
 		}
 	);
 
-	socket.on("disconnect", async () => {
+	socket.on("disconnect", async (reason) => {
+		console.log("SOCKET DISCONNECT", socket.user.id, reason);
+
 		try
 		{
 			const joinedGames = Array
@@ -198,7 +200,6 @@ function registerGameSocket(io, socket)
 			{
 				await disconnectPlayer(io, gameId, socket.user.id);
 			}
-			console.log("SOCKET DISCONNECT", socket.user.id);
 		}
 		catch (err)
 		{

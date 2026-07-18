@@ -61,6 +61,8 @@ export interface Game {
 
   dice: number | null;
 
+  availableMoves?: number[];
+
   lastDice?: number | null;
 
   winner?: number | null;

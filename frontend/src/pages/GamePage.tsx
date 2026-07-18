@@ -49,9 +49,12 @@ export default function GamePage() {
     }
   };
 
+  const [moving, setMoving] = useState(false);
+
   const handleMove = async (index: number) => {
-    if (!token || !id || isSpectator || !game)
+    if (!token || !id || isSpectator || !game || moving)
       return;
+    setMoving(true);
 
     try
     {
@@ -68,10 +71,17 @@ export default function GamePage() {
             return;
         }
 
-        if (err.message === "Roll dice first" || err.message === "Not your turn" || err.message === "Invalid move")
+        if (err.message === "Roll dice first" || err.message === "Not your turn" || err.message === "Invalid move" || err.message === "Need 5 to leave base" ||
+            err.message === "Own blockade on exit" || err.message === "Exact roll required" || err.message === "Blockade in path" || err.message === "Destination blocked by blockade")
+        {
             return;
+        }
 
         console.error(err);
+    }
+    finally
+    {
+      setMoving(false);
     }
   };
 
@@ -163,12 +173,34 @@ export default function GamePage() {
           <GameScene
             game={game}
             onPieceClick={(playerId: number, pieceIndex: number) => {
-              if (isSpectator) return;
-              const currentPlayer = game.players.find(
-                (p: any) => p.id === game.turn,
-              );
-              if (!currentPlayer) return;
-              if (currentPlayer.id !== playerId) return;
+              if (isSpectator)
+                return;
+              const currentPlayer = game.players.find((p: any) => p.id === game.turn);
+              if (!currentPlayer)
+                return;
+              if (currentPlayer.id !== playerId)
+                return;
+              if (game.status !== "playing")
+                  return;
+              if (game.players.length < 2)
+                  return;
+              if (game.turn !== user?.id)
+                  return;
+              if (playerId !== user?.id)
+                  return;
+              if (game.pendingBonus == null && game.dice == null)
+                  return;
+              const player = game.players.find((p: any) => p.id === playerId);
+              if (!player)
+                  return;
+              const piece = player.pieces[pieceIndex];
+              if (!piece)
+                  return;
+              const steps = game.pendingBonus ?? game.dice;
+              if (piece.state === "base" && steps !== 5)
+                  return;
+              if (!game.availableMoves?.includes(pieceIndex))
+                  return;
               handleMove(pieceIndex);
             }}
           />

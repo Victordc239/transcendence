@@ -23,8 +23,9 @@ exports.createGame = async (req, res) => {
 		const existing = await getGameByPlayer(userId);
 		if (existing)
 		{
-			return res.status(400).json({
-				error: "Already in a game"
+			return res.json({
+				reconnect: false,
+				message: "You still have an active game. Wait until it expires."
 			});
 		}
 		const game = createNewGame(userId);
@@ -88,7 +89,8 @@ exports.joinGame = async (req, res) => {
 		const gameIdValidation = validateId(req.params.id);
 		if (!gameIdValidation.ok)
 		{
-			return res.status(400).json({
+			return res.json({
+				success: false,
 				error: gameIdValidation.error
 			});
 		}
@@ -96,7 +98,10 @@ exports.joinGame = async (req, res) => {
 		const existing = await getGameByPlayer(userId);
 		if (existing && existing.id !== gameId)
 		{
-			return res.status(400).json({error: "Already in another game"});
+			return res.json({
+				reconnect: false,
+				message: "You still have an active game. Wait until it expires."
+			});
 		}
 		const locked = await withGameLock(gameId, async (game) => {
 			if (!game)
@@ -135,7 +140,12 @@ exports.joinGame = async (req, res) => {
 		});
 
 		if (!locked)
-			return res.status(404).json({ error: 'Game not found' });
+		{
+			return res.json({
+				success: false,
+				error: "Game not found"
+			});
+		}
 
 		if (locked.result?.error)
 			return res.json({success: false, error: locked.result.error});
@@ -257,7 +267,12 @@ exports.rollDice = async (req, res) => {
 		});
 
 		if (!locked)
-			return res.status(404).json({ error: 'Game not found' });
+		{
+			return res.json({
+				success: false,
+				error: "Game not found"
+			});
+		}
 
 		if (locked.result?.error)
 		{
@@ -313,7 +328,12 @@ exports.movePiece = async (req, res) => {
 		});
 
 		if (!locked)
-			return res.status(404).json({ error: 'Game not found' });
+		{
+			return res.json({
+				success: false,
+				error: "Game not found"
+			});
+		}
 
 		if (!locked.result?.ok)
 			return res.status(400).json({ error: locked.result?.error || 'Move failed' });
@@ -375,9 +395,12 @@ exports.moveBonusPiece = async (req, res) => {
 		});
 
 		if (!locked)
-			return res.status(404).json({
+		{
+			return res.json({
+				success: false,
 				error: "Game not found"
 			});
+		}
 
 		if (!locked.result.ok)
 			return res.status(400).json({

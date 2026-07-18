@@ -3,6 +3,7 @@ const getRealBoardPosition = require('./getRealBoardPosition');
 const HOME_STRETCH_MAP = require('./homeStretchMap');
 const { MAIN_TRACK_SIZE } = require('../constants');
 const pool = require('../../db');
+const getAvailableMoves = require('../rules/getAvailableMoves');
 
 async function normalizeGame(game)
 {
@@ -38,11 +39,21 @@ async function normalizeGame(game)
 		])
 	);
 
+	const availableMoves =
+	(game.dice != null || game.pendingBonus != null)
+		? getAvailableMoves(
+			game,
+			game.turn,
+			game.pendingBonus ?? game.dice
+		)
+		: [];
+
 	return {
 		id: game.id,
 		status: game.status,
 		turn: game.turn,
 		dice: game.dice,
+		availableMoves,
 		lastDice: game.lastDice,
 		consecutiveSixes: game.consecutiveSixes || {},
 		lastMovedPiece: game.lastMovedPiece || null,

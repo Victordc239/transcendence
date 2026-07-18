@@ -19,46 +19,77 @@ function LobbyPage() {
   };
 
   const handleCreateGame = async () => {
-    try {
-      if (!token) return;
-
+    try
+    {
+      if (!token)
+        return;
       setLoadingCreate(true);
-
       const game = await createGame(token);
-
-      if (game?.id) {
+      if (game.message)
+      {
+        alert(game.message);
+        return;
+      }
+      if (game.id)
+      {
         navigate(`/game/${game.id}`);
       }
-    } catch (err) {
-      console.error(err);
+    }
+    catch (err)
+    {
+      if (err instanceof Error)
+      {
+        if (err.message === "Already in a game")
+        {
+          alert("You still have an active game. Reconnect to it or wait until it expires.");
+          return;
+        }
+
+        alert(err.message);
+        return;
+      }
+
       alert("Error creando partida");
-    } finally {
+    }
+    finally
+    {
       setLoadingCreate(false);
     }
   };
 
   const handleJoinGame = async () => {
-    try {
-      if (!token) return;
+    try
+    {
+      if (!token)
+        return;
 
-      if (!gameId.trim()) {
+      if (!gameId.trim())
+      {
         alert("Introduce un ID de partida");
         return;
       }
-
       setLoadingJoin(true);
-
       const game = await joinGame(token, gameId.trim());
-
-      if (game?.id) {
+      if (game.success === false)
+      {
+        alert(game.error);
+        return;
+      }
+      if (game.id)
+      {
         navigate(`/game/${game.id}`);
       }
-    } catch (err) {
-      console.error(err);
+    }
+    catch (err)
+    {
       alert(
-        err instanceof Error ? err.message : "Error uniéndose a la partida",
+        err instanceof Error
+          ? err.message
+          : "Error uniéndose a la partida"
       );
-    } finally {
+    }
+    finally
+    {
       setLoadingJoin(false);
     }
   };

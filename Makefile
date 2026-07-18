@@ -1,5 +1,6 @@
 NAME        := transcendence
 COMPOSE     := docker compose
+DB_VOLUME   := transcendence_db_data
 
 all: up
 
@@ -17,6 +18,8 @@ help:
 
 
 up:
+	$(COMPOSE) down
+	docker volume rm transcendence_db_data || true
 	$(COMPOSE) up --build -d
 
 down:
@@ -25,13 +28,13 @@ down:
 restart: down up
 
 logs:
-	$(COMPOSE) logs -f db
+	$(COMPOSE) logs -f transcendence_db
 
 logs-back:
-	$(COMPOSE) logs -f backend
+	$(COMPOSE) logs -f transcendence_backend
 
 logs-front:
-	$(COMPOSE) logs -f frontend
+	$(COMPOSE) logs -f transcendence_frontend
 
 clean:
 	@echo "Nothing to clean."

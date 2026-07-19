@@ -19,7 +19,8 @@ module.exports = (req, res, next) => {
 	}
 	catch (err)
 	{
-		console.error(err);
-		return res.status(401).json({ error: 'Token inválido' });
+		return res.status(401).json({
+			error: "Token inválido"
+		});
 	}
 };

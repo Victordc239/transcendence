@@ -51,7 +51,7 @@ export function AuthProvider({
 
         connectSocket(token);
       } catch (err) {
-        console.error(err);
+        //console.error(err);
         logout();
       }
     };

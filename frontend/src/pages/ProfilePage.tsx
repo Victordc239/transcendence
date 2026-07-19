@@ -57,9 +57,9 @@ export default function ProfilePage() {
 			setUser(data);
 			setUsername(data.username);
 		}
-		catch (err)
+		catch
 		{
-			console.error(err);
+			alert("No se pudo cargar el perfil");
 		}
 	}
 
@@ -84,20 +84,20 @@ export default function ProfilePage() {
 			return;
 		}
 
-		try {
-			await updateProfile(
-				cleanUsername,
-				selectedAvatar
-			);
-
+		try
+		{
+			await updateProfile(cleanUsername, selectedAvatar);
 			await loadProfile();
-
 			setEditing(false);
 		}
 		catch (err)
 		{
-			console.error(err);
-			alert("No se pudo actualizar el perfil");
+			const message =
+				err instanceof Error
+					? err.message
+					: "No se pudo actualizar el perfil";
+
+			alert(message);
 		}
 	}
 
@@ -118,7 +118,7 @@ export default function ProfilePage() {
                 {editing && isMyProfile ? (
                     <div className="space-y-6">
                         <div>
-                            <span className="block text-sm font-medium text-white/60 mb-3">
+                            <span className="block text-sm font-medium text-black/60 mb-3">
                                 Selecciona tu avatar:
                             </span>
                             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-w-md mx-auto">
@@ -142,7 +142,7 @@ export default function ProfilePage() {
                         </div>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-white/60 mb-2">
+                                <label className="block text-sm font-medium text-black/60 mb-2">
                                     Nombre de usuario
                                 </label>
                                 <Input

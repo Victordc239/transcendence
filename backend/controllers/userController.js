@@ -84,8 +84,9 @@ exports.updateMe = async (req, res) => {
 
 			if (usernameExists.rows.length > 0)
 			{
-				return res.status(400).json({
-					error: 'El nombre de usuario ya está en uso'
+				return res.json({
+					success: false,
+					error: "El nombre de usuario ya está en uso"
 				});
 			}
 		}

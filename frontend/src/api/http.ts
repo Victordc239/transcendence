@@ -5,8 +5,11 @@ export async function http<T>(
   options: RequestInit = {}
 ): Promise<T> {
 
-  const token =
-    sessionStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
+  if (!token)
+  {
+    throw new Error("No authentication token");
+  }
 
   const res = await fetch(
     `${API_URL}${endpoint}`,
@@ -30,20 +33,18 @@ export async function http<T>(
 
   let data;
 
-  try {
+  try
+  {
     data = await res.json();
 
-  } catch {
-    throw new Error(
-      "Invalid server response"
-    );
   }
-
-  if (!res.ok) {
-    throw new Error(
-      data.error || "HTTP Error"
-    );
+  catch
+  {
+    throw new Error("Invalid server response");
   }
-
+  if (!res.ok)
+  {
+    throw new Error(data.error || "HTTP Error");
+  }
   return data;
 }

@@ -151,6 +151,7 @@ function executeMove(game, playerId, pieceIndex)
 		{
 			game.pendingBonus = CAPTURE_BONUS;
 			game.pendingBonusPlayer = playerId;
+			game.pendingBonusFromSix = (game.dice === 6);
 
 			game.dice = null;
 			game.updatedAt = Date.now();
@@ -173,6 +174,7 @@ function executeMove(game, playerId, pieceIndex)
 		{
 			game.pendingBonus = GOAL_BONUS;
 			game.pendingBonusPlayer = playerId;
+			game.pendingBonusFromSix = (game.dice === 6);
 
 			game.dice = null;
 			game.updatedAt = Date.now();
@@ -343,9 +345,21 @@ function executeBonusMove(
 			}
 		}
 
+		const extraRoll = game.pendingBonusFromSix;
 		game.pendingBonus = null;
 		game.pendingBonusPlayer = null;
-
+		game.pendingBonusFromSix = false;
+		if (extraRoll)
+		{
+			game.dice = null;
+			startTurnTimer(game.id);
+			return {
+				ok: true,
+				playerFinished: true,
+				finished: false,
+				extraRoll: true
+			};
+		}
 		nextTurn(game);
 		return {
 			ok: true,
@@ -354,17 +368,25 @@ function executeBonusMove(
 		};
 	}
 
+	const extraRoll = game.pendingBonusFromSix;
 	game.pendingBonus = null;
 	game.pendingBonusPlayer = null;
-
+	game.pendingBonusFromSix = false;
+	if (extraRoll)
+	{
+		game.dice = null;
+		game.updatedAt = Date.now();
+		startTurnTimer(game.id);
+		return {
+			ok: true,
+			extraRoll: true
+		};
+	}
 	nextTurn(game);
-
 	game.updatedAt = Date.now();
-
 	startTurnTimer(game.id);
-
 	return {
-		ok:true
+		ok: true
 	};
 }
 

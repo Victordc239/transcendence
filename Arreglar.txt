@@ -8,8 +8,8 @@
 - Solucionar que cuando hay barrera no pueden pasar las fichas ✅
 - Cuando sacas 3 veces 6 la última ficha que has movido se va para casa directamente ✅
 
-- Cuando comes o llegas a meta si el movimiento original fue con un 6, después de hacer el +20 o +10 el jugador vuelve a tirar (Soraya)
-- Manejar que cuando comes (+20) o subes ficha (+10) si tienes el resto de fichas en casa no puedes mover ficha y pierdes turno (Soraya)
+- Cuando comes o llegas a meta si el movimiento original fue con un 6, después de hacer el +20 o +10 el jugador vuelve a tirar (Soraya) ✅
+- Manejar que cuando comes (+20) o subes ficha (+10) si tienes el resto de fichas en casa o no puedes mover ficha por bloqueos o por cualquier razon y pierdas el turno y pase al siguiente jugador (Soraya)  ✅ 
 - Cambiar/Mejorar distribución página game (Soraya)
 - Implementar en el frontend lo de ganar (Soraya)
 

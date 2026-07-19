@@ -21,8 +21,36 @@
 - Hacer la página responsive (Manuel)
 
 - Hacer el README
-- No warnings or errors should appear in the browser console 
+- No warnings or errors should appear in the browser console
 - Antes de subirlo al repo final descomentar las lineas de gitignore
+
+
+c1r12s6% docker logs -f transcendence_backend
+🔐 Secretos cargados desde Vault
+✅ Tablas listas
+Backend running on port 3000
+JsonWebTokenError: invalid signature
+    at /app/node_modules/jsonwebtoken/verify.js:171:19
+    at getSecret (/app/node_modules/jsonwebtoken/verify.js:97:14)
+    at module.exports [as verify] (/app/node_modules/jsonwebtoken/verify.js:101:10)
+    at module.exports (/app/middleware/authMiddleware.js:16:23)
+    at Layer.handleRequest (/app/node_modules/router/lib/layer.js:152:17)
+    at next (/app/node_modules/router/lib/route.js:157:13)
+    at Route.dispatch (/app/node_modules/router/lib/route.js:117:3)
+    at handle (/app/node_modules/router/index.js:435:11)
+    at Layer.handleRequest (/app/node_modules/router/lib/layer.js:152:17)
+    at /app/node_modules/router/index.js:295:15
+JsonWebTokenError: invalid signature
+    at /app/node_modules/jsonwebtoken/verify.js:171:19
+    at getSecret (/app/node_modules/jsonwebtoken/verify.js:97:14)
+    at module.exports [as verify] (/app/node_modules/jsonwebtoken/verify.js:101:10)
+    at module.exports (/app/middleware/authMiddleware.js:16:23)
+    at Layer.handleRequest (/app/node_modules/router/lib/layer.js:152:17)
+    at next (/app/node_modules/router/lib/route.js:157:13)
+    at Route.dispatch (/app/node_modules/router/lib/route.js:117:3)
+    at handle (/app/node_modules/router/index.js:435:11)
+    at Layer.handleRequest (/app/node_modules/router/lib/layer.js:152:17)
+    at /app/node_modules/router/index.js:295:15
 
 MÓDULO BONUS:
 

@@ -57,6 +57,21 @@ async function withGameLock(gameId, callback)
 
 		const callbackResult = await callback(game, client);
 
+		if (callbackResult.deleteGame)
+		{
+			await client.query(
+				`
+				DELETE FROM games
+				WHERE id = $1
+				`,
+				[gameId]
+			);
+
+			await client.query("COMMIT");
+
+			return null;
+		}
+
 		/*if (!callbackResult)
 		{
 			await client.query('ROLLBACK');

@@ -39,6 +39,9 @@ async function disconnectPlayer(io, gameId, userId) {
 			if (activePlayers.length === 1)
 			{
 				const lastPlayer = activePlayers[0];
+				game.status = "finished";
+				game.winner = lastPlayer.id;
+				game.updatedAt = Date.now();
 				const room = io.sockets.adapter.rooms.get(String(gameId));
 				if (room)
 				{
@@ -52,11 +55,11 @@ async function disconnectPlayer(io, gameId, userId) {
 						}
 					}
 				}
+				return { ok: true };
 			}
 			if (isGameAbandoned(game))
 			{
-				await deleteGame(gameId);
-				return;
+				return { deleteGame: true };
 			}
 			return { ok: true };
 		});
@@ -90,7 +93,7 @@ function registerGameSocket(io, socket)
 					return { ok: true };
 				}
 
-				if (game.status === 'FINISHED')
+				if (game.status === 'finished')
 					return { error: 'Game finished' };
 
 				if (!game.spectators)
@@ -188,6 +191,7 @@ function registerGameSocket(io, socket)
 	);
 
 	socket.on("disconnect", async (reason) => {
+		console.log(socket.rooms);
 		console.log("SOCKET DISCONNECT", socket.user.id, reason);
 
 		try

@@ -7,7 +7,7 @@ function authSocket(socket, next)
 		const token = socket.handshake.auth?.token;
 		if (!token)
 			return next(new Error('Authentication error'));
-		console.log("Socket token:", token);
+		//console.log("Socket token:", token);
 
 		const decoded = jwt.verify( token, process.env.JWT_SECRET);
 

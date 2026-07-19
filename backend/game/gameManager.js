@@ -28,45 +28,6 @@ async function createGame(game, hostId)
 }
 
 // GET GAME:
-/*async function getGame(gameId) {
-	try
-	{
-		const result = await pool.query(
-			`
-			SELECT state
-			FROM games
-			WHERE id = $1
-			`,
-			[gameId]);
-
-		if (result.rows.length === 0)
-			return null;
-
-		const state = result.rows[0].state;
-		if (!state)
-			return null;
-
-		if (typeof state === 'string')
-		{
-			try
-			{
-				return JSON.parse(state);
-			}
-			catch (err)
-			{
-				console.error('❌ Corrupted game state:', gameId, err);
-				return null;
-			}
-		}
-		return state;
-	}
-	catch (err)
-	{
-		console.error('getGame error:', err);
-		return null;
-	}
-}*/
-
 async function getGame(gameId) {
   const result = await pool.query(
     `SELECT state FROM games WHERE id = $1`,
@@ -122,13 +83,16 @@ async function deleteGame(gameId)
 {
 	try
 	{
+		console.log("DELETING GAME", gameId);
 		await pool.query(
 			`
 			DELETE FROM games
 			WHERE id = $1
+			RETURNING id
 			`,
 			[gameId]
 		);
+		console.log("DELETE RESULT:", result.rowCount, result.rows);
 		return true;
 	}
 	catch (err)
@@ -140,11 +104,13 @@ async function deleteGame(gameId)
 
 async function getGameByPlayer(userId)
 {
-	const result = await pool.query(`
-		SELECT id, state
+	const result = await pool.query(
+		`
+		SELECT state
 		FROM games
-		WHERE status != 'FINISHED'
-	`);
+		WHERE status <> 'finished'
+		`
+	);
 
 	for (const row of result.rows)
 	{
@@ -152,10 +118,20 @@ async function getGameByPlayer(userId)
 			typeof row.state === "string"
 				? JSON.parse(row.state)
 				: row.state;
+		
+		console.log("CHECK GAME", game.id, game.status);
 
 		const player = game.players.find(p => p.id === userId);
-		if (player && !player.abandoned)
-			return game;
+
+		console.log(player);
+
+		if (!player)
+			continue;
+
+		if (player.abandoned)
+			continue;
+
+		return game;
 	}
 
 	return null;

@@ -1,4 +1,5 @@
-- Cuando sacas 6 al inicio puedes volver a tirar ✅
+Revisar:
+
 - No puede haber 4 fichas en la misma casilla ✅
 - Hay un error con las fichas cuando llegan a meta, algunas no cuentan bien las casillas que faltan y suben a meta con un numero mayor ✅
 - Cuando un jugador gana no puede seguir tirando el dado ✅
@@ -7,22 +8,24 @@
 - No se pueden poner 3 fichas en una misma casilla de casa (máximo 2 fichas) ✅
 - Solucionar que cuando hay barrera no pueden pasar las fichas ✅
 - Cuando sacas 3 veces 6 la última ficha que has movido se va para casa directamente ✅
+- Cuando sacas 5 con el dado y puedes sacar una ficha de casa (BASE), si hay dos fichas de distinto color en tu START_POSITIONS puedes comer la última ficha posicionada ahí ✅
+- Cuando sacas 5 con el dado y puedes sacar una ficha de casa (BASE), si hay una ficha de tu color y otra ficha de distinto color en tu START_POSITIONS puedes comer la ficha de distinto color ✅
+- Solucionar que cuando hay en START_POSITIONS 2 fichas de otro color no puede sacar ficha de casa (BASE), y debe poder sacar ficha y comer una ficha del otro color ✅
+- Cuando comes o llegas a meta si el movimiento original fue con un 6, después de hacer el +20 o +10 el jugador vuelve a tirar ✅
+- Manejar que cuando comes (+20) o subes ficha (+10) si tienes el resto de fichas en casa o no puedes mover ficha por bloqueos o por cualquier razon y pierdas el turno y pase al siguiente jugador ✅ 
 
-- Cuando comes o llegas a meta si el movimiento original fue con un 6, después de hacer el +20 o +10 el jugador vuelve a tirar (Soraya) ✅
-- Manejar que cuando comes (+20) o subes ficha (+10) si tienes el resto de fichas en casa o no puedes mover ficha por bloqueos o por cualquier razon y pierdas el turno y pase al siguiente jugador (Soraya)  ✅ 
+Arreglar:
+
 - Cambiar/Mejorar distribución página game (Soraya)
 - Implementar en el frontend lo de ganar (Soraya)
 
-- Cuando sacas 5 con el dado y puedes sacar una ficha de casa (BASE), si hay dos fichas de distinto color en tu START_POSITIONS puedes comer la última ficha posicionada ahí (Santi)✅
-- Cuando sacas 5 con el dado y puedes sacar una ficha de casa (BASE), si hay una ficha de tu color y otra ficha de distinto color en tu START_POSITIONS puedes comer la ficha de distinto color (Santi)✅
-- Solucionar que cuando hay en START_POSITIONS 2 fichas de otro color no puede sacar ficha de casa (BASE), y debe poder sacar ficha y comer una ficha del otro color (Santi)✅
-
-- Estan mal las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend), modificar las coordenadas de las fichas en el tablero (Manuel)
+- Arreglar las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend), modificar las coordenadas de las fichas en el tablero (Manuel)
 - Hacer la página responsive (Manuel)
 
 - Hacer el README
 - No warnings or errors should appear in the browser console
 - Antes de subirlo al repo final descomentar las lineas de gitignore
+- Antes de subirlo borrar archivos: Arreglar.txt, Reglas.txt, comando.txt, notas.txt
 
 
 MÓDULO BONUS:

@@ -27,18 +27,6 @@ export const tokens = {
   },
 };
 ==============================
-FILE: ./src/pages/HistoryPage.tsx
-==============================
-function HistoryPage() {
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      History Page
-    </div>
-  );
-}
-
-export default HistoryPage;
-==============================
 FILE: ./src/pages/FriendRequestsPage.tsx
 ==============================
 import {
@@ -127,246 +115,6 @@ export default function FriendRequestsPage() {
     </MainLayout>
   );
 }
-==============================
-FILE: ./src/pages/LobbyPage.tsx
-==============================
-/*import { useNavigate } from "react-router-dom";
-import { createGame } from "../api/game.api";
-import { useAuth } from "../context/AuthContext";
-
-function LobbyPage() {
-  const navigate = useNavigate();
-  const { token } = useAuth();
-
-  const handleLogout = () => {
-    sessionStorage.removeItem("token");
-    navigate("/");
-  };
-
-const handleCreateGame = async () => {
-  try {
-    if (!token) {
-      console.warn("No token - usuario no autenticado");
-      return;
-    }
-
-    const game = await createGame(token);
-
-    console.log("GAME CREATED:", game);
-
-    if (game?.id) {
-      navigate(`/game/${game.id}`);
-    }
-  } catch (err) {
-    console.error("CREATE GAME ERROR:", err);
-    alert("Error creando partida");
-  }
-};
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white">
-
-      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent">
-            Parchís Online
-          </h1>
-          <p className="text-white/60 text-sm mt-2">
-            Lobby social competitivo
-          </p>
-        </div>
-
-        <button
-          onClick={handleLogout}
-          className="rounded-xl bg-red-500/10 px-4 py-2 text-red-200 hover:bg-red-500/20"
-        >
-          Logout
-        </button>
-      </div>
-
-      <div className="mx-auto mt-6 max-w-7xl rounded-3xl border border-white/10 bg-white/5 p-10 backdrop-blur-xl">
-        <h2 className="text-5xl font-bold">
-          Bienvenida al Parchís Online
-        </h2>
-
-        <p className="mt-4 text-white/70 max-w-2xl">
-          Sistema multiplayer con sockets, matchmaking y partidas en tiempo real.
-        </p>
-
-        <div className="mt-8 flex gap-4">
-          <button
-            onClick={handleCreateGame}
-            className="rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 px-6 py-3 font-semibold"
-          >
-            Crear partida
-          </button>
-
-          <button
-            className="rounded-2xl border border-white/10 bg-white/10 px-6 py-3"
-          >
-            Unirse a partida
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default LobbyPage;*/
-
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createGame, joinGame } from "../api/game.api";
-import { useAuth } from "../context/AuthContext";
-import LobbyChat from "../components/ui/LobbyChat";
-import Footer from "../components/ui/Footer";
-
-function LobbyPage() {
-  const navigate = useNavigate();
-  const { token , user } = useAuth();
-
-  const [gameId, setGameId] = useState("");
-  const [loadingCreate, setLoadingCreate] = useState(false);
-  const [loadingJoin, setLoadingJoin] = useState(false);
-
-  const handleLogout = () => {
-    sessionStorage.removeItem("token");
-    navigate("/");
-  };
-
-  const handleCreateGame = async () => {
-    try {
-      if (!token) return;
-
-      setLoadingCreate(true);
-
-      const game = await createGame(token);
-
-      if (game?.id) {
-        navigate(`/game/${game.id}`);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error creando partida");
-    } finally {
-      setLoadingCreate(false);
-    }
-  };
-
-  const handleJoinGame = async () => {
-    try {
-      if (!token) return;
-
-      if (!gameId.trim()) {
-        alert("Introduce un ID de partida");
-        return;
-      }
-
-      setLoadingJoin(true);
-
-      const game = await joinGame(token, gameId.trim());
-
-      if (game?.id) {
-        navigate(`/game/${game.id}`);
-      }
-    } catch (err) {
-      console.error(err);
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Error uniéndose a la partida"
-      );
-    } finally {
-      setLoadingJoin(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent">
-            Parchís Online
-          </h1>
-        </div>
-
-        <div className="flex gap-6 items-center">
-          <button
-            onClick={() => {
-              if (user) {
-                navigate(`/profile/${user.id}`);
-              }
-            }}
-          >
-            Perfil
-          </button>
-
-          <button onClick={() => navigate("/friends")}>
-            Amigos
-          </button>
-
-          <button onClick={() => navigate("/friend-requests")}>
-            Solicitudes
-          </button>
-
-          <button
-            onClick={handleLogout}
-            className="rounded-xl bg-red-500/10 px-4 py-2 text-red-200"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      <div className="mx-auto mt-6 max-w-7xl rounded-3xl border border-white/10 bg-white/5 p-10 backdrop-blur-xl">
-        <h2 className="text-5xl font-bold">
-          Bienvenida al Parchís Online
-        </h2>
-
-        <p className="mt-4 text-white/70 max-w-2xl">
-          Sistema multiplayer con sockets, matchmaking y partidas en tiempo real.
-        </p>
-
-        <div className="mt-8 flex flex-col gap-4">
-          <button
-            onClick={handleCreateGame}
-            disabled={loadingCreate}
-            className="rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 px-6 py-3 font-semibold disabled:opacity-50"
-          >
-            {loadingCreate ? "Creando..." : "Crear partida"}
-          </button>
-
-          <div className="flex gap-3">
-            <input
-              value={gameId}
-              onChange={(e) => setGameId(e.target.value)}
-              placeholder="ID de partida"
-              className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white placeholder-white/40"
-            />
-
-            <button
-              onClick={handleJoinGame}
-              disabled={loadingJoin}
-              className="rounded-xl border border-white/10 bg-white/10 px-6 py-2 disabled:opacity-50"
-            >
-              {loadingJoin ? "Uniéndose..." : "Unirse"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-7xl">
-        <LobbyChat />
-      </div>
-
-      <div className="mx-auto w-full max-w-7xl px-6">
-        <Footer />
-      </div>
-    </div>
-  );
-}
-
-export default LobbyPage;
 ==============================
 FILE: ./src/pages/PrivacyPolicyPage.tsx
 ==============================
@@ -902,8 +650,8 @@ export default function FriendsPage() {
 
         <div className="space-y-3">
           {friends.length === 0 && (
-            <p className="text-white/60">
-              No tienes amigos todavía.
+            <p className="text-gray-400">
+              No tienes amigos todavía
             </p>
           )}
 
@@ -959,6 +707,9 @@ import { useGameStore } from "../store/gameStore";
 import { rollDice, movePiece, moveBonusPiece } from "../api/game.api";
 import GameScene from "../game/layout/GameScene";
 import Footer from "../components/ui/Footer";
+import PlayersPanel from "../game/hud/PlayersPanel";
+import ChatPanel from "../game/hud/ChatPanel";
+import GameHUD from "../game/hud/GameHUD";
 import { socket } from "../socket/socket";
 
 export default function GamePage() {
@@ -966,47 +717,72 @@ export default function GamePage() {
   const { id } = useParams();
   const { token, user } = useAuth();
   const game = useGameStore((s) => s.game);
-  const showLastPlayerPopup = useGameStore(s => s.showLastPlayerPopup);
-  const setShowLastPlayerPopup = useGameStore(s => s.setShowLastPlayerPopup);
+  const showLastPlayerPopup = useGameStore((s) => s.showLastPlayerPopup);
+  const setShowLastPlayerPopup = useGameStore((s) => s.setShowLastPlayerPopup);
 
   const [rolling, setRolling] = useState(false);
 
   useGameRealtime(id ?? "", token ?? "");
 
   const isSpectator = !!(
-    game &&
-    !game.players.some((p: any) => p.id === user?.id)
+    game && !game.players.some((p: any) => p.id === user?.id)
   );
 
   const handleRoll = async () => {
-    if (!token || !id || isSpectator) return;
+    if (!token || !id || isSpectator)
+      return;
 
     setRolling(true);
 
-    try {
-      await rollDice(token, id);
-    } finally {
+    try
+    {
+      const result = await rollDice(token, id);
+
+      if (!result.success)
+      {
+        alert(result.error);
+        return;
+      }
+    }
+    finally
+    {
       setTimeout(() => setRolling(false), 500);
     }
   };
 
+  const [moving, setMoving] = useState(false);
+
   const handleMove = async (index: number) => {
-
-    if (!token || !id || isSpectator || !game)
+    if (!token || !id || isSpectator || !game || moving)
       return;
+    setMoving(true);
 
-    if (game.pendingBonus != null) {
-      await moveBonusPiece(
-        token,
-        id,
-        index
-      );
-    } else {
-      await movePiece(
-        token,
-        id,
-        index
-      );
+    try
+    {
+      if (game.pendingBonus != null)
+        await moveBonusPiece(token, id, index);
+      else
+        await movePiece(token, id, index);
+    }
+    catch (err)
+    {
+        if (!(err instanceof Error))
+        {
+            console.error(err);
+            return;
+        }
+
+        if (err.message === "Roll dice first" || err.message === "Not your turn" || err.message === "Invalid move" || err.message === "Need 5 to leave base" ||
+            err.message === "Own blockade on exit" || err.message === "Exact roll required" || err.message === "Blockade in path" || err.message === "Destination blocked by blockade")
+        {
+            return;
+        }
+
+        console.error(err);
+    }
+    finally
+    {
+      setMoving(false);
     }
   };
 
@@ -1022,8 +798,7 @@ export default function GamePage() {
   const handleLastPlayerConfirm = () => {
     setShowLastPlayerPopup(false);
 
-    if (id)
-    {
+    if (id) {
       socket.emit("game:leave", {
         gameId: id,
       });
@@ -1037,119 +812,386 @@ export default function GamePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950 text-white flex flex-col justify-between overflow-x-hidden">
+      
+      {/* Botón Flotante para Móvil del HUD (Chat/Dados/Players) */}
+      <div className="block md:hidden">
+        <GameHUD game={game} />
+      </div>
 
-      <div className="flex flex-1">
-
-        <div className="flex-1 flex items-center justify-center relative">
-
+      {/* Contenedor Principal */}
+      <div className="flex flex-1 flex-col md:flex-row p-4 md:p-6 gap-6 items-stretch">
+        
+        {/* LADO IZQUIERDO: El Escenario del Juego */}
+        <div className="flex-1 flex items-center justify-center relative bg-white/5 backdrop-blur-md rounded-3xl border border-white/5 p-4 min-h-[65vh] md:min-h-0">
+          
           <button
             onClick={handleLeave}
-            className="absolute top-4 left-4 z-50 rounded-xl bg-red-600 px-4 py-2 font-semibold text-white shadow-lg transition hover:bg-red-700"
+            className="
+              absolute top-4 left-4 z-50
+              rounded-2xl
+              border border-white/10
+              bg-white/10
+              backdrop-blur-xl
+              px-4 py-2 text-sm md:text-base
+              font-semibold
+              text-white/90
+              shadow-lg
+              transition-all duration-200
+              hover:bg-red-500/20
+              hover:border-red-500/40
+              hover:text-red-300
+            "
           >
-            ← Leave Game
+            Leave Game
           </button>
 
           {isSpectator && (
-            <div className="absolute top-20 left-4 z-50 bg-yellow-500/20 text-yellow-300 px-4 py-2 rounded-xl">
+            <div className="absolute top-16 md:top-20 left-4 z-50 bg-yellow-500/20 text-yellow-300 px-3 py-1.5 rounded-xl text-xs font-semibold">
               👁 Spectator Mode
             </div>
           )}
 
-          {
-            showLastPlayerPopup && (
-              <div className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center">
-
-                <div className="bg-slate-900 rounded-xl p-8 max-w-md shadow-xl">
-
-                  <h2 className="text-2xl font-bold mb-4">
-                    Game abandoned
-                  </h2>
-
-                  <p className="text-white/80 mb-6">
-                    All other players have abandoned the game.
-                  </p>
-
-                  <button
-                    onClick={handleLastPlayerConfirm}
-                    className="w-full rounded-xl bg-purple-600 py-2 font-semibold hover:bg-purple-700"
-                  >
-                    OK
-                  </button>
-
-                </div>
-
+          {showLastPlayerPopup && (
+            <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
+              <div className="bg-slate-950 border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+                <h2 className="text-xl md:text-2xl font-bold mb-3 text-purple-400">
+                  Game abandoned
+                </h2>
+                <p className="text-white/70 mb-6 text-sm">
+                  All other players have abandoned the game.
+                </p>
+                <button
+                  onClick={handleLastPlayerConfirm}
+                  className="w-full rounded-xl bg-purple-600 py-3 font-bold hover:bg-purple-700 transition"
+                >
+                  OK
+                </button>
               </div>
-            )
-          }
+            </div>
+          )}
 
           <GameScene
             game={game}
             onPieceClick={(playerId: number, pieceIndex: number) => {
-              if (isSpectator) return;
-
-              const currentPlayer = game.players.find(
-                (p: any) => p.id === game.turn
-              );
-
-              if (!currentPlayer) return;
-              if (currentPlayer.id !== playerId) return;
-
+              if (isSpectator)
+                return;
+              const currentPlayer = game.players.find((p: any) => p.id === game.turn);
+              if (!currentPlayer)
+                return;
+              if (currentPlayer.id !== playerId)
+                return;
+              if (game.status !== "playing")
+                  return;
+              if (game.players.length < 2)
+                  return;
+              if (game.turn !== user?.id)
+                  return;
+              if (playerId !== user?.id)
+                  return;
+              if (game.pendingBonus == null && game.dice == null)
+                  return;
+              const player = game.players.find((p: any) => p.id === playerId);
+              if (!player)
+                  return;
+              const piece = player.pieces[pieceIndex];
+              if (!piece)
+                  return;
+              const steps = game.pendingBonus ?? game.dice;
+              if (piece.state === "base" && steps !== 5)
+                  return;
+              if (!game.availableMoves?.includes(pieceIndex))
+                  return;
               handleMove(pieceIndex);
             }}
           />
         </div>
 
-        <div className="w-80 p-4 space-y-4 bg-black/20 backdrop-blur-xl">
-          <h1 className="text-xl font-bold">
-            Game {game.id}
-          </h1>
-
-          <div className="text-white/60">
-            Turn: {game.turn}
+        {/* LADO DERECHO: El Panel Lateral Organizado (Solo visible en PC) */}
+        <div className="hidden md:flex w-80 flex-col gap-4">
+          
+          {/* Cabecera del juego */}
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4">
+            <h1 className="text-lg font-bold text-purple-400">Game {game.id}</h1>
+            <div className="flex justify-between text-xs text-white/50 mt-1">
+              <div>Turn: {game.turn}</div>
+              <div>Spectators: {game.spectators?.length || 0}</div>
+            </div>
           </div>
 
-          <div className="text-white/60">
-            Spectators: {game.spectators?.length || 0}
+          {/* Tus componentes HUD directamente integrados en el flujo de la columna en PC */}
+          <PlayersPanel game={game} />
+          
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 flex flex-col gap-3">
+            <div
+              className={`text-3xl p-3 rounded-xl bg-white/5 border border-white/10 text-center transition ${
+                rolling ? "scale-110 rotate-12" : ""
+              }`}
+            >
+              {game.dice ?? "🎲"}
+              {game.pendingBonus && (
+                <span className="text-2xl font-bold text-yellow-400 animate-pulse ml-2">
+                  +{game.pendingBonus}
+                </span>
+              )}
+            </div>
+
+            <button
+              disabled={isSpectator || game.pendingBonus != null}
+              onClick={handleRoll}
+              className={`w-full py-2.5 rounded-xl font-bold text-sm transition ${
+                isSpectator
+                  ? "bg-gray-600/50 text-white/40 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700 active:scale-95"
+              }`}
+            >
+              {isSpectator ? "Spectating" : "Roll Dice"}
+            </button>
           </div>
 
-          <div
-            className={`text-4xl p-4 rounded-xl bg-white/10 transition ${
-              rolling ? "scale-110 rotate-12" : ""
-            }`}
-          >
-            {game.dice ?? "🎲"}
-            {
-                game.pendingBonus && (
-                    <div className="text-3xl font-bold text-yellow-400 animate-pulse">
-                        +{game.pendingBonus}
-                    </div>
-                )
-            }
-          </div>
-
-          <button
-            disabled={isSpectator || game.pendingBonus != null}
-            onClick={handleRoll}
-            className={`w-full py-2 rounded-xl ${
-              isSpectator
-                ? "bg-gray-500 cursor-not-allowed"
-                : "bg-purple-500"
-            }`}
-          >
-            {isSpectator ? "Spectating" : "Roll Dice"}
-          </button>
+          <ChatPanel game={game} />
         </div>
 
       </div>
 
-      <div className="px-6">
+      <div className="px-6 py-2">
         <Footer />
       </div>
-
     </div>
   );
 }
+
+==============================
+FILE: ./src/pages/LobbyPage.tsx
+==============================
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createGame, joinGame } from "../api/game.api";
+import { useAuth } from "../context/AuthContext";
+import LobbyChat from "../components/ui/LobbyChat";
+import Footer from "../components/ui/Footer";
+
+function LobbyPage() {
+  const navigate = useNavigate();
+  const { token, user } = useAuth();
+
+  const [gameId, setGameId] = useState("");
+  const [loadingCreate, setLoadingCreate] = useState(false);
+  const [loadingJoin, setLoadingJoin] = useState(false);
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("token");
+    navigate("/");
+  };
+
+  const handleCreateGame = async () => {
+    try
+    {
+      if (!token)
+        return;
+      setLoadingCreate(true);
+      const game = await createGame(token);
+      if (game.message)
+      {
+        alert(game.message);
+        return;
+      }
+      if (game.id)
+      {
+        navigate(`/game/${game.id}`);
+      }
+    }
+    catch (err)
+    {
+      if (err instanceof Error)
+      {
+        if (err.message === "Already in a game")
+        {
+          alert("You still have an active game. Reconnect to it or wait until it expires.");
+          return;
+        }
+
+        alert(err.message);
+        return;
+      }
+
+      alert("Error creando partida");
+    }
+    finally
+    {
+      setLoadingCreate(false);
+    }
+  };
+
+  const handleJoinGame = async () => {
+    try
+    {
+      if (!token)
+        return;
+
+      if (!gameId.trim())
+      {
+        alert("Introduce un ID de partida");
+        return;
+      }
+      setLoadingJoin(true);
+      const game = await joinGame(token, gameId.trim());
+      if (game.success === false)
+      {
+        alert(game.error);
+        return;
+      }
+      if (game.id)
+      {
+        navigate(`/game/${game.id}`);
+      }
+    }
+    catch (err)
+    {
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Error uniéndose a la partida"
+      );
+    }
+    finally
+    {
+      setLoadingJoin(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6 text-white flex flex-col gap-6">
+      <div className="mx-auto w-full max-w-7xl flex flex-col md:flex-row gap-4 md:gap-0 items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-5 md:p-6 backdrop-blur-xl">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent text-center md:text-left">
+            Parchís Online
+          </h1>
+        </div>
+        <div className="flex flex-wrap justify-center gap-4 md:gap-6 items-center text-sm md:text-base">
+          <button
+            className="hover:text-purple-300 transition-colors"
+            onClick={() => {
+              if (user) navigate(`/profile/${user.id}`);
+            }}
+          >
+            Perfil
+          </button>
+
+          <button
+            className="hover:text-purple-300 transition-colors"
+            onClick={() => navigate("/friends")}
+          >
+            Amigos
+          </button>
+
+          <button
+            className="hover:text-purple-300 transition-colors"
+            onClick={() => navigate("/friend-requests")}
+          >
+            Solicitudes
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="rounded-xl bg-red-500/10 px-4 py-2 text-red-200 hover:bg-red-500/20 transition-all text-xs md:text-sm"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+      <div className="mx-auto w-full max-w-7xl rounded-3xl border border-white/10 bg-white/5 p-6 md:p-10 backdrop-blur-xl">
+        {/* CAMBIO CLAVE: flex-col en móvil, flex-row en pantallas grandes (lg:) para balancear el espacio */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+          {/* COLUMNA IZQUIERDA: Título de Bienvenida */}
+          <div className="max-w-xl text-center lg:text-left">
+            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-purple-200 bg-clip-text text-transparent">
+              Bienvenido al Parchís Online
+            </h2>
+            <p className="mt-2 text-sm text-center md:text-base text-white/50 hidden md:block">
+              Crea una sala privada para jugar con tus amigos o únete a una
+              partida activa ingresando su identificador.
+            </p>
+          </div>
+
+          {/* COLUMNA DERECHA: Acciones (Crear / Unirse) */}
+          {/* Limitamos el ancho en PC (lg:max-w-md) para que los botones no se estiren infinitamente y se vean elegantes */}
+          <div className="w-full lg:max-w-md flex flex-col gap-4">
+            {/* Botón de Crear Partida */}
+            <button
+              onClick={handleCreateGame}
+              disabled={loadingCreate}
+              className="
+          w-full
+          rounded-2xl 
+          bg-gradient-to-r from-pink-400 to-purple-400 
+          px-6 py-4 
+          font-bold 
+          shadow-lg shadow-purple-500/20 
+          active:scale-98 
+          transition-all duration-200
+          hover:brightness-110
+          disabled:opacity-50
+          text-sm md:text-base
+        "
+            >
+              {loadingCreate ? "Creando..." : "Crear partida"}
+            </button>
+
+            {/* Inputs de Unirse a Partida */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                value={gameId}
+                onChange={(e) => setGameId(e.target.value)}
+                placeholder="ID de partida"
+                className="
+            flex-1 
+            rounded-xl 
+            border border-white/10 
+            bg-white/5 
+            px-4 py-3 
+            text-white 
+            placeholder-white/40 
+            focus:outline-none focus:border-purple-500 focus:bg-white/10
+            transition-all duration-200 
+            text-sm md:text-base
+          "
+              />
+              <button
+                onClick={handleJoinGame}
+                disabled={loadingJoin}
+                className="
+            rounded-xl 
+            border border-white/10 
+            bg-white/10 
+            px-6 py-3 sm:py-2 
+            font-semibold 
+            hover:bg-white/20 
+            active:scale-98
+            transition-all duration-200 
+            disabled:opacity-50 
+            text-sm md:text-base
+          "
+              >
+                {loadingJoin ? "Uniéndose..." : "Unirse"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="mx-auto w-full max-w-7xl">
+        <LobbyChat />
+      </div>
+
+      <div className="mx-auto w-full max-w-7xl px-4 md:px-6">
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
+export default LobbyPage;
+
 ==============================
 FILE: ./src/pages/LoginPage.tsx
 ==============================
@@ -1184,9 +1226,9 @@ function LoginPage() {
 
 		try {
 			const data = await login(cleanEmail, password);
-
-			if (!data.token) {
-				alert(data.error || "Error en login");
+			if (!data.success)
+			{
+				alert(data.error);
 				return;
 			}
 
@@ -1198,7 +1240,6 @@ function LoginPage() {
 		}
 		catch (err)
 		{
-			console.error(err);
 			alert("Error de conexión");
 		}
 	};
@@ -1313,9 +1354,9 @@ export default function ProfilePage() {
 			setUser(data);
 			setUsername(data.username);
 		}
-		catch (err)
+		catch
 		{
-			console.error(err);
+			alert("No se pudo cargar el perfil");
 		}
 	}
 
@@ -1340,20 +1381,20 @@ export default function ProfilePage() {
 			return;
 		}
 
-		try {
-			await updateProfile(
-				cleanUsername,
-				selectedAvatar
-			);
-
+		try
+		{
+			await updateProfile(cleanUsername, selectedAvatar);
 			await loadProfile();
-
 			setEditing(false);
 		}
 		catch (err)
 		{
-			console.error(err);
-			alert("No se pudo actualizar el perfil");
+			const message =
+				err instanceof Error
+					? err.message
+					: "No se pudo actualizar el perfil";
+
+			alert(message);
 		}
 	}
 
@@ -1367,96 +1408,99 @@ export default function ProfilePage() {
 
 	return (
 		<MainLayout>
-			<GlassPanel className="max-w-xl mx-auto p-6">
-				<h2 className="text-2xl font-bold mb-6">
-					{isMyProfile
-						? "Mi Perfil"
-						: `Perfil de ${user.username}`}
-				</h2>
+            <GlassPanel className="max-w-xl mx-auto p-5 md:p-8 rounded-3xl border border-white/10 my-4 md:my-8">
+                <h2 className="text-xl md:text-2xl font-bold mb-6 text-center md:text-left tracking-wide">
+                    {isMyProfile ? "Mi Perfil" : `Perfil de ${user.username}`}
+                </h2>
+                {editing && isMyProfile ? (
+                    <div className="space-y-6">
+                        <div>
+                            <span className="block text-sm font-medium text-black/60 mb-3">
+                                Selecciona tu avatar:
+                            </span>
+                            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-w-md mx-auto">
+                                {avatars.map((avatar) => (
+                                    <img
+                                        key={avatar}
+                                        src={avatar}
+                                        onClick={() => setSelectedAvatar(avatar)}
+                                        className={`
+                                            w-12 h-12 sm:w-16 sm:h-16 rounded-full cursor-pointer border-2 object-cover
+                                            transition-all duration-200 hover:scale-110 active:scale-95
+                                            ${selectedAvatar === avatar
+                                                ? "border-cyan-400 shadow-lg shadow-cyan-400/20"
+                                                : "border-white/10 hover:border-white/30"
+                                            }
+                                        `}
+                                        alt="opción de avatar"
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-black/60 mb-2">
+                                    Nombre de usuario
+                                </label>
+                                <Input
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    className="w-full bg-white/5 border-white/10 rounded-xl px-4 py-3"
+                                />
+                            </div>
 
-				{editing && isMyProfile ? (
-					<>
-						<div className="grid grid-cols-5 gap-3 my-4">
-							{avatars.map((avatar) => (
-								<img
-									key={avatar}
-									src={avatar}
-									onClick={() =>
-										setSelectedAvatar(
-											avatar
-										)
-									}
-									className={`
-										w-16 h-16 rounded-full cursor-pointer border-2 object-cover
-										${selectedAvatar === avatar
-											? "border-cyan-400 shadow-lg"
-											: "border-white/10"
-										}
-									`}
-								/>
-							))}
-						</div>
+                            <Button
+                                onClick={handleSave}
+                                className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 font-bold transition-all"
+                            >
+                                Guardar Cambios
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center md:items-stretch gap-6">
+                        <div className="flex justify-center">
+                            <div className="relative">
+                                <img
+                                    src={selectedAvatar || "/uploads/default-avatar.png"}
+                                    className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover border-2 border-purple-500/30 p-1 bg-white/5"
+                                    alt="avatar"
+                                />
+                                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-slate-950 rounded-full" />
+                            </div>
+                        </div>
+                        <div className="w-full space-y-3 bg-white/5 border border-white/5 rounded-2xl p-5">
+                            <div className="flex justify-between items-center border-b border-white/5 pb-2 text-sm md:text-base">
+                                <span className="text-gray/50">Usuario:</span>
+                                <span className="font-semibold text-gray/20">{user.username}</span>
+                            </div>
 
-						<Input
-							value={username}
-							onChange={(e) =>
-								setUsername(
-									e.target.value
-								)
-							}
-						/>
+                            {isMyProfile && (
+                                <div className="flex justify-between items-center border-b border-white/5 pb-2 text-sm md:text-base">
+                                    <span className="text-gray/50">Email:</span>
+                                    <span className="font-semibold text-gray/20 break-all pl-4 text-right">{user.email}</span>
+                                </div>
+                            )}
 
-						<Button
-							onClick={handleSave}
-						>
-							Guardar
-						</Button>
-					</>
-				) : (
-					<>
-						<div className="flex justify-center mb-6">
-							<img
-								src={
-									selectedAvatar ||
-									"/uploads/default-avatar.png"
-								}
-								className="w-24 h-24 rounded-full object-cover border border-white/20"
-								alt="avatar"
-							/>
-						</div>
-
-						<p>
-							<strong>Usuario:</strong>{" "}
-							{user.username}
-						</p>
-
-						{isMyProfile && (
-							<p>
-								<strong>Email:</strong>{" "}
-								{user.email}
-							</p>
-						)}
-
-						<p>
-							<strong>Fecha alta:</strong>{" "}
-							{new Date(
-								user.created_at
-							).toLocaleDateString()}
-						</p>
-
-						{isMyProfile && (
-							<Button
-								onClick={() =>
-									setEditing(true)
-								}
-							>
-								Editar Perfil
-							</Button>
-						)}
-					</>
-				)}
-			</GlassPanel>
-		</MainLayout>
+                            <div className="flex justify-between items-center text-sm md:text-base">
+                                <span className="text-gray/50">Fecha alta:</span>
+                                <span className="font-semibold text-gray/20">
+                                    {new Date(user.created_at).toLocaleDateString()}
+                                </span>
+                            </div>
+                        </div>
+                        {isMyProfile && (
+                            <Button
+                                onClick={() => setEditing(true)}
+                                className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 font-bold transition-all mt-2 text-sm md:text-base"
+                            >
+                                Editar Perfil
+                            </Button>
+                        )}
+                    </div>
+                )}
+            </GlassPanel>
+        </MainLayout>
 	);
 }
 
@@ -1503,20 +1547,17 @@ function RegisterPage() {
 		}
 
 		try {
-			const data = await register(
-				cleanUsername,
-				cleanEmail,
-				password
-			);
+			const data = await register(cleanUsername, cleanEmail, password);
+			if (!data.success)
+			{
+				alert(data.error);
+				return;
+			}
 
-			if (data.user)
-				navigate("/");
-			else
-				alert(data.error || "Error en registro");
+			navigate("/");
 		}
 		catch (err)
 		{
-			console.error(err);
 			alert("Error de conexión");
 		}
 	};
@@ -1628,28 +1669,22 @@ export default AuthLayout;
 ==============================
 FILE: ./src/layouts/MainLayout.tsx
 ==============================
-import type { ReactNode } from "react";
-
-import {
-  Link,
-  useNavigate,
-} from "react-router-dom";
-
+import { useState, type ReactNode } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import GlassPanel from "../components/ui/GlassPanel";
 import Footer from "../components/ui/Footer";
-
 import { useAuth } from "../context/AuthContext";
 
 interface Props {
   children: ReactNode;
 }
 
-export default function MainLayout({
-  children,
-}: Props) {
+export default function MainLayout({ children }: Props) {
   const navigate = useNavigate();
-
   const { logout, user } = useAuth();
+  
+  // Estado para controlar el menú en celulares
+  const [isOpen, setIsOpen] = useState(false);
 
   function handleLogout() {
     logout();
@@ -1658,38 +1693,89 @@ export default function MainLayout({
 
   return (
     <div className="min-h-screen bg-bgPrimary text-textPrimary flex flex-col">
-      <div className="mx-auto w-full max-w-7xl flex-1 p-6">
-        <GlassPanel className="mb-6 p-4">
+      <div className="mx-auto w-full max-w-7xl flex-1 p-4 md:p-6 flex flex-col gap-6">
+        <GlassPanel className="p-4 relative">
           <div className="flex justify-between items-center">
-            <h1 className="text-title font-bold">
+            <h1 
+              className="text-title font-bold flex items-center gap-2 cursor-pointer text-lg md:text-xl"
+              onClick={() => navigate("/lobby")}
+            >
               🎮 Parchís Online
             </h1>
-
-            <div className="flex gap-4">
-              <Link to="/lobby">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="md:hidden flex flex-col gap-1.5 p-2 justify-center items-center w-10 h-10 rounded-lg hover:bg-white/5 transition-all focus:outline-none"
+              aria-label="Toggle menu"
+            >
+              <span className={`h-0.5 w-5 bg-black transition-all duration-300 ${isOpen ? "rotate-45 translate-y-2" : ""}`} />
+              <span className={`h-0.5 w-5 bg-black transition-all duration-300 ${isOpen ? "opacity-0" : ""}`} />
+              <span className={`h-0.5 w-5 bg-black transition-all duration-300 ${isOpen ? "-rotate-45 -translate-y-2" : ""}`} />
+            </button>
+            <div className="hidden md:flex items-center gap-6">
+              <Link to="/lobby" className="hover:text-purple-300 transition-colors">
                 Lobby
               </Link>
-
-              <Link to={`/profile/${user?.id}`}>
+              <Link to={`/profile/${user?.id}`} className="hover:text-purple-300 transition-colors">
                 Perfil
               </Link>
-
-              <Link to="/friends">
+              <Link to="/friends" className="hover:text-purple-300 transition-colors">
                 Amigos
               </Link>
-
-              <Link to="/friend-requests">
+              <Link to="/friend-requests" className="hover:text-purple-300 transition-colors">
                 Solicitudes
               </Link>
-
-              <button onClick={handleLogout}>
+              <button 
+                onClick={handleLogout}
+                className="rounded-xl bg-red-500/10 px-4 py-1.5 text-red-200 hover:bg-red-500/20 transition-all font-semibold"
+              >
                 Salir
               </button>
             </div>
           </div>
+          <div className={`
+            /* Estilos de bloque móvil */
+            md:hidden flex flex-col gap-3 mt-4 pt-4 border-t border-white/10 text-center transition-all duration-300
+            ${isOpen ? "opacity-100 max-h-screen" : "opacity-0 max-h-0 overflow-hidden mt-0 pt-0 border-none"}
+          `}>
+            <Link 
+              to="/lobby" 
+              onClick={() => setIsOpen(false)}
+              className="py-2 hover:bg-white/5 rounded-lg transition-colors"
+            >
+              Lobby
+            </Link>
+            <Link 
+              to={`/profile/${user?.id}`} 
+              onClick={() => setIsOpen(false)}
+              className="py-2 hover:bg-white/5 rounded-lg transition-colors"
+            >
+              Perfil
+            </Link>
+            <Link 
+              to="/friends" 
+              onClick={() => setIsOpen(false)}
+              className="py-2 hover:bg-white/5 rounded-lg transition-colors"
+            >
+              Amigos
+            </Link>
+            <Link 
+              to="/friend-requests" 
+              onClick={() => setIsOpen(false)}
+              className="py-2 hover:bg-white/5 rounded-lg transition-colors"
+            >
+              Solicitudes
+            </Link>
+            <button 
+              onClick={() => { setIsOpen(false); handleLogout(); }}
+              className="w-full py-2.5 mt-2 rounded-xl bg-red-500/10 text-red-200 hover:bg-red-500/20 transition-all font-semibold"
+            >
+              Salir
+            </button>
+          </div>
         </GlassPanel>
-
-        {children}
+        <div className="flex-1 flex flex-col">
+          {children}
+        </div>
 
         <Footer />
       </div>
@@ -2105,7 +2191,7 @@ export default function LobbyChat() {
 
   return (
     <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-      <h2 className="text-2xl font-bold mb-4">Lobby Chat</h2>
+      <h2 className="text-2xl font-bold mb-4">Chat</h2>
 
       <div className="h-96 overflow-y-auto rounded-xl bg-black/20 p-4 space-y-3">
         {messages.map((m) => {
@@ -2274,40 +2360,6 @@ export default function LobbyChat() {
   );
 }
 ==============================
-FILE: ./src/api/api.ts
-==============================
-import { API_URL } from "./config";
-
-export async function login(email: string, password: string) {
-  const res = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-
-  return res.json();
-}
-
-export async function register(username: string, email: string, password: string) {
-  const res = await fetch(`${API_URL}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, email, password }),
-  });
-
-  return res.json();
-}
-
-export async function getMe(token: string) {
-  const res = await fetch(`${API_URL}/users/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  return res.json();
-}
-==============================
 FILE: ./src/api/game.api.ts
 ==============================
 import { API_URL } from "./config";
@@ -2403,129 +2455,6 @@ export async function moveBonusPiece(
   return safeFetch(res);
 }
 ==============================
-FILE: ./src/api/game.ts
-==============================
-import { API_URL } from "./config";
-
-function getToken() {
-  return sessionStorage.getItem("token");
-}
-
-export async function createGame() {
-  const res = await fetch(`${API_URL}/games`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${getToken()}`,
-    },
-  });
-
-  return res.json();
-}
-
-export async function getGame(gameId: string) {
-  const res = await fetch(`${API_URL}/games/${gameId}`, {
-    headers: {
-      Authorization: `Bearer ${getToken()}`,
-    },
-  });
-
-  return res.json();
-}
-
-export async function joinGame(gameId: string) {
-  const res = await fetch(`${API_URL}/games/${gameId}/join`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${getToken()}`,
-    },
-  });
-
-  return res.json();
-}
-
-export async function rollDice(gameId: string) {
-  const res = await fetch(`${API_URL}/games/${gameId}/roll`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${getToken()}`,
-    },
-  });
-
-  return res.json();
-}
-
-export async function movePiece(
-  gameId: string,
-  pieceIndex: number
-) {
-  const res = await fetch(
-    `${API_URL}/games/${gameId}/move`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getToken()}`,
-      },
-      body: JSON.stringify({ pieceIndex }),
-    }
-  );
-
-  return res.json();
-}
-==============================
-FILE: ./src/api/http.ts
-==============================
-import { API_URL } from "./config";
-
-export async function http<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-
-  const token =
-    sessionStorage.getItem("token");
-
-  const res = await fetch(
-    `${API_URL}${endpoint}`,
-    {
-      ...options,
-
-      headers: {
-        "Content-Type": "application/json",
-
-        ...(token
-          ? {
-              Authorization:
-                `Bearer ${token}`,
-            }
-          : {}),
-
-        ...options.headers,
-      },
-    }
-  );
-
-  let data;
-
-  try {
-    data = await res.json();
-
-  } catch {
-    throw new Error(
-      "Invalid server response"
-    );
-  }
-
-  if (!res.ok) {
-    throw new Error(
-      data.error || "HTTP Error"
-    );
-  }
-
-  return data;
-}
-
-==============================
 FILE: ./src/api/friends.api.ts
 ==============================
 import { http } from "./http";
@@ -2568,12 +2497,204 @@ const HOST = window.location.host;
 export const API_URL = `https://${HOST}/api`;
 export const SOCKET_URL = `https://${HOST}`;
 ==============================
+FILE: ./src/api/api.ts
+==============================
+import { API_URL } from "./config";
+
+export async function login(email: string, password: string) {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  return res.json();
+}
+
+export async function register(username: string, email: string, password: string) {
+  const res = await fetch(`${API_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, email, password }),
+  });
+
+  return res.json();
+}
+
+export async function getMe(token: string)
+{
+  if (!token)
+  {
+    return null;
+  }
+
+  const res = await fetch(`${API_URL}/users/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.json();
+}
+==============================
+FILE: ./src/api/game.ts
+==============================
+import { API_URL } from "./config";
+
+function getToken() {
+  return sessionStorage.getItem("token");
+}
+
+export async function createGame() {
+  const token = getToken();
+
+  if (!token) {
+    throw new Error("No authentication token");
+  }
+
+  const res = await fetch(`${API_URL}/games`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.json();
+}
+
+export async function getGame(gameId: string) {
+  const token = getToken();
+
+  if (!token) {
+    throw new Error("No authentication token");
+  }
+
+  const res = await fetch(`${API_URL}/games/${gameId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.json();
+}
+
+export async function joinGame(gameId: string) {
+  const token = getToken();
+
+  if (!token) {
+    throw new Error("No authentication token");
+  }
+
+  const res = await fetch(`${API_URL}/games/${gameId}/join`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.json();
+}
+
+export async function rollDice(gameId: string) {
+  const token = getToken();
+
+  if (!token) {
+    throw new Error("No authentication token");
+  }
+
+  const res = await fetch(`${API_URL}/games/${gameId}/roll`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.json();
+}
+
+export async function movePiece(gameId: string, pieceIndex: number) {
+  const token = getToken();
+
+  if (!token) {
+    throw new Error("No authentication token");
+  }
+
+  const res = await fetch(
+    `${API_URL}/games/${gameId}/move`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ pieceIndex }),
+    }
+  );
+
+  return res.json();
+}
+==============================
+FILE: ./src/api/http.ts
+==============================
+import { API_URL } from "./config";
+
+export async function http<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+
+  const token = sessionStorage.getItem("token");
+  if (!token)
+  {
+    throw new Error("No authentication token");
+  }
+
+  const res = await fetch(
+    `${API_URL}${endpoint}`,
+    {
+      ...options,
+
+      headers: {
+        "Content-Type": "application/json",
+
+        ...(token
+          ? {
+              Authorization:
+                `Bearer ${token}`,
+            }
+          : {}),
+
+        ...options.headers,
+      },
+    }
+  );
+
+  let data;
+
+  try
+  {
+    data = await res.json();
+
+  }
+  catch
+  {
+    throw new Error("Invalid server response");
+  }
+  if (!res.ok)
+  {
+    throw new Error(data.error || "HTTP Error");
+  }
+  return data;
+}
+
+==============================
 FILE: ./src/api/user.api.ts
 ==============================
 import { http } from "./http";
 import type { User } from "../types/user";
 
 export function getMe() {
+  //console.trace("user.api.ts -> getMe()");
   return http<User>("/users/me");
 }
 
@@ -2660,7 +2781,7 @@ export function AuthProvider({
 
         connectSocket(token);
       } catch (err) {
-        console.error(err);
+        //console.error(err);
         logout();
       }
     };
@@ -2680,7 +2801,7 @@ export function AuthProvider({
     setToken(newToken);
     setUser(user);
 
-    connectSocket(newToken);
+    //connectSocket(newToken);
   };
 
   const logout = () => {
@@ -3144,23 +3265,6 @@ ReactDOM.createRoot(
 ==============================
 FILE: ./src/socket/socket.ts
 ==============================
-/*import { io } from "socket.io-client";
-import { API_URL } from "../api/config";
-
-export const socket = io(API_URL, {
-  autoConnect: false,
-});
-
-export function connectSocket(
-  token: string
-) {
-  socket.auth = { token };
-
-  if (!socket.connected) {
-    socket.connect();
-  }
-}*/
-
 import { io } from "socket.io-client";
 import { SOCKET_URL } from "../api/config";
 
@@ -3258,62 +3362,6 @@ export const useFriendsStore =
 ==============================
 FILE: ./src/store/gameStore.ts
 ==============================
-/*import { create } from "zustand";
-
-export type PieceState =
-  | "base"
-  | "track"
-  | "home"
-  | "finished";
-
-export type Piece = {
-  id: string;
-  ownerId: number;
-
-  state: PieceState;
-
-  trackIndex: number;   // 0–55 (global board)
-  homeIndex: number;    // 0–5 (final lane)
-
-  isAnimating?: boolean;
-};
-
-export type Player = {
-  id: number;
-  color: "pink" | "purple" | "green" | "blue";
-  pieces: Piece[];
-};
-
-export type GameStatus = "waiting" | "playing" | "finished";
-
-export type Game = {
-  id: string;
-  players: Player[];
-
-  turn: number;
-  dice: number | null;
-
-  status: GameStatus;
-
-  lastMove?: {
-    pieceId: string;
-    from: number;
-    to: number;
-  };
-};
-
-type GameStore = {
-  game: Game | null;
-  setGame: (game: Game) => void;
-  clear: () => void;
-};
-
-export const useGameStore = create<GameStore>((set) => ({
-  game: null,
-  setGame: (game) => set({ game }),
-  clear: () => set({ game: null }),
-}));*/
-
 import { create } from "zustand";
 import type { Game } from "../types/game";
 
@@ -3449,6 +3497,8 @@ export interface Game {
   turn: number;
 
   dice: number | null;
+
+  availableMoves?: number[];
 
   lastDice?: number | null;
 
@@ -3665,97 +3715,6 @@ export const CENTER: Point = {
  */
 export { mainTrack, bases };
 ==============================
-FILE: ./src/game/pieces/Piece.tsx
-==============================
-/*import { motion } from "framer-motion";
-
-const glowClass: Record<string, string> = {
-  pink: "neon-pink",
-  blue: "neon-blue",
-  green: "neon-green",
-  purple: "neon-purple",
-};
-
-export default function Piece({
-  x,
-  y,
-  color,
-}: any) {
-  return (
-    <motion.img
-      src={`/pieces/${color}-piece.png`}
-      className={`
-        absolute
-        w-[42px]
-        h-[42px]
-        -translate-x-1/2
-        -translate-y-1/2
-        pointer-events-auto
-        ${glowClass[color]}
-      `}
-      animate={{
-        left: x,
-        top: y,
-      }}
-      transition={{
-        type: "spring",
-        damping: 14,
-        stiffness: 120,
-      }}
-      whileHover={{
-        scale: 1.08,
-      }}
-    />
-  );
-}*/
-
-type PieceProps = {
-  x: number;
-  y: number;
-  color: string;
-  onClick?: () => void;
-};
-
-export default function Piece({
-  x,
-  y,
-  color,
-  onClick,
-}: PieceProps) {
-  return (
-    <g
-      onClick={onClick}
-      style={{
-        transform: `translate(${x}px, ${y}px)`,
-        cursor: "pointer",
-      }}
-    >
-      <circle
-        r={28}
-        fill={color}
-        opacity={0.18}
-        style={{
-          filter: `blur(10px)`,
-        }}
-      />
-
-      <circle
-        r={18}
-        fill={color}
-        style={{
-          filter: `drop-shadow(0 0 18px ${color})`,
-        }}
-      />
-
-      <circle
-        cy={-5}
-        r={7}
-        fill="rgba(255,255,255,.65)"
-      />
-    </g>
-  );
-}
-==============================
 FILE: ./src/game/pieces/AnimatedPiece.tsx
 ==============================
 import Piece from "./Piece";
@@ -3799,77 +3758,6 @@ export default function AnimatedPiece({
 ==============================
 FILE: ./src/game/pieces/GamePieces.tsx
 ==============================
-/*import type { Game } from "../../types/game";
-import { bases } from "../boardPositions";
-
-const pieceImages: Record<string, string> = {
-  pink: "/pieces/pink-piece.png",
-  purple: "/pieces/purple-piece.png",
-  blue: "/pieces/blue-piece.png",
-  green: "/pieces/green-piece.png",
-};
-
-export default function GamePieces({
-  game,
-}: {
-  game: Game;
-}) {
-  return (
-    <svg
-      viewBox="0 0 1600 1600"
-      className="
-        absolute
-        inset-0
-        w-full
-        h-full
-        z-30
-        pointer-events-none
-      "
-      preserveAspectRatio="xMidYMid meet"
-    >
-      {game.players.map((player) =>
-        player.pieces.map((piece, i) => {
-          let pos = piece.coords;
-          if (!pos && piece.state === "base") {
-            pos = bases[player.color][i];
-          }
-
-          if (!pos) {
-            return null;
-          }
-
-          return (
-            <g key={`${player.id}-${i}`}>
-              <circle
-                cx={pos.x}
-                cy={pos.y}
-                r={42}
-                fill={player.color}
-                opacity={0.18}
-              />
-
-              <image
-                href={pieceImages[player.color]}
-                x={pos.x - 32}
-                y={pos.y - 32}
-                width={64}
-                height={64}
-                preserveAspectRatio="xMidYMid meet"
-                style={{
-                  filter: `
-                    drop-shadow(0 0 12px ${player.color})
-                    drop-shadow(0 0 24px ${player.color})
-                  `,
-                }}
-              />
-            </g>
-          );
-        })
-      )}
-    </svg>
-  );
-}*/
-
 import type { Game } from "../../types/game";
 import {
   bases,
@@ -4036,35 +3924,52 @@ export default function GamePieces({
   );
 }
 ==============================
-FILE: ./src/game/hud/GameHUD.tsx
+FILE: ./src/game/pieces/Piece.tsx
 ==============================
-import PlayersPanel from "./PlayersPanel";
-import ChatPanel from "./ChatPanel";
-import DicePanel from "./DicePanel";
+type PieceProps = {
+  x: number;
+  y: number;
+  color: string;
+  onClick?: () => void;
+};
 
-export default function GameHUD({ game }: any) {
+export default function Piece({
+  x,
+  y,
+  color,
+  onClick,
+}: PieceProps) {
   return (
-    <div className="
-      fixed
-      right-[20px]
-      top-1/2
-      -translate-y-1/2
+    <g
+      onClick={onClick}
+      style={{
+        transform: `translate(${x}px, ${y}px)`,
+        cursor: "pointer",
+      }}
+    >
+      <circle
+        r={28}
+        fill={color}
+        opacity={0.18}
+        style={{
+          filter: `blur(10px)`,
+        }}
+      />
 
-      w-[290px]
-      h-[62vh]
+      <circle
+        r={18}
+        fill={color}
+        style={{
+          filter: `drop-shadow(0 0 18px ${color})`,
+        }}
+      />
 
-      flex
-      flex-col
-      gap-4
-
-      z-50
-    ">
-      <PlayersPanel game={game} />
-
-      <DicePanel game={game} />
-
-      <ChatPanel game={game} />
-    </div>
+      <circle
+        cy={-5}
+        r={7}
+        fill="rgba(255,255,255,.65)"
+      />
+    </g>
   );
 }
 ==============================
@@ -4342,6 +4247,85 @@ export default function ChatPanel({
   );
 }
 ==============================
+FILE: ./src/game/hud/GameHUD.tsx
+==============================
+import PlayersPanel from "./PlayersPanel";
+import ChatPanel from "./ChatPanel";
+import DicePanel from "./DicePanel";
+import { useState } from "react";
+
+export default function GameHUD({ game }: any) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="
+          md:hidden
+          fixed bottom-6 right-6 z-[60] 
+          flex items-center justify-center 
+          w-14 h-14 
+          rounded-full bg-purple-600 border border-white/20
+          shadow-2xl shadow-purple-500/50
+          text-white font-bold text-lg
+          transition-all duration-200
+          active:scale-95 
+        "
+      >
+        {isOpen ? "✕" : "💬"}
+      </button>
+
+      {isOpen && (
+        <div 
+          onClick={() => setIsOpen(false)} 
+          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40" 
+        />
+      )}
+
+      <div className={`
+        /* Móvil: se convierte en menú lateral deslizable */
+        fixed top-0 right-0 h-full w-[300px]
+        bg-slate-950/95 backdrop-blur-2xl p-5
+        flex flex-col gap-4 z-50
+        border-l border-white/10
+        transition-transform duration-300 ease-in-out
+        ${isOpen ? "translate-x-0" : "translate-x-full"}
+
+        /* Escritorio: desactiva los estilos de menú lateral */
+        md:fixed
+        md:right-[20px]
+        md:top-1/2
+        md:-translate-y-1/2
+        md:w-[290px]
+        md:h-[62vh]
+        md:bg-transparent
+        md:backdrop-blur-none
+        md:p-0
+        md:border-none
+        md:translate-x-0
+      `}>
+
+        <div className="flex md:hidden items-center justify-between border-b border-white/10 pb-3">
+          <span className="font-bold text-sm tracking-wider text-purple-400 uppercase">Panel de Juego</span>
+          <button 
+            onClick={() => setIsOpen(false)}
+            className="text-xs bg-white/10 px-2 py-1 rounded-lg text-white/60"
+          >
+            Cerrar
+          </button>
+        </div>
+
+        <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto md:overflow-visible">
+          <PlayersPanel game={game} />
+          <DicePanel game={game} />
+          <ChatPanel game={game} />
+        </div>
+      </div>
+    </>
+  ); 
+}
+
+==============================
 FILE: ./src/game/animations/VictoryAnimation.tsx
 ==============================
 
@@ -4358,68 +4342,7 @@ FILE: ./src/game/layout/GameScene.tsx
 ==============================
 import GameBoard from "../board/GameBoard";
 import GamePieces from "../pieces/GamePieces";
-import GameHUD from "../hud/GameHUD";
 import BoardEffects from "../board/BoardEffects";
-
-/*export default function GameScene({ game }: any) {
-  return (
-    <div className="relative w-full h-screen overflow-hidden">
-
-      {
-        game.status === "finished" &&
-        (
-          <div
-            className="
-            absolute
-            inset-0
-            flex
-            items-center
-            justify-center
-            bg-black/70
-            z-[200]
-          "
-          >
-            Winner:
-            {game.winner}
-          </div>
-        )
-      }
-
-      <div
-        className="
-          absolute inset-0
-          bg-[radial-gradient(circle_at_center,rgba(59,130,246,.12),transparent_60%)]
-        "
-      />
-
-      <div
-        className="
-          absolute inset-0
-          flex
-          items-center
-          justify-center
-        "
-      >
-        <div
-          className="
-            relative
-            aspect-square
-            w-[92vmin]
-            max-w-[1100px]
-          "
-        >
-          <GameBoard />
-
-          <BoardEffects />
-
-          <GamePieces game={game} />
-        </div>
-      </div>
-
-      <GameHUD game={game} />
-    </div>
-  );
-}*/
 
 export default function GameScene({
   game,
@@ -4435,21 +4358,16 @@ export default function GameScene({
       )}
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,.12),transparent_60%)]" />
-
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative aspect-square w-[92vmin] max-w-[1100px]">
-
-          <GameBoard />
-          <BoardEffects />
-          <GamePieces
-            game={game}
-            onPieceClick={onPieceClick}
-          />
-
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="relative aspect-square w-[92vmin] max-w-[1100px]">
+            <GameBoard />
+            <BoardEffects />
+            <GamePieces
+              game={game}
+              onPieceClick={onPieceClick}
+            />
         </div>
       </div>
-
-      <GameHUD game={game} />
     </div>
   );
 }
@@ -4934,6 +4852,44 @@ export const finishedPositions: Record<string, Point[]> = {
   ],
 };
 ==============================
+FILE: ./src/utils/validation.ts
+==============================
+export function validateText(
+  value: string,
+  {
+    minLength = 1,
+    maxLength = 255,
+    fieldName = "Field",
+  }: {
+    minLength?: number;
+    maxLength?: number;
+    fieldName?: string;
+  }
+) {
+  const clean = value.trim();
+
+  if (clean.length < minLength) {
+    return {
+      ok: false,
+      error: `${fieldName} is required.`,
+      value: clean,
+    };
+  }
+
+  if (clean.length > maxLength) {
+    return {
+      ok: false,
+      error: `${fieldName} cannot exceed ${maxLength} characters.`,
+      value: clean,
+    };
+  }
+
+  return {
+    ok: true,
+    value: clean,
+  };
+}
+==============================
 FILE: ./src/router.tsx
 ==============================
 import { createBrowserRouter } from "react-router-dom";
@@ -4943,7 +4899,6 @@ import RegisterPage from "./pages/RegisterPage";
 import LobbyPage from "./pages/LobbyPage";
 import GamePage from "./pages/GamePage";
 import ProfilePage from "./pages/ProfilePage";
-import HistoryPage from "./pages/HistoryPage";
 import FriendsPage from "./pages/FriendsPage";
 import FriendRequestsPage from "./pages/FriendRequestsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
@@ -4992,14 +4947,6 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/history",
-    element: (
-      <ProtectedRoute>
-        <HistoryPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
     path: "/friends",
     element: (
       <ProtectedRoute>
@@ -5016,44 +4963,6 @@ export const router = createBrowserRouter([
     ),
   },
 ]);
-==============================
-FILE: ./src/utils/validation.ts
-==============================
-export function validateText(
-  value: string,
-  {
-    minLength = 1,
-    maxLength = 255,
-    fieldName = "Field",
-  }: {
-    minLength?: number;
-    maxLength?: number;
-    fieldName?: string;
-  }
-) {
-  const clean = value.trim();
-
-  if (clean.length < minLength) {
-    return {
-      ok: false,
-      error: `${fieldName} is required.`,
-      value: clean,
-    };
-  }
-
-  if (clean.length > maxLength) {
-    return {
-      ok: false,
-      error: `${fieldName} cannot exceed ${maxLength} characters.`,
-      value: clean,
-    };
-  }
-
-  return {
-    ok: true,
-    value: clean,
-  };
-}
 ==============================
 FILE: ./eslint.config.js
 ==============================

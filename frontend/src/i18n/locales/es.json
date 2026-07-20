@@ -276,6 +276,40 @@
     }
   },
 
+  "game": {
+    "loading": "Cargando partida...",
+    "leave": "Salir de la partida",
+    "spectatorMode": "👁 Modo espectador",
+
+    "abandoned": {
+      "title": "Partida abandonada",
+      "message": "Todos los demás jugadores han abandonado la partida.",
+      "confirm": "Aceptar"
+    },
+
+    "header": {
+      "title": "Partida {{id}}",
+      "turn": "Turno: {{turn}}",
+      "spectators": "Espectadores: {{count}}"
+    },
+
+    "dice": {
+      "roll": "Lanzar dado",
+      "spectating": "Espectando"
+    },
+
+    "errors": {
+      "rollDiceFirst": "Primero debes lanzar el dado",
+      "notYourTurn": "No es tu turno",
+      "invalidMove": "Movimiento no válido",
+      "needFive": "Necesitas un 5 para salir de la base",
+      "ownBlockade": "Hay un bloqueo propio en la salida",
+      "exactRoll": "Se requiere una tirada exacta",
+      "blockadePath": "Hay un bloqueo en el camino",
+      "destinationBlocked": "El destino está bloqueado por una barrera"
+    }
+  },
+
   "errors": {
     "connection": "Error de conexión"
   }

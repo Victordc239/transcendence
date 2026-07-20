@@ -11,6 +11,7 @@ import ChatPanel from "../game/hud/ChatPanel";
 import GameHUD from "../game/hud/GameHUD";
 import { socket } from "../socket/socket";
 import VictoryAnimation from "../game/animations/VictoryAnimation";
+import { useTranslation } from "react-i18next";
 
 export default function GamePage() {
   const navigate = useNavigate();
@@ -23,8 +24,18 @@ export default function GamePage() {
   const winner = game?.players.find(p => p.id === game?.winner);
   const showLastPlayerPopup = useGameStore((s) => s.showLastPlayerPopup);
   const setShowLastPlayerPopup = useGameStore((s) => s.setShowLastPlayerPopup);
-
+  const { t } = useTranslation();
   const [rolling, setRolling] = useState(false);
+  const errorMap: Record<string, string> = {
+    "Roll dice first": "game.errors.rollDiceFirst",
+    "Not your turn": "game.errors.notYourTurn",
+    "Invalid move": "game.errors.invalidMove",
+    "Need 5 to leave base": "game.errors.needFive",
+    "Own blockade on exit": "game.errors.ownBlockade",
+    "Exact roll required": "game.errors.exactRoll",
+    "Blockade in path": "game.errors.blockadePath",
+    "Destination blocked by blockade": "game.errors.destinationBlocked",
+  };
 
   useGameRealtime(id ?? "", token ?? "");
 
@@ -76,10 +87,11 @@ export default function GamePage() {
             return;
         }
 
-        if (err.message === "Roll dice first" || err.message === "Not your turn" || err.message === "Invalid move" || err.message === "Need 5 to leave base" ||
-            err.message === "Own blockade on exit" || err.message === "Exact roll required" || err.message === "Blockade in path" || err.message === "Destination blocked by blockade")
+        const key = errorMap[err.message];
+        if (key)
         {
-            return;
+          alert(t(key));
+          return;
         }
 
         console.error(err);
@@ -112,7 +124,11 @@ export default function GamePage() {
   };
 
   if (!game) {
-    return <div className="text-white p-6">Loading game...</div>;
+    return (
+      <div className="text-white p-6">
+        {t("game.loading")}
+      </div>
+    );
   }
 
   return (
@@ -149,12 +165,12 @@ export default function GamePage() {
               hover:shadow-xl
             "
           >
-            Leave Game
+            {t("game.leave")}
           </button>
 
           {isSpectator && (
             <div className="absolute top-16 md:top-20 left-4 z-50 bg-yellow-500/20 text-yellow-300 px-3 py-1.5 rounded-xl text-xs font-semibold">
-              👁 Spectator Mode
+              {t("game.spectatorMode")}
             </div>
           )}
 
@@ -162,16 +178,16 @@ export default function GamePage() {
             <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
               <div className="bg-slate-950 border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-2xl">
                 <h2 className="text-xl md:text-2xl font-bold mb-3 text-purple-400">
-                  Game abandoned
+                  {t("game.abandoned.title")}
                 </h2>
                 <p className="text-white/70 mb-6 text-sm">
-                  All other players have abandoned the game.
+                  {t("game.abandoned.message")}
                 </p>
                 <button
                   onClick={handleLastPlayerConfirm}
                   className="w-full rounded-xl bg-purple-600 py-3 font-bold hover:bg-purple-700 transition"
                 >
-                  OK
+                  {t("game.abandoned.confirm")}
                 </button>
               </div>
             </div>
@@ -228,10 +244,10 @@ export default function GamePage() {
           
           {/* Cabecera del juego */}
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4">
-            <h1 className="text-lg font-bold text-purple-400">Game {game.id}</h1>
+            <h1 className="text-lg font-bold text-purple-400">{t("game.header.title", { id: game.id })}</h1>
             <div className="flex justify-between text-xs text-white/50 mt-1">
-              <div>Turn: {game.turn}</div>
-              <div>Spectators: {game.spectators?.length || 0}</div>
+              <div>{t("game.header.turn", {turn: game.turn})}</div>
+              <div>{t("game.header.spectators", {count: game.spectators?.length || 0})}</div>
             </div>
           </div>
 
@@ -261,7 +277,9 @@ export default function GamePage() {
                   : "bg-purple-600 hover:bg-purple-700 active:scale-95"
               }`}
             >
-              {isSpectator ? "Spectating" : "Roll Dice"}
+              {isSpectator
+                ? t("game.dice.spectating")
+                : t("game.dice.roll")}
             </button>
           </div>
 

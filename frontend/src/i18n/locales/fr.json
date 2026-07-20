@@ -276,6 +276,40 @@
     }
   },
 
+  "game": {
+    "loading": "Chargement de la partie...",
+    "leave": "Quitter la partie",
+    "spectatorMode": "👁 Mode spectateur",
+
+    "abandoned": {
+      "title": "Partie abandonnée",
+      "message": "Tous les autres joueurs ont abandonné la partie.",
+      "confirm": "OK"
+    },
+
+    "header": {
+      "title": "Partie {{id}}",
+      "turn": "Tour : {{turn}}",
+      "spectators": "Spectateurs : {{count}}"
+    },
+
+    "dice": {
+      "roll": "Lancer le dé",
+      "spectating": "Spectateur"
+    },
+
+    "errors": {
+      "rollDiceFirst": "Lancez d'abord le dé",
+      "notYourTurn": "Ce n'est pas votre tour",
+      "invalidMove": "Coup invalide",
+      "needFive": "Vous avez besoin d'un 5 pour sortir de la base",
+      "ownBlockade": "Votre propre barrage bloque la sortie",
+      "exactRoll": "Un lancer exact est requis",
+      "blockadePath": "Un barrage bloque le chemin",
+      "destinationBlocked": "La destination est bloquée par un barrage"
+    }
+  },
+
   "errors": {
     "connection": "Erreur de connexion"
   }

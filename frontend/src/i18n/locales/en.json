@@ -276,6 +276,40 @@
     }
   },
 
+  "game": {
+    "loading": "Loading game...",
+    "leave": "Leave Game",
+    "spectatorMode": "👁 Spectator Mode",
+
+    "abandoned": {
+      "title": "Game abandoned",
+      "message": "All other players have abandoned the game.",
+      "confirm": "OK"
+    },
+
+    "header": {
+      "title": "Game {{id}}",
+      "turn": "Turn: {{turn}}",
+      "spectators": "Spectators: {{count}}"
+    },
+
+    "dice": {
+      "roll": "Roll Dice",
+      "spectating": "Spectating"
+    },
+
+    "errors": {
+      "rollDiceFirst": "Roll dice first",
+      "notYourTurn": "Not your turn",
+      "invalidMove": "Invalid move",
+      "needFive": "Need 5 to leave base",
+      "ownBlockade": "Own blockade on exit",
+      "exactRoll": "Exact roll required",
+      "blockadePath": "Blockade in path",
+      "destinationBlocked": "Destination blocked by blockade"
+    }
+  },
+
   "errors": {
     "connection": "Connection error"
   }

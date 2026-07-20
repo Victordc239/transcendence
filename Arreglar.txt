@@ -19,16 +19,13 @@ Arreglar:
 - Cambiar/Mejorar distribución página game (Soraya)
 - Implementar en el frontend lo de ganar (Soraya)
 
-- Arreglar las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend), modificar las coordenadas de las fichas en el tablero (Manuel)
+- Arreglar las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend), modificar las coordenadas de las fichas en el tablero (Manuel)✅
 - Hacer la página responsive (Manuel) ✅
 
 - Hacer el README
 - No warnings or errors should appear in the browser console
 - Antes de subirlo al repo final descomentar las lineas de gitignore
 - Antes de subirlo borrar archivos: Arreglar.txt, Reglas.txt, comando.txt, notas.txt
-
-si tengo un movimiento de un +10 o +20 y se me pasa el timepo porque no he movido n inguna ficha y se me pasa el turno el siguiente jugador no puede tirar el dado y nadie puede tirar el dado hasta que no vuelve al que tenia el movimiento +10 o +20 y selecciona una ficha para moverla, cuando deberia ser que si no ha movido ninguna ficha tendria que perder ese +10 o +20 y perder el turno
-
 
 MÓDULO BONUS:
 

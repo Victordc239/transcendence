@@ -175,7 +175,6 @@ export const homeStretch = {
 };
 
 export const finishedPositions: Record<string, Point[]> = {
-  // TRIÁNGULO SUPERIOR (rosa)
   pink: [
     { x: 730, y: 670 },
     { x: 870, y: 670 },
@@ -183,27 +182,24 @@ export const finishedPositions: Record<string, Point[]> = {
     { x: 800, y: 740 },
   ],
 
-  // TRIÁNGULO DERECHO (verde)
   green: [
-    { x: 860, y: 730 },
-    { x: 860, y: 870 },
-    { x: 860, y: 800 },
-    { x: 790, y: 800 },
+    { x: 920, y: 730 },
+    { x: 920, y: 870 },
+    { x: 920, y: 800 },
+    { x: 850, y: 800 },
   ],
 
-  // TRIÁNGULO IZQUIERDO (azul)
   blue: [
-    { x: 740, y: 730 },
-    { x: 740, y: 870 },
-    { x: 740, y: 800 },
-    { x: 810, y: 800 },
+    { x: 680, y: 730 },
+    { x: 680, y: 870 },
+    { x: 680, y: 800 },
+    { x: 750, y: 800 },
   ],
 
-  // TRIÁNGULO INFERIOR (morado)
   purple: [
-    { x: 730, y: 860 },
-    { x: 870, y: 860 },
-    { x: 800, y: 860 },
-    { x: 800, y: 790 },
+    { x: 730, y: 925 },
+    { x: 870, y: 925 },
+    { x: 800, y: 925 },
+    { x: 800, y: 855 },
   ],
 };

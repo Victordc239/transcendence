@@ -1,8 +1,5 @@
 import type { Game } from "../../types/game";
-import {
-  bases,
-  finishedPositions,
-} from "../boardPositions";
+import {bases, finishedPositions, mainTrack} from "../boardPositions";
 
 const pieceImages: Record<string, string> = {
   pink: "/pieces/pink-piece.png",
@@ -15,11 +12,12 @@ type PieceRenderData = {
   playerId: number;
   color: string;
   index: number;
+  position: number;
   x: number;
   y: number;
 };
 
-const STACK_OFFSET = 28;
+const STACK_OFFSET = 60;
 
 export default function GamePieces({
   game,
@@ -51,6 +49,7 @@ export default function GamePieces({
         playerId: player.id,
         color: player.color,
         index: i,
+        position: piece.position,
         x: pos.x,
         y: pos.y,
       });
@@ -82,10 +81,18 @@ export default function GamePieces({
     const baseX = group[0].x;
     const baseY = group[0].y;
 
-    const isVerticalTrack =
-      (baseX > 600 && baseX < 1000) ||
-      baseX < 450 ||
-      baseX > 1150;
+    const trackPos = group[0].position;
+
+    let isVerticalTrack = true;
+
+    if (trackPos >= 0 && trackPos < mainTrack.length)
+    {
+      const prev = mainTrack[(trackPos - 1 + mainTrack.length) % mainTrack.length];
+      const next = mainTrack[(trackPos + 1) % mainTrack.length];
+      const dx = Math.abs(next.x - prev.x);
+      const dy = Math.abs(next.y - prev.y);
+      isVerticalTrack = dy > dx;
+    }
 
     const center = (group.length - 1) / 2;
 

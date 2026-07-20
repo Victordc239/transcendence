@@ -27,6 +27,8 @@ Arreglar:
 - Antes de subirlo al repo final descomentar las lineas de gitignore
 - Antes de subirlo borrar archivos: Arreglar.txt, Reglas.txt, comando.txt, notas.txt
 
+si tengo un movimiento de un +10 o +20 y se me pasa el timepo porque no he movido n inguna ficha y se me pasa el turno el siguiente jugador no puede tirar el dado y nadie puede tirar el dado hasta que no vuelve al que tenia el movimiento +10 o +20 y selecciona una ficha para moverla, cuando deberia ser que si no ha movido ninguna ficha tendria que perder ese +10 o +20 y perder el turno
+
 
 MÓDULO BONUS:
 

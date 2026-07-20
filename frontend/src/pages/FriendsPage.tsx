@@ -18,6 +18,12 @@ interface SearchUser {
   username: string;
   avatar_url?: string;
   online?: boolean;
+
+  friendship_status:
+    | "none"
+    | "pending"
+    | "received"
+    | "accepted";
 }
 
 export default function FriendsPage() {
@@ -39,14 +45,16 @@ export default function FriendsPage() {
   }, []);
 
   async function loadFriends() {
-    try {
+    try
+    {
       const data = await getFriends();
       setFriends(data.friends);
-    } catch (err) {
-      console.error(err);
+    }
+    catch
+    {
+      alert("No se pudieron cargar los amigos");
     }
   }
-
   async function handleSearch() {
     const validation = validateText(query, {
       maxLength: 50,
@@ -60,31 +68,56 @@ export default function FriendsPage() {
       alert(validation.error);
       return;
     }
-    try {
+    try
+    {
       const data = await searchUsers(validation.value);
       setResults(data.users);
-    } catch (err) {
-      console.error(err);
+    }
+    catch (err)
+    {
+      if (err instanceof Error)
+        alert(err.message);
+      else
+        alert("Error al buscar usuarios");
     }
   }
 
   async function handleSendRequest(userId: number) {
     try {
       await sendFriendRequest(userId);
+
+      setResults((prev) =>
+        prev.map((user) =>
+          user.id === userId
+            ? {
+                ...user,
+                friendship_status: "pending",
+              }
+            : user
+        )
+      );
+
       alert("Solicitud enviada");
     } catch (err) {
-      console.error(err);
-      alert("No se pudo enviar la solicitud");
+      if (err instanceof Error)
+        alert(err.message);
+      else
+        alert("No se pudo enviar la solicitud");
     }
   }
 
   async function handleRemoveFriend(friendId: number) {
-    try {
+    try
+    {
       await removeFriend(friendId);
       await loadFriends();
-    } catch (err) {
-      console.error(err);
-      alert("No se pudo eliminar el amigo");
+    }
+    catch (err)
+    {
+      if (err instanceof Error)
+        alert(err.message);
+      else
+        alert("No se pudo eliminar el amigo");
     }
   }
 
@@ -92,12 +125,12 @@ export default function FriendsPage() {
     <MainLayout>
       <GlassPanel className="p-4 md:p-8 rounded-3xl border border-black/5 dark:border-white/10 my-4 shadow-xl">
         <h2 className="text-2xl md:text-3xl font-extrabold mb-6 tracking-tight text-textPrimary">
-          Comunidad y Amigos
+          Amigos
         </h2>
 
         <div className="mb-8 bg-black/[0.03] dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 md:p-6 space-y-4">
           <h3 className="text-sm md:text-base font-semibold opacity-80 text-textPrimary">
-            Buscar nuevos contrincantes
+            Buscar nuevos amigos
           </h3>
 
           <div className="flex flex-col sm:flex-row gap-3 items-stretch">
@@ -153,10 +186,22 @@ export default function FriendsPage() {
                   </div>
 
                   <Button
-                    className="px-4 py-1.5 text-xs bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold flex-shrink-0 transition-all shadow-md"
-                    onClick={() => handleSendRequest(user.id)}
+                      disabled={user.friendship_status !== "none"}
+                      className="px-4 py-1.5 text-xs bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-bold flex-shrink-0 transition-all shadow-md"
+                      onClick={() => handleSendRequest(user.id)}
                   >
-                    Añadir
+                      {
+                          user.friendship_status === "accepted"
+                              ? "Amigo"
+
+                          : user.friendship_status === "pending"
+                              ? "Enviada"
+
+                          : user.friendship_status === "received"
+                              ? "Responder"
+
+                          : "Añadir"
+                      }
                   </Button>
                 </div>
               ))}

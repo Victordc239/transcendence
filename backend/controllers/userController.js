@@ -218,14 +218,45 @@ exports.searchUsers = async (req, res) => {
 		const result = await pool.query(
 			`
 			SELECT
-				id,
-				username,
-				avatar_url
-			FROM users
+				u.id,
+				u.username,
+				u.avatar_url,
+
+				CASE
+					WHEN f.status = 'accepted'
+						THEN 'accepted'
+
+					WHEN f.status = 'pending'
+						AND f.requester_id = $2
+						THEN 'pending'
+
+					WHEN f.status = 'pending'
+						AND f.addressee_id = $2
+						THEN 'received'
+
+					ELSE 'none'
+				END AS friendship_status
+
+			FROM users u
+
+			LEFT JOIN friendships f
+			ON (
+			(
+				f.requester_id = $2
+				AND f.addressee_id = u.id
+			)
+			OR
+			(
+				f.requester_id = u.id
+				AND f.addressee_id = $2
+			)
+			)
+
 			WHERE
-				LOWER(username) LIKE LOWER($1)
-				AND id != $2
-			ORDER BY username ASC
+			LOWER(u.username) LIKE LOWER($1)
+			AND u.id != $2
+
+			ORDER BY u.username ASC
 			LIMIT 20
 			`,
 			[

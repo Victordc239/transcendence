@@ -22,10 +22,16 @@ export function updateProfile(
 export function searchUsers(query: string) {
   return http<{
     users: {
-      id: number;
-      username: string;
-      avatar_url?: string;
-      online?: boolean;
+        id: number;
+        username: string;
+        avatar_url?: string;
+        online?: boolean;
+
+        friendship_status:
+            | "none"
+            | "pending"
+            | "received"
+            | "accepted";
     }[];
   }>(`/users/search?q=${encodeURIComponent(query)}`);
 }

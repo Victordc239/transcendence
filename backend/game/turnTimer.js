@@ -27,10 +27,15 @@ function startTurnTimer(gameId)
 		{
 			const locked = await withGameLock(gameId,
 				async (game) => {
-
 					if (game.status !== GAME_STATUS.PLAYING)
 						return { skip: true };
 					game.dice = null;
+					if (game.pendingBonus && game.pendingBonusPlayer === game.turn)
+					{
+						game.pendingBonus = null;
+						game.pendingBonusPlayer = null;
+						game.pendingBonusFromSix = false;
+					}
 					nextTurn(game);
 					game.updatedAt = Date.now();
 					return { ok: true };

@@ -302,6 +302,7 @@ function executeBonusMove(
 			}
 			game.pendingBonus = null;
 			game.pendingBonusPlayer = null;
+			game.pendingBonusFromSix = false;
 			clearTurnTimer(game.id);
 			game.status = GAME_STATUS.FINISHED;
 			game.winner = game.ranking[0];

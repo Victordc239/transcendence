@@ -1,6 +1,6 @@
-
 import { useEffect, useState } from "react";
 import { socket } from "../../socket/socket";
+import { useTranslation } from "react-i18next";
 
 type ChatMessage = {
   userId: number;
@@ -12,11 +12,9 @@ type ChatMessage = {
 export default function ChatPanel({
   game,
 }: any) {
-  const [msg, setMsg] =
-    useState("");
-
-  const [messages, setMessages] =
-    useState<ChatMessage[]>([]);
+  const [msg, setMsg] = useState("");
+  const { t } = useTranslation();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
     const onMessage = (
@@ -55,7 +53,7 @@ export default function ChatPanel({
   return (
     <div className="glass-panel rounded-3xl p-4 flex-1 flex flex-col gap-3 min-h-0">
       <div className="font-semibold text-white/80">
-        Chat
+        {t("chatPanel.title")}
       </div>
 
       <div
@@ -125,7 +123,7 @@ export default function ChatPanel({
             p-3
             outline-none
           "
-          placeholder="Write a message..."
+          placeholder={t("chatPanel.placeholder")}
         />
 
         <button
@@ -140,7 +138,7 @@ export default function ChatPanel({
             border-cyan-400/30
           "
         >
-          Send
+          {t("chatPanel.send")}
         </button>
       </div>
     </div>

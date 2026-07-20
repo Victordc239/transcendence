@@ -1,7 +1,9 @@
 import type { Game } from "../../types/game";
+import { useTranslation } from "react-i18next";
 
 export default function PlayersPanel({ game }: { game: Game }) {
-//export default function PlayersPanel({ game }: any) {
+
+  const { t } = useTranslation();
 
   const avatarBorderColors = {
     pink: "border-pink-500",
@@ -18,7 +20,9 @@ export default function PlayersPanel({ game }: { game: Game }) {
       flex-col
       gap-3
     ">
-      <h3 className="font-bold mb-2">Players</h3>
+      <h3 className="font-bold mb-2">
+        {t("players.title")}
+      </h3>
 
       {game.players.map((p) => {
         const isTurn = game.turn === p.id;
@@ -64,10 +68,10 @@ export default function PlayersPanel({ game }: { game: Game }) {
 
               <div className="text-xs text-white/50">
                 {p.abandoned
-                  ? "Abandoned"
+                  ? t("players.abandoned")
                   : p.connected
-                  ? "Connected"
-                  : "Disconnected"}
+                  ? t("players.connected")
+                  : t("players.disconnected")}
               </div>
             </div>
           </div>

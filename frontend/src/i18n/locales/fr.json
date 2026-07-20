@@ -281,6 +281,11 @@
     "leave": "Quitter la partie",
     "spectatorMode": "👁 Mode spectateur",
 
+    "hud": {
+      "panel": "Panneau de jeu",
+      "close": "Fermer"
+    },
+
     "abandoned": {
       "title": "Partie abandonnée",
       "message": "Tous les autres joueurs ont abandonné la partie.",
@@ -308,6 +313,13 @@
       "blockadePath": "Un barrage bloque le chemin",
       "destinationBlocked": "La destination est bloquée par un barrage"
     }
+  },
+
+  "players": {
+    "title": "Joueurs",
+    "abandoned": "Abandonné",
+    "connected": "Connecté",
+    "disconnected": "Déconnecté"
   },
 
   "profile": {
@@ -343,6 +355,20 @@
       "option": "option d'avatar",
       "current": "avatar"
     }
+  },
+
+  "victory": {
+    "titleVictory": "VICTOIRE",
+    "titleGameOver": "PARTIE TERMINÉE",
+    "congratulations": "Félicitations !",
+    "winnerIs": "Le gagnant est",
+    "returnLobby": "Retour au Lobby"
+  },
+
+  "chatPanel": {
+    "title": "Chat",
+    "placeholder": "Écrivez un message...",
+    "send": "Envoyer"
   },
 
   "errors": {

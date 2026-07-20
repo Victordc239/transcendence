@@ -1,6 +1,7 @@
 import Confetti from "react-confetti";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   winnerName: string;
@@ -13,6 +14,7 @@ export default function VictoryAnimation({
   won,
   onClose,
 }: Props) {
+  const { t } = useTranslation();
 
 	const [windowSize, setWindowSize] = useState({
 		width: window.innerWidth,
@@ -96,13 +98,15 @@ export default function VictoryAnimation({
           </motion.div>
 
           <h1 className="text-5xl font-extrabold text-purple-400 mb-3">
-            {won ? "VICTORY" : "GAME OVER"}
+            {won
+              ? t("victory.titleVictory")
+              : t("victory.titleGameOver")}
           </h1>
 
           <p className="text-white/70 mb-2">
             {won
-              ? "Congratulations!"
-              : "The winner is"}
+              ? t("victory.congratulations")
+              : t("victory.winnerIs")}
           </p>
 
           <p className="text-xl font-bold text-white mb-8">
@@ -121,7 +125,7 @@ export default function VictoryAnimation({
               font-bold
             "
           >
-            Return to Lobby
+            {t("victory.returnLobby")}
           </button>
 
         </div>

@@ -281,6 +281,11 @@
     "leave": "Leave Game",
     "spectatorMode": "👁 Spectator Mode",
 
+    "hud": {
+      "panel": "Game Panel",
+      "close": "Close"
+    },
+
     "abandoned": {
       "title": "Game abandoned",
       "message": "All other players have abandoned the game.",
@@ -308,6 +313,13 @@
       "blockadePath": "Blockade in path",
       "destinationBlocked": "Destination blocked by blockade"
     }
+  },
+
+  "players": {
+    "title": "Players",
+    "abandoned": "Abandoned",
+    "connected": "Connected",
+    "disconnected": "Disconnected"
   },
 
   "profile": {
@@ -343,6 +355,20 @@
       "option": "avatar option",
       "current": "avatar"
     }
+  },
+
+  "victory": {
+    "titleVictory": "VICTORY",
+    "titleGameOver": "GAME OVER",
+    "congratulations": "Congratulations!",
+    "winnerIs": "The winner is",
+    "returnLobby": "Return to Lobby"
+  },
+
+  "chatPanel": {
+    "title": "Chat",
+    "placeholder": "Write a message...",
+    "send": "Send"
   },
 
   "errors": {

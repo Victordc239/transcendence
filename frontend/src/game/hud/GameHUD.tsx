@@ -2,9 +2,12 @@ import PlayersPanel from "./PlayersPanel";
 import ChatPanel from "./ChatPanel";
 import DicePanel from "./DicePanel";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function GameHUD({ game }: any) {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useTranslation();
+
   return (
     <>
       <button 
@@ -55,12 +58,14 @@ export default function GameHUD({ game }: any) {
       `}>
 
         <div className="flex md:hidden items-center justify-between border-b border-white/10 pb-3">
-          <span className="font-bold text-sm tracking-wider text-purple-400 uppercase">Panel de Juego</span>
+          <span className="font-bold text-sm tracking-wider text-purple-400 uppercase">
+              {t("game.hud.panel")}
+          </span>
           <button 
             onClick={() => setIsOpen(false)}
             className="text-xs bg-white/10 px-2 py-1 rounded-lg text-white/60"
           >
-            Cerrar
+            {t("game.hud.close")}
           </button>
         </div>
 

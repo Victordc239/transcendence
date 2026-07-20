@@ -12,6 +12,7 @@ import GameHUD from "../game/hud/GameHUD";
 import { socket } from "../socket/socket";
 import VictoryAnimation from "../game/animations/VictoryAnimation";
 import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../i18n/LanguageSwitcher";
 
 export default function GamePage() {
   const navigate = useNavigate();
@@ -166,6 +167,10 @@ export default function GamePage() {
           >
             {t("game.leave")}
           </button>
+
+          <div className="absolute top-4 right-4 z-50">
+            <LanguageSwitcher />
+          </div>
 
           {isSpectator && (
             <div className="absolute top-16 md:top-20 left-4 z-50 bg-yellow-500/20 text-yellow-300 px-3 py-1.5 rounded-xl text-xs font-semibold">

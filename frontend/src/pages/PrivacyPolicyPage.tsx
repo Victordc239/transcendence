@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../i18n/LanguageSwitcher";
 
 export default function PrivacyPolicyPage() {
   const { t } = useTranslation();
@@ -18,6 +19,11 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-bgPrimary text-textPrimary">
       <div className="mx-auto max-w-5xl p-8">
+
+        <div className="flex justify-end mt-4">
+          <LanguageSwitcher />
+        </div>
+        
         <h1 className="mt-6 text-4xl font-bold">
           {t("privacy.title")}
         </h1>

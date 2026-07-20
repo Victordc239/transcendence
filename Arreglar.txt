@@ -20,7 +20,7 @@ Arreglar:
 - Implementar en el frontend lo de ganar (Soraya)
 
 - Arreglar las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend), modificar las coordenadas de las fichas en el tablero (Manuel)
-- Hacer la página responsive (Manuel)
+- Hacer la página responsive (Manuel) ✅
 
 - Hacer el README
 - No warnings or errors should appear in the browser console
@@ -48,8 +48,8 @@ IV.1 Web
 
 IV.2 Accessibility and Internationalization
 
-	• Minor: Support for multiple languages (at least 3 languages).
-		◦ Implement i18n (internationalization) system.✅
+	• Minor: Support for multiple languages (at least 3 languages). ✅ +1
+		◦ Implement i18n (internationalization) system.
 		◦ At least 3 complete language translations.
 		◦ Language switcher in the UI.
 		◦ All user-facing text must be translatable.

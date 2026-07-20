@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import LobbyChat from "../components/ui/LobbyChat";
 import Footer from "../components/ui/Footer";
 import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../i18n/LanguageSwitcher";
 
 function LobbyPage() {
   const navigate = useNavigate();
@@ -105,6 +106,8 @@ function LobbyPage() {
           </h1>
         </div>
         <div className="flex flex-wrap justify-center gap-4 md:gap-6 items-center text-sm md:text-base">
+          <LanguageSwitcher />
+
           <button
             className="hover:text-purple-300 transition-colors"
             onClick={() => {

@@ -33,25 +33,25 @@ export default function AuthBackground() {
 
       {/* Columna izquierda */}
       <div className="pointer-events-none absolute inset-y-0 left-6 hidden lg:flex flex-col justify-evenly opacity-20">
-        <img src="/auth/trophy.svg" className="w-24 animate-float" />
-        <img src="/auth/dice.svg" className="w-20 animate-spinSlow" />
-        <img src="/auth/controller.svg" className="w-28 animate-floatDelay" />
-        <img src="/auth/piece.svg" className="w-20 animate-float" />
+        <img src="/decor/trophy.svg" className="w-24 animate-float" />
+        <img src="/decor/dice.svg" className="w-20 animate-spinSlow" />
+        <img src="/decor/controller.svg" className="w-28 animate-floatDelay" />
+        <img src="/decor/piece.svg" className="w-20 animate-float" />
       </div>
 
       {/* Columna derecha */}
       <div className="pointer-events-none absolute inset-y-0 right-6 hidden lg:flex flex-col justify-evenly opacity-20">
-        <img src="/auth/controller.svg" className="w-28 animate-floatDelay" />
-        <img src="/auth/piece.svg" className="w-22 animate-float" />
-        <img src="/auth/dice.svg" className="w-20 animate-spinSlow" />
-        <img src="/auth/trophy.svg" className="w-24 animate-float" />
+        <img src="/decor/controller.svg" className="w-28 animate-floatDelay" />
+        <img src="/decor/piece.svg" className="w-22 animate-float" />
+        <img src="/decor/dice.svg" className="w-20 animate-spinSlow" />
+        <img src="/decor/trophy.svg" className="w-24 animate-float" />
       </div>
 
       {/* Parte superior */}
       <div className="pointer-events-none absolute top-8 left-1/2 -translate-x-1/2 flex gap-12 opacity-15">
-        <img src="/auth/trophy.svg" className="w-16 animate-float" />
-        <img src="/auth/dice.svg" className="w-16 animate-spinSlow" />
-        <img src="/auth/controller.svg" className="w-20 animate-floatDelay" />
+        <img src="/decor/trophy.svg" className="w-16 animate-float" />
+        <img src="/decor/dice.svg" className="w-16 animate-spinSlow" />
+        <img src="/decor/controller.svg" className="w-20 animate-floatDelay" />
       </div>
 
     </>

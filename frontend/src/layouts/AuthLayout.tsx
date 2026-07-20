@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import LanguageSwitcher from "../i18n/LanguageSwitcher";
 import Footer from "../components/ui/Footer";
-import AuthBackground from "../auth/AuthBackground";
+import AuthBackground from "../components/background/AuthBackground";
 
 interface AuthLayoutProps {
   children: ReactNode;

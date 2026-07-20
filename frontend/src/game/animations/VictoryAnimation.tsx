@@ -10,6 +10,7 @@ type Props = {
 
 export default function VictoryAnimation({
   winnerName,
+  won,
   onClose,
 }: Props) {
 
@@ -34,7 +35,7 @@ export default function VictoryAnimation({
 	}, []);
 	
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black-950/80 backdrop-blur-sm">
 
       <Confetti
         width={windowSize.width}
@@ -81,20 +82,25 @@ export default function VictoryAnimation({
 
         <div className="relative">
 
-          <div className="text-7xl mb-5">
-            won ? "🏆" : "🎮"
-          </div>
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{
+              delay: 0.2,
+              type: "spring",
+              stiffness: 180,
+            }}
+            className="text-7xl mb-5"
+          >
+            {won ? "🏆" : "🎮"}
+          </motion.div>
 
           <h1 className="text-5xl font-extrabold text-purple-400 mb-3">
-            won
-              ? "VICTORY"
-              : "GAME OVER"
+            {won ? "VICTORY" : "GAME OVER"}
           </h1>
 
           <p className="text-white/70 mb-2">
-            won
-              ? "Congratulations!"
-              : "Winner"
+            {won ? "Congratulations!" : "Winner"}
           </p>
 
           <p className="text-xl font-bold text-white mb-8">

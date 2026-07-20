@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import ThemeToggle from "../components/ui/ThemeToggle";
+import LanguageSwitcher from "../i18n/LanguageSwitcher";
 import Footer from "../components/ui/Footer";
 
 interface AuthLayoutProps {
@@ -27,7 +28,9 @@ function AuthLayout({
         p-6
       "
     >
-      <div className="absolute top-6 right-6">
+      {/* Controles superiores */}
+      <div className="absolute top-6 right-6 flex items-center gap-3">
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
 

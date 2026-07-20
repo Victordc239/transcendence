@@ -36,9 +36,9 @@ export default function MainLayout({ children }: Props) {
               className="md:hidden flex flex-col gap-1.5 p-2 justify-center items-center w-10 h-10 rounded-lg hover:bg-white/5 transition-all focus:outline-none"
               aria-label="Toggle menu"
             >
-              <span className={`h-0.5 w-5 bg-black transition-all duration-300 ${isOpen ? "rotate-45 translate-y-2" : ""}`} />
-              <span className={`h-0.5 w-5 bg-black transition-all duration-300 ${isOpen ? "opacity-0" : ""}`} />
-              <span className={`h-0.5 w-5 bg-black transition-all duration-300 ${isOpen ? "-rotate-45 -translate-y-2" : ""}`} />
+              <span className={`h-0.5 w-5 bg-black dark:bg-white transition-all duration-300 ${isOpen ? "rotate-45 translate-y-2" : ""}`} />
+              <span className={`h-0.5 w-5 bg-black dark:bg-white transition-all duration-300 ${isOpen ? "opacity-0" : ""}`} />
+              <span className={`h-0.5 w-5 bg-black dark:bg-white transition-all duration-300 ${isOpen ? "-rotate-45 -translate-y-2" : ""}`} />
             </button>
             <div className="hidden md:flex items-center gap-6">
               <Link to="/lobby" className="hover:text-purple-300 transition-colors">

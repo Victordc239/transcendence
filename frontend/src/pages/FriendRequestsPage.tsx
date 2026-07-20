@@ -1,20 +1,9 @@
-import {
-  useEffect,
-  useState,
-} from "react";
-
+import { useEffect, useState} from "react";
 import MainLayout from "../layouts/MainLayout";
-
 import GlassPanel from "../components/ui/GlassPanel";
-
 import Button from "../components/ui/Button";
-
 import type { FriendRequest } from "../types/friend";
-
-import {
-  getPendingRequests,
-  acceptFriendRequest,
-} from "../api/friends.api";
+import { getPendingRequests, acceptFriendRequest} from "../api/friends.api";
 
 export default function FriendRequestsPage() {
   const [requests, setRequests] =

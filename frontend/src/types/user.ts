@@ -4,4 +4,5 @@ export interface User {
   email: string;
   avatar_url?: string;
   created_at: string;
+  online: boolean;
 }

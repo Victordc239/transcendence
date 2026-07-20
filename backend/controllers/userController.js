@@ -30,7 +30,7 @@ exports.getMe = async (req, res) => {
 
 		return res.json({
 			...user,
-			online: true
+			online: isUserOnline(user.id)
 		});
 	}
 	catch (error)

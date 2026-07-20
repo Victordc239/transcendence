@@ -6,9 +6,11 @@ import Input from "../components/ui/Input";
 import GlassPanel from "../components/ui/GlassPanel";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import type { User } from "../types/user";
 
 export default function ProfilePage() {
-	const [user, setUser] = useState<any>(null);
+	//const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
 
 	const [editing, setEditing] =
 		useState(false);
@@ -166,10 +168,24 @@ export default function ProfilePage() {
                             <div className="relative">
                                 <img
                                     src={selectedAvatar || "/uploads/default-avatar.png"}
-                                    className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover border-2 border-purple-500/30 p-1 bg-white/5"
+                                    className={`
+                                        w-24 h-24
+                                        md:w-28 md:h-28
+                                        rounded-full
+                                        object-cover
+                                        p-1
+                                        bg-white/5
+                                        border-[3px]
+                                        transition-all
+                                        duration-300
+                                        ${
+                                            user.online
+                                                ? "border-green-500 shadow-[0_0_18px_rgba(34,197,94,0.45)]"
+                                                : "border-purple-500/30"
+                                        }
+                                    `}
                                     alt="avatar"
                                 />
-                                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-slate-950 rounded-full" />
                             </div>
                         </div>
                         <div className="w-full space-y-3 bg-white/5 border border-white/5 rounded-2xl p-5">

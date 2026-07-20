@@ -60,7 +60,7 @@ export default function MainLayout({ children }: Props) {
               </Link>
               <button 
                 onClick={handleLogout}
-                className="rounded-xl bg-red-500/10 px-4 py-1.5 text-red-200 hover:bg-red-500/20 transition-all font-semibold"
+                className="rounded-xl bg-red-500/10 px-4 py-1.5 text-red-700 hover:bg-red-500/20 transition-all font-semibold"
               >
                 {t("menu.logout")}
               </button>

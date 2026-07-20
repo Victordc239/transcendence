@@ -7,16 +7,13 @@ import GlassPanel from "../components/ui/GlassPanel";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import type { User } from "../types/user";
+import { useTranslation } from "react-i18next";
 
 export default function ProfilePage() {
 	//const [user, setUser] = useState<any>(null);
     const [user, setUser] = useState<User | null>(null);
-
-	const [editing, setEditing] =
-		useState(false);
-
-	const [username, setUsername] =
-		useState("");
+	const [editing, setEditing] = useState(false);
+	const [username, setUsername] = useState("");
 
 	const avatars = [
 		"/uploads/default-avatar.png",
@@ -33,7 +30,7 @@ export default function ProfilePage() {
 
 	const { id } = useParams();
 	const { user: me } = useAuth();
-
+    const { t } = useTranslation();
 	const [selectedAvatar, setSelectedAvatar] = useState("");
 
 	const isMyProfile = Number(id) === me?.id;
@@ -61,7 +58,7 @@ export default function ProfilePage() {
 		}
 		catch
 		{
-			alert("No se pudo cargar el perfil");
+			alert(t("profile.loadError"));
 		}
 	}
 
@@ -72,17 +69,17 @@ export default function ProfilePage() {
 		const cleanUsername = username.trim();
 
 		if (!cleanUsername) {
-			alert("El nombre de usuario es obligatorio");
+			alert(t("profile.validation.required"));
 			return;
 		}
 
 		if (cleanUsername.length < 3 || cleanUsername.length > 20) {
-			alert("El nombre de usuario debe tener entre 3 y 20 caracteres");
+			alert(t("profile.validation.length"));
 			return;
 		}
 
 		if (!avatars.includes(selectedAvatar)) {
-			alert("Avatar inválido");
+			alert(t("profile.validation.invalidAvatar"));
 			return;
 		}
 
@@ -95,10 +92,9 @@ export default function ProfilePage() {
 		catch (err)
 		{
 			const message =
-				err instanceof Error
-					? err.message
-					: "No se pudo actualizar el perfil";
-
+                err instanceof Error
+                    ? err.message
+                    : t("profile.validation.updateError");
 			alert(message);
 		}
 	}
@@ -106,7 +102,7 @@ export default function ProfilePage() {
 	if (!user) {
 		return (
 			<MainLayout>
-				<div>Cargando...</div>
+				<div>{t("profile.loading")}</div>
 			</MainLayout>
 		);
 	}
@@ -115,13 +111,19 @@ export default function ProfilePage() {
 		<MainLayout>
             <GlassPanel className="max-w-xl mx-auto p-5 md:p-8 rounded-3xl border border-white/10 my-4 md:my-8">
                 <h2 className="text-xl md:text-2xl font-bold mb-6 text-center md:text-left tracking-wide">
-                    {isMyProfile ? "Mi Perfil" : `Perfil de ${user.username}`}
+                {
+                    isMyProfile
+                        ? t("profile.title.mine")
+                        : t("profile.title.user", {
+                            username: user.username,
+                        })
+                }
                 </h2>
                 {editing && isMyProfile ? (
                     <div className="space-y-6">
                         <div>
                             <span className="block text-sm font-medium text-black/60 mb-3">
-                                Selecciona tu avatar:
+                                {t("profile.edit.title")}
                             </span>
                             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-w-md mx-auto">
                                 {avatars.map((avatar) => (
@@ -137,7 +139,7 @@ export default function ProfilePage() {
                                                 : "border-white/10 hover:border-white/30"
                                             }
                                         `}
-                                        alt="opción de avatar"
+                                        alt={t("profile.avatarAlt.option")}
                                     />
                                 ))}
                             </div>
@@ -145,7 +147,7 @@ export default function ProfilePage() {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-black/60 mb-2">
-                                    Nombre de usuario
+                                    {t("profile.edit.username")}
                                 </label>
                                 <Input
                                     value={username}
@@ -158,7 +160,7 @@ export default function ProfilePage() {
                                 onClick={handleSave}
                                 className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 font-bold transition-all"
                             >
-                                Guardar Cambios
+                                {t("profile.edit.save")}
                             </Button>
                         </div>
                     </div>
@@ -184,25 +186,25 @@ export default function ProfilePage() {
                                                 : "border-purple-500/30"
                                         }
                                     `}
-                                    alt="avatar"
+                                    alt={t("profile.avatarAlt.current")}
                                 />
                             </div>
                         </div>
                         <div className="w-full space-y-3 bg-white/5 border border-white/5 rounded-2xl p-5">
                             <div className="flex justify-between items-center border-b border-white/5 pb-2 text-sm md:text-base">
-                                <span className="text-gray/50">Usuario:</span>
+                                <span className="text-gray/50">{t("profile.info.username")}</span>
                                 <span className="font-semibold text-gray/20">{user.username}</span>
                             </div>
 
                             {isMyProfile && (
                                 <div className="flex justify-between items-center border-b border-white/5 pb-2 text-sm md:text-base">
-                                    <span className="text-gray/50">Email:</span>
+                                    <span className="text-gray/50">{t("profile.info.email")}</span>
                                     <span className="font-semibold text-gray/20 break-all pl-4 text-right">{user.email}</span>
                                 </div>
                             )}
 
                             <div className="flex justify-between items-center text-sm md:text-base">
-                                <span className="text-gray/50">Fecha alta:</span>
+                                <span className="text-gray/50">{t("profile.info.createdAt")}</span>
                                 <span className="font-semibold text-gray/20">
                                     {new Date(user.created_at).toLocaleDateString()}
                                 </span>
@@ -213,7 +215,7 @@ export default function ProfilePage() {
                                 onClick={() => setEditing(true)}
                                 className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 font-bold transition-all mt-2 text-sm md:text-base"
                             >
-                                Editar Perfil
+                                {t("profile.edit.button")}
                             </Button>
                         )}
                     </div>

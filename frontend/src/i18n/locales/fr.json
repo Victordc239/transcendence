@@ -310,6 +310,41 @@
     }
   },
 
+  "profile": {
+    "loading": "Chargement...",
+    "loadError": "Impossible de charger le profil",
+
+    "title": {
+      "mine": "Mon Profil",
+      "user": "Profil de {{username}}"
+    },
+
+    "edit": {
+      "title": "Sélectionnez votre avatar :",
+      "username": "Nom d'utilisateur",
+      "save": "Enregistrer les modifications",
+      "button": "Modifier le profil"
+    },
+
+    "validation": {
+      "required": "Le nom d'utilisateur est obligatoire",
+      "length": "Le nom d'utilisateur doit contenir entre 3 et 20 caractères",
+      "invalidAvatar": "Avatar invalide",
+      "updateError": "Impossible de mettre à jour le profil"
+    },
+
+    "info": {
+      "username": "Nom d'utilisateur :",
+      "email": "E-mail :",
+      "createdAt": "Membre depuis :"
+    },
+
+    "avatarAlt": {
+      "option": "option d'avatar",
+      "current": "avatar"
+    }
+  },
+
   "errors": {
     "connection": "Erreur de connexion"
   }

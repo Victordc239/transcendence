@@ -310,6 +310,41 @@
     }
   },
 
+  "profile": {
+    "loading": "Cargando...",
+    "loadError": "No se pudo cargar el perfil",
+
+    "title": {
+      "mine": "Mi Perfil",
+      "user": "Perfil de {{username}}"
+    },
+
+    "edit": {
+      "title": "Selecciona tu avatar:",
+      "username": "Nombre de usuario",
+      "save": "Guardar Cambios",
+      "button": "Editar Perfil"
+    },
+
+    "validation": {
+      "required": "El nombre de usuario es obligatorio",
+      "length": "El nombre de usuario debe tener entre 3 y 20 caracteres",
+      "invalidAvatar": "Avatar inválido",
+      "updateError": "No se pudo actualizar el perfil"
+    },
+
+    "info": {
+      "username": "Usuario:",
+      "email": "Email:",
+      "createdAt": "Fecha alta:"
+    },
+
+    "avatarAlt": {
+      "option": "opción de avatar",
+      "current": "avatar"
+    }
+  },
+
   "errors": {
     "connection": "Error de conexión"
   }

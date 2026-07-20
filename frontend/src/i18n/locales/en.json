@@ -310,6 +310,41 @@
     }
   },
 
+  "profile": {
+    "loading": "Loading...",
+    "loadError": "Could not load profile",
+
+    "title": {
+      "mine": "My Profile",
+      "user": "{{username}}'s Profile"
+    },
+
+    "edit": {
+      "title": "Select your avatar:",
+      "username": "Username",
+      "save": "Save Changes",
+      "button": "Edit Profile"
+    },
+
+    "validation": {
+      "required": "Username is required",
+      "length": "Username must be between 3 and 20 characters",
+      "invalidAvatar": "Invalid avatar",
+      "updateError": "Could not update profile"
+    },
+
+    "info": {
+      "username": "Username:",
+      "email": "Email:",
+      "createdAt": "Member since:"
+    },
+
+    "avatarAlt": {
+      "option": "avatar option",
+      "current": "avatar"
+    }
+  },
+
   "errors": {
     "connection": "Connection error"
   }

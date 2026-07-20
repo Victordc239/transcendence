@@ -102,107 +102,146 @@ html {
   color-scheme: light dark;
 }
 
-/*@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ===========================================================
+   AUTH BACKGROUND ANIMATIONS
+   =========================================================== */
 
-html,
-body,
-#root {
-  width: 100%;
-  min-height: 100%;
+@keyframes floatSlow {
+	0% {
+		transform: translateY(0px) rotate(0deg);
+	}
+	50% {
+		transform: translateY(-18px) rotate(3deg);
+	}
+	100% {
+		transform: translateY(0px) rotate(0deg);
+	}
 }
 
-body {
-  margin: 0;
-  font-family: Inter, sans-serif;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #0b1020, #020617);
-  color: white;
+@keyframes floatReverse {
+	0% {
+		transform: translateY(0px) rotate(0deg);
+	}
+	50% {
+		transform: translateY(16px) rotate(-3deg);
+	}
+	100% {
+		transform: translateY(0px) rotate(0deg);
+	}
 }
 
-
-.game-scene {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  overflow: hidden;
-
-  background:
-    radial-gradient(circle at center, #111827 0%, #050816 100%);
+@keyframes spinVerySlow {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }
 
-
-.board-container {
-  position: relative;
-
-  width: min(92vw, 92vh);
-  aspect-ratio: 1 / 1;
-
-  max-width: 1100px;
-  max-height: 1100px;
+@keyframes pulseGlow {
+	0% {
+		opacity: .35;
+		transform: scale(1);
+	}
+	50% {
+		opacity: .65;
+		transform: scale(1.08);
+	}
+	100% {
+		opacity: .35;
+		transform: scale(1);
+	}
 }
 
+@keyframes twinkle {
+	0%,
+	100% {
+		opacity: .25;
+		transform: scale(.8);
+	}
 
-.neon-pink {
-  filter:
-    drop-shadow(0 0 6px #ff4fd8)
-    drop-shadow(0 0 12px #ff4fd8);
+	50% {
+		opacity: 1;
+		transform: scale(1.2);
+	}
 }
 
-.neon-blue {
-  filter:
-    drop-shadow(0 0 6px #3b82f6)
-    drop-shadow(0 0 12px #3b82f6);
+@keyframes driftLeft {
+	0% {
+		transform: translateX(0);
+	}
+	50% {
+		transform: translateX(-18px);
+	}
+	100% {
+		transform: translateX(0);
+	}
 }
 
-.neon-green {
-  filter:
-    drop-shadow(0 0 6px #22c55e)
-    drop-shadow(0 0 12px #22c55e);
+@keyframes driftRight {
+	0% {
+		transform: translateX(0);
+	}
+	50% {
+		transform: translateX(18px);
+	}
+	100% {
+		transform: translateX(0);
+	}
 }
 
-.neon-purple {
-  filter:
-    drop-shadow(0 0 6px #a855f7)
-    drop-shadow(0 0 12px #a855f7);
+/* ===========================================================
+   Utility classes
+   =========================================================== */
+
+.animate-float {
+	animation: floatSlow 8s ease-in-out infinite;
 }
 
-
-.glass-panel {
-  background: rgba(15, 23, 42, 0.72);
-
-  backdrop-filter: blur(18px);
-
-  border: 1px solid rgba(255,255,255,.08);
-
-  box-shadow:
-    inset 0 0 30px rgba(255,255,255,.03),
-    0 10px 40px rgba(0,0,0,.4);
+.animate-float-reverse {
+	animation: floatReverse 9s ease-in-out infinite;
 }
 
-@keyframes glowPulse {
-  0% {
-    opacity: .4;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.08);
-  }
-
-  100% {
-    opacity: .4;
-    transform: scale(1);
-  }
+.animate-spin-slow {
+	animation: spinVerySlow 90s linear infinite;
 }
 
-.glow-pulse {
-  animation: glowPulse 2s infinite ease-in-out;
-}*/
+.animate-pulse-glow {
+	animation: pulseGlow 5s ease-in-out infinite;
+}
+
+.animate-twinkle {
+	animation: twinkle 3s ease-in-out infinite;
+}
+
+.animate-drift-left {
+	animation: driftLeft 12s ease-in-out infinite;
+}
+
+.animate-drift-right {
+	animation: driftRight 12s ease-in-out infinite;
+}
+
+/* ===========================================================
+   Decorative elements
+   =========================================================== */
+
+.auth-decoration {
+	user-select: none;
+	pointer-events: none;
+	position: absolute;
+}
+
+.auth-glow {
+	position: absolute;
+	border-radius: 9999px;
+	filter: blur(120px);
+	pointer-events: none;
+}
+
+.auth-shadow {
+	filter:
+		drop-shadow(0 0 20px rgba(255,255,255,.08))
+		drop-shadow(0 0 35px rgba(168,85,247,.18));
+}

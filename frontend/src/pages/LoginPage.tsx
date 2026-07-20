@@ -53,13 +53,13 @@ function LoginPage() {
 		<AuthLayout>
 			<div className="relative">
 
-				<div className="flex flex-col gap-6">
+				<div className="flex flex-col gap-7">
 					<div className="text-center">
-						<h1 className="text-4xl font-bold text-pink-Primary">
+						<h1 className="text-5xl font-bold text-pink-Primary">
 							{t("app.title")}
 						</h1>
 
-						<p className="mt-2 text-slate-600">
+						<p className="mt-3 text-lg text-slate-600">
 							{t("login.welcome")}
 						</p>
 					</div>
@@ -84,7 +84,7 @@ function LoginPage() {
 						{t("login.signIn")}
 					</Button>
 
-					<p className="text-center text-sm">
+					<p className="text-center text-base">
 						{t("login.noAccount")}{" "}
 						<span
 							onClick={() => navigate("/register")}

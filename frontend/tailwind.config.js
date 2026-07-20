@@ -84,6 +84,85 @@ export default {
           },
         },
       },
+
+      animation: {
+        float: "floatSlow 8s ease-in-out infinite",
+        floatReverse: "floatReverse 9s ease-in-out infinite",
+        spinSlow: "spinVerySlow 90s linear infinite",
+        pulseGlow: "pulseGlow 5s ease-in-out infinite",
+        twinkle: "twinkle 3s ease-in-out infinite",
+        driftLeft: "driftLeft 12s ease-in-out infinite",
+        driftRight: "driftRight 12s ease-in-out infinite",
+      },
+
+      keyframes: {
+        floatSlow: {
+          "0%,100%": {
+            transform: "translateY(0)"
+          },
+          "50%": {
+            transform: "translateY(-18px) rotate(3deg)"
+          }
+        },
+
+        floatReverse: {
+          "0%,100%": {
+            transform: "translateY(0)"
+          },
+          "50%": {
+            transform: "translateY(16px) rotate(-3deg)"
+          }
+        },
+
+        spinVerySlow: {
+          from: {
+            transform: "rotate(0deg)"
+          },
+          to: {
+            transform: "rotate(360deg)"
+          }
+        },
+
+        pulseGlow: {
+          "0%,100%": {
+            opacity: ".35",
+            transform: "scale(1)"
+          },
+          "50%": {
+            opacity: ".65",
+            transform: "scale(1.08)"
+          }
+        },
+
+        twinkle: {
+          "0%,100%": {
+            opacity: ".25",
+            transform: "scale(.8)"
+          },
+          "50%": {
+            opacity: "1",
+            transform: "scale(1.2)"
+          }
+        },
+
+        driftLeft: {
+          "0%,100%": {
+            transform: "translateX(0)"
+          },
+          "50%": {
+            transform: "translateX(-18px)"
+          }
+        },
+
+        driftRight: {
+          "0%,100%": {
+            transform: "translateX(0)"
+          },
+          "50%": {
+            transform: "translateX(18px)"
+          }
+        }
+      }
     },
   },
 

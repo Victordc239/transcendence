@@ -3,15 +3,12 @@ import MainLayout from "../layouts/MainLayout";
 import GlassPanel from "../components/ui/GlassPanel";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import {
-  getFriends,
-  sendFriendRequest,
-  removeFriend,
-} from "../api/friends.api";
+import {getFriends, sendFriendRequest, removeFriend} from "../api/friends.api";
 import { searchUsers } from "../api/user.api";
 import { useFriendsStore } from "../store/friendsStore";
 import { socket } from "../socket/socket";
 import { validateText } from "../utils/validation";
+import { useTranslation } from "react-i18next";
 
 interface SearchUser {
   id: number;
@@ -28,7 +25,7 @@ interface SearchUser {
 
 export default function FriendsPage() {
   const { friends, setFriends, updateOnlineStatus } = useFriendsStore();
-
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchUser[]>([]);
 
@@ -52,13 +49,13 @@ export default function FriendsPage() {
     }
     catch
     {
-      alert("No se pudieron cargar los amigos");
+      alert(t("friends.errors.load"));
     }
   }
   async function handleSearch() {
     const validation = validateText(query, {
       maxLength: 50,
-      fieldName: "Search",
+      fieldName: t("friends.search"),
     });
     if (!validation.ok) {
       if (!query.trim()) {
@@ -78,7 +75,7 @@ export default function FriendsPage() {
       if (err instanceof Error)
         alert(err.message);
       else
-        alert("Error al buscar usuarios");
+        alert(t("friends.errors.search"));
     }
   }
 
@@ -97,12 +94,12 @@ export default function FriendsPage() {
         )
       );
 
-      alert("Solicitud enviada");
+      alert(t("friends.requestSent"));
     } catch (err) {
       if (err instanceof Error)
         alert(err.message);
       else
-        alert("No se pudo enviar la solicitud");
+        alert(t("friends.errors.sendRequest"));
     }
   }
 
@@ -117,7 +114,7 @@ export default function FriendsPage() {
       if (err instanceof Error)
         alert(err.message);
       else
-        alert("No se pudo eliminar el amigo");
+        alert(t("friends.errors.remove"));
     }
   }
 
@@ -125,18 +122,18 @@ export default function FriendsPage() {
     <MainLayout>
       <GlassPanel className="p-4 md:p-8 rounded-3xl border border-black/5 dark:border-white/10 my-4 shadow-xl">
         <h2 className="text-2xl md:text-3xl font-extrabold mb-6 tracking-tight text-textPrimary">
-          Amigos
+          {t("friends.title")}
         </h2>
 
         <div className="mb-8 bg-black/[0.03] dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 md:p-6 space-y-4">
           <h3 className="text-sm md:text-base font-semibold opacity-80 text-textPrimary">
-            Buscar nuevos amigos
+            {t("friends.searchTitle")}
           </h3>
 
           <div className="flex flex-col sm:flex-row gap-3 items-stretch">
             <div className="flex-1 relative flex items-center">
               <Input
-                placeholder="Buscar usuario..."
+                placeholder={t("friends.searchPlaceholder")}
                 value={query}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -153,7 +150,7 @@ export default function FriendsPage() {
               onClick={handleSearch}
               className="px-6 py-3 bg-gradient-to-r from-pink-400 to-purple-400 hover:brightness-110 text-white rounded-xl font-bold transition-all sm:w-auto w-full flex-shrink-0"
             >
-              Buscar
+              {t("friends.searchButton")}
             </Button>
           </div>
 
@@ -180,7 +177,9 @@ export default function FriendsPage() {
                         {user.username}
                       </p>
                       <p className="text-[10px] uppercase tracking-wider opacity-60 text-textPrimary font-medium">
-                        {user.online ? "En línea" : "Desconectado"}
+                        {user.online
+                          ? t("friends.online")
+                          : t("friends.offline")}
                       </p>
                     </div>
                   </div>
@@ -192,15 +191,15 @@ export default function FriendsPage() {
                   >
                       {
                           user.friendship_status === "accepted"
-                              ? "Amigo"
+                              ? t("friends.friend")
 
                           : user.friendship_status === "pending"
-                              ? "Enviada"
+                              ? t("friends.sent")
 
                           : user.friendship_status === "received"
-                              ? "Responder"
+                              ? t("friends.reply")
 
-                          : "Añadir"
+                          : t("friends.add")
                       }
                   </Button>
                 </div>
@@ -211,7 +210,7 @@ export default function FriendsPage() {
 
         <div>
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-textPrimary">
-            Mis Amigos
+            {t("friends.myFriends")}
             <span className="text-xs font-bold bg-black/10 dark:bg-white/10 px-2.5 py-0.5 rounded-full text-textPrimary opacity-80">
               {friends.length}
             </span>
@@ -228,7 +227,7 @@ export default function FriendsPage() {
                     <img
                       src={friend.avatar_url || "/uploads/default-avatar.png"}
                       className="w-11 h-11 rounded-full object-cover border border-black/10 dark:border-white/10 p-0.5 bg-white/10"
-                      alt={`Avatar de ${friend.username}`}
+                      alt={`${t("friends.avatar")} ${friend.username}`}
                     />
                   </div>
 
@@ -257,7 +256,7 @@ export default function FriendsPage() {
                     className="!w-20 md:!w-auto !min-w-0 h-8 px-0 md:px-4 text-[11px] md:text-xs !bg-red-500/10 hover:!bg-red-500/20 !text-red-600 dark:!text-red-400 !border !border-red-500/20 !bg-none rounded-xl font-bold transition-all duration-200 active:scale-95 flex items-center justify-center"
                     onClick={() => handleRemoveFriend(friend.id)}
                   >
-                    Eliminar
+                    {t("friends.remove")}
                   </Button>
                 </div>
               </div>

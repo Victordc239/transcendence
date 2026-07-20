@@ -4,9 +4,11 @@ import GlassPanel from "../components/ui/GlassPanel";
 import Button from "../components/ui/Button";
 import type { FriendRequest } from "../types/friend";
 import { getPendingRequests, acceptFriendRequest } from "../api/friends.api";
+import { useTranslation } from "react-i18next";
 
 export default function FriendRequestsPage() {
   const [requests, setRequests] = useState<FriendRequest[]>([]);
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadRequests();
@@ -27,7 +29,7 @@ export default function FriendRequestsPage() {
       loadRequests();
     } catch (err) {
       console.error(err);
-      alert("No se pudo aceptar la solicitud");
+      alert(t("friendRequests.errors.accept"));
     }
   }
 
@@ -35,7 +37,7 @@ export default function FriendRequestsPage() {
     <MainLayout>
       <GlassPanel className="p-4 md:p-8 rounded-3xl border border-black/5 dark:border-white/10 my-4 shadow-xl">
         <h2 className="text-2xl md:text-3xl font-extrabold mb-6 tracking-tight text-textPrimary">
-          Solicitudes de Amistad
+          {t("friendRequests.title")}
           {requests.length > 0 && (
             <span className="ml-2 text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 px-2.5 py-0.5 rounded-full">
               {requests.length}
@@ -45,7 +47,7 @@ export default function FriendRequestsPage() {
 
         {requests.length === 0 ? (
           <div className="text-center py-8 opacity-50 text-textPrimary text-sm font-medium">
-            No tienes solicitudes pendientes por el momento.
+            {t("friendRequests.empty")}
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -59,7 +61,7 @@ export default function FriendRequestsPage() {
                     <img
                       src={(request as any).senderAvatarUrl || "/uploads/default-avatar.png"}
                       className="w-11 h-11 rounded-full object-cover border border-black/10 dark:border-white/10 p-0.5 bg-white/10"
-                      alt={`Avatar de ${request.senderUsername}`}
+                      alt={`${t("friends.avatar")} ${request.senderUsername}`}
                     />
                   </div>
 
@@ -68,14 +70,14 @@ export default function FriendRequestsPage() {
                       {request.senderUsername}
                     </h4>
                     <p className="text-[11px] font-medium opacity-50 text-textPrimary md:hidden mt-0.5">
-                      Te envió una solicitud
+                      {t("friendRequests.sentYou")}
                     </p>
                   </div>
                 </div>
 
                 <div className="hidden md:flex items-center justify-center">
                   <span className="text-xs font-semibold opacity-50 text-textPrimary tracking-wide">
-                    Solicitud pendiente
+                    {t("friendRequests.pending")}
                   </span>
                 </div>
 
@@ -96,7 +98,7 @@ export default function FriendRequestsPage() {
                     "
                     onClick={() => handleAccept(request.senderId)}
                   >
-                    Aceptar
+                    {t("friendRequests.accept")}
                   </Button>
                 </div>
               </div>

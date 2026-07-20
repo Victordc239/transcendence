@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Online Ludo"
+    "title": "Online Parchis"
   },
 
   "menu": {
@@ -40,13 +40,13 @@
   },
 
   "footer": {
-    "copyright": "Online Ludo · Academic project developed at 42 Madrid.",
+    "copyright": "Online Parchis · Academic project developed at 42 Madrid.",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service"
   },
 
   "lobby": {
-    "welcome": "Welcome to Online Ludo",
+    "welcome": "Welcome to Online Parchis",
     "createGame": "Create game",
     "creating": "Creating...",
     "join": "Join",
@@ -73,6 +73,47 @@
     "send": "Send",
     "invitationExpired": "Invitation expired.",
     "invitationRejected": "Your invitation was rejected."
+  },
+
+  "friends": {
+    "title": "Friends",
+    "search": "Search",
+    "searchTitle": "Find new friends",
+    "searchPlaceholder": "Search user...",
+    "searchButton": "Search",
+
+    "online": "Online",
+    "offline": "Offline",
+
+    "friend": "Friend",
+    "sent": "Sent",
+    "reply": "Reply",
+    "add": "Add",
+
+    "myFriends": "My Friends",
+    "remove": "Remove",
+    "avatar": "Avatar of",
+
+    "requestSent": "Friend request sent",
+
+    "errors": {
+      "load": "Couldn't load friends",
+      "search": "Error searching users",
+      "sendRequest": "Couldn't send friend request",
+      "remove": "Couldn't remove friend"
+    }
+  },
+
+  "friendRequests": {
+    "title": "Friend Requests",
+    "empty": "You don't have any pending friend requests.",
+    "sentYou": "Sent you a friend request",
+    "pending": "Pending request",
+    "accept": "Accept",
+
+    "errors": {
+      "accept": "Couldn't accept the request"
+    }
   },
 
   "errors": {

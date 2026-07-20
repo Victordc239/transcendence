@@ -75,6 +75,47 @@
     "invitationRejected": "Tu invitación fue rechazada."
   },
 
+  "friends": {
+    "title": "Amigos",
+    "search": "Buscar",
+    "searchTitle": "Buscar nuevos amigos",
+    "searchPlaceholder": "Buscar usuario...",
+    "searchButton": "Buscar",
+
+    "online": "En línea",
+    "offline": "Desconectado",
+
+    "friend": "Amigo",
+    "sent": "Enviada",
+    "reply": "Responder",
+    "add": "Añadir",
+
+    "myFriends": "Mis Amigos",
+    "remove": "Eliminar",
+    "avatar": "Avatar de",
+
+    "requestSent": "Solicitud enviada",
+
+    "errors": {
+      "load": "No se pudieron cargar los amigos",
+      "search": "Error al buscar usuarios",
+      "sendRequest": "No se pudo enviar la solicitud",
+      "remove": "No se pudo eliminar el amigo"
+    }
+  },
+
+  "friendRequests": {
+    "title": "Solicitudes de amistad",
+    "empty": "No tienes solicitudes pendientes por el momento.",
+    "sentYou": "Te envió una solicitud",
+    "pending": "Solicitud pendiente",
+    "accept": "Aceptar",
+
+    "errors": {
+      "accept": "No se pudo aceptar la solicitud"
+    }
+  },
+
   "errors": {
     "connection": "Error de conexión"
   }

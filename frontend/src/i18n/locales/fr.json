@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Ludo en ligne"
+    "title": "Parchis en ligne"
   },
 
   "menu": {
@@ -40,13 +40,13 @@
   },
 
   "footer": {
-    "copyright": "Ludo en ligne · Projet académique développé à 42 Madrid.",
+    "copyright": "Parchis en ligne · Projet académique développé à 42 Madrid.",
     "privacy": "Politique de confidentialité",
     "terms": "Conditions d'utilisation"
   },
 
   "lobby": {
-    "welcome": "Bienvenue sur Ludo en ligne",
+    "welcome": "Bienvenue sur Parchis en ligne",
     "createGame": "Créer une partie",
     "creating": "Création...",
     "join": "Rejoindre",
@@ -73,6 +73,47 @@
     "send": "Envoyer",
     "invitationExpired": "L'invitation a expiré.",
     "invitationRejected": "Votre invitation a été refusée."
+  },
+
+  "friends": {
+    "title": "Amis",
+    "search": "Recherche",
+    "searchTitle": "Rechercher de nouveaux amis",
+    "searchPlaceholder": "Rechercher un utilisateur...",
+    "searchButton": "Rechercher",
+
+    "online": "En ligne",
+    "offline": "Hors ligne",
+
+    "friend": "Ami",
+    "sent": "Envoyée",
+    "reply": "Répondre",
+    "add": "Ajouter",
+
+    "myFriends": "Mes amis",
+    "remove": "Supprimer",
+    "avatar": "Avatar de",
+
+    "requestSent": "Demande envoyée",
+
+    "errors": {
+      "load": "Impossible de charger les amis",
+      "search": "Erreur lors de la recherche",
+      "sendRequest": "Impossible d'envoyer la demande",
+      "remove": "Impossible de supprimer l'ami"
+    }
+  },
+
+  "friendRequests": {
+    "title": "Demandes d'amitié",
+    "empty": "Vous n'avez aucune demande d'amitié en attente.",
+    "sentYou": "Vous a envoyé une demande d'amitié",
+    "pending": "Demande en attente",
+    "accept": "Accepter",
+
+    "errors": {
+      "accept": "Impossible d'accepter la demande"
+    }
   },
 
   "errors": {

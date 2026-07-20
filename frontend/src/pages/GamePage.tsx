@@ -137,14 +137,16 @@ export default function GamePage() {
               border border-white/10
               bg-white/10
               backdrop-blur-xl
-              px-4 py-2 text-sm md:text-base
-              font-semibold
-              text-white/90
-              shadow-lg
+              px-5 py-2.5
+              font-medium
+              text-white/80
+              shadow-xl
               transition-all duration-200
-              hover:bg-red-500/20
-              hover:border-red-500/40
+              hover:bg-red-500/15
+              hover:border-red-400/30
               hover:text-red-300
+              hover:shadow-red-500/20
+              hover:shadow-xl
             "
           >
             Leave Game

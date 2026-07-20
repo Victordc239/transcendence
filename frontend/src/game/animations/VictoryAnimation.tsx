@@ -78,7 +78,7 @@ export default function VictoryAnimation({
         "
       >
 
-        <div className="absolute inset-0 rounded-3xl bg-purple-500/10 blur-3xl" />
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 blur-3xl" />
 
         <div className="relative">
 
@@ -100,7 +100,9 @@ export default function VictoryAnimation({
           </h1>
 
           <p className="text-white/70 mb-2">
-            {won ? "Congratulations!" : "Winner"}
+            {won
+              ? "Congratulations!"
+              : "The winner is"}
           </p>
 
           <p className="text-xl font-bold text-white mb-8">

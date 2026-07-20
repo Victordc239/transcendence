@@ -1,0 +1,82 @@
+{
+  "app": {
+    "title": "Parchís Online"
+  },
+
+  "menu": {
+    "lobby": "Lobby",
+    "profile": "Perfil",
+    "friends": "Amigos",
+    "requests": "Solicitudes",
+    "logout": "Salir"
+  },
+
+  "accessibility": {
+    "toggleMenu": "Abrir menú"
+  },
+
+  "login": {
+    "welcome": "Bienvenido de nuevo",
+    "email": "Email",
+    "password": "Contraseña",
+    "signIn": "Iniciar sesión",
+    "noAccount": "¿No tienes cuenta?",
+    "signUp": "Regístrate"
+  },
+
+  "register": {
+    "title": "Crear cuenta",
+    "username": "Nombre de usuario",
+    "signUp": "Registrarse",
+    "haveAccount": "¿Ya tienes cuenta?",
+    "signIn": "Inicia sesión"
+  },
+
+  "validation": {
+    "requiredFields": "Todos los campos son obligatorios",
+    "invalidEmail": "Email inválido",
+    "usernameLength": "El nombre de usuario debe tener entre 3 y 20 caracteres",
+    "passwordLength": "La contraseña debe tener al menos 8 caracteres"
+  },
+
+  "footer": {
+    "copyright": "Parchís Online · Proyecto académico desarrollado en 42 Madrid.",
+    "privacy": "Política de Privacidad",
+    "terms": "Términos del Servicio"
+  },
+
+  "lobby": {
+    "welcome": "Bienvenido al Parchís Online",
+    "createGame": "Crear partida",
+    "creating": "Creando...",
+    "join": "Unirse",
+    "joining": "Uniéndose...",
+    "gameId": "ID de partida",
+    "enterGameId": "Introduce un ID de partida",
+    "createError": "Error creando partida",
+    "joinError": "Error uniéndose a la partida",
+    "activeGame": "Todavía tienes una partida activa. Reconéctate a ella o espera a que expire."
+  },
+
+  "chat": {
+    "title": "Chat",
+    "message": "Mensaje",
+    "profile": "Perfil",
+    "invite": "Invitar",
+    "block": "Bloquear",
+    "someoneTyping": "Alguien está escribiendo...",
+    "gameInvitation": "Invitación de partida",
+    "wantsToPlay": "quiere jugar contigo.",
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "writeMessage": "Escribe un mensaje...",
+    "send": "Enviar",
+    "invitationExpired": "La invitación ha expirado.",
+    "invitationRejected": "Tu invitación fue rechazada."
+  },
+
+  "errors": {
+    "connection": "Error de conexión"
+  }
+
+}

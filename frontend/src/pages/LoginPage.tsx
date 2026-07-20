@@ -5,11 +5,13 @@ import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { login, getMe } from "../api/api";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function LoginPage() {
 	const navigate = useNavigate();
 	const auth = useAuth();
+	const { t } = useTranslation();
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -18,12 +20,12 @@ function LoginPage() {
 		const cleanEmail = email.trim().toLowerCase();
 
 		if (!cleanEmail || !password) {
-			alert("Todos los campos son obligatorios");
+			alert(t("validation.requiredFields"));
 			return;
 		}
 
 		if (!EMAIL_REGEX.test(cleanEmail)) {
-			alert("Email inválido");
+			alert(t("validation.invalidEmail"));
 			return;
 		}
 
@@ -43,7 +45,7 @@ function LoginPage() {
 		}
 		catch (err)
 		{
-			alert("Error de conexión");
+			alert(t("errors.connection"));
 		}
 	};
 
@@ -52,41 +54,41 @@ function LoginPage() {
 			<div className="flex flex-col gap-6">
 				<div className="text-center">
 					<h1 className="text-4xl font-bold text-pink-Primary">
-						Parchís Online
+						{t("app.title")}
 					</h1>
 
 					<p className="mt-2 text-slate-600">
-						Bienvenido de nuevo
+						{t("login.welcome")}
 					</p>
 				</div>
 
 				<div className="flex flex-col gap-4">
 					<Input
 						type="email"
-						placeholder="Email"
+						placeholder={t("login.email")}
 						value={email}
 						onChange={(e: any) => setEmail(e.target.value)}
 					/>
 
 					<Input
 						type="password"
-						placeholder="Password"
+						placeholder={t("login.password")}
 						value={password}
 						onChange={(e: any) => setPassword(e.target.value)}
 					/>
 				</div>
 
 				<Button onClick={handleLogin}>
-					Iniciar sesión
+					{t("login.signIn")}
 				</Button>
 
 				<p className="text-center text-sm">
-					¿No tienes cuenta?{" "}
+					{t("login.noAccount")}{" "}
 					<span
 						onClick={() => navigate("/register")}
 						className="cursor-pointer text-pink-Primary"
 					>
-						Regístrate
+						{t("login.signUp")}
 					</span>
 				</p>
 			</div>

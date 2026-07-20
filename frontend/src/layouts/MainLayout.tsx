@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import GlassPanel from "../components/ui/GlassPanel";
 import Footer from "../components/ui/Footer";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../i18n/LanguageSwitcher";
 
 interface Props {
   children: ReactNode;
@@ -11,6 +13,7 @@ interface Props {
 export default function MainLayout({ children }: Props) {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const { t } = useTranslation();
   
   // Estado para controlar el menú en celulares
   const [isOpen, setIsOpen] = useState(false);
@@ -29,35 +32,37 @@ export default function MainLayout({ children }: Props) {
               className="text-title font-bold flex items-center gap-2 cursor-pointer text-lg md:text-xl"
               onClick={() => navigate("/lobby")}
             >
-              🎮 Parchís Online
+              🎮 {t("app.title")}
             </h1>
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="md:hidden flex flex-col gap-1.5 p-2 justify-center items-center w-10 h-10 rounded-lg hover:bg-white/5 transition-all focus:outline-none"
-              aria-label="Toggle menu"
+              aria-label={t("accessibility.toggleMenu")}
             >
               <span className={`h-0.5 w-5 bg-black dark:bg-white transition-all duration-300 ${isOpen ? "rotate-45 translate-y-2" : ""}`} />
               <span className={`h-0.5 w-5 bg-black dark:bg-white transition-all duration-300 ${isOpen ? "opacity-0" : ""}`} />
               <span className={`h-0.5 w-5 bg-black dark:bg-white transition-all duration-300 ${isOpen ? "-rotate-45 -translate-y-2" : ""}`} />
             </button>
             <div className="hidden md:flex items-center gap-6">
+              <LanguageSwitcher />
+
               <Link to="/lobby" className="hover:text-purple-300 transition-colors">
-                Lobby
+                {t("menu.lobby")}
               </Link>
               <Link to={`/profile/${user?.id}`} className="hover:text-purple-300 transition-colors">
-                Perfil
+                {t("menu.profile")}
               </Link>
               <Link to="/friends" className="hover:text-purple-300 transition-colors">
-                Amigos
+                {t("menu.friends")}
               </Link>
               <Link to="/friend-requests" className="hover:text-purple-300 transition-colors">
-                Solicitudes
+                {t("menu.requests")}
               </Link>
               <button 
                 onClick={handleLogout}
                 className="rounded-xl bg-red-500/10 px-4 py-1.5 text-red-200 hover:bg-red-500/20 transition-all font-semibold"
               >
-                Salir
+                {t("menu.logout")}
               </button>
             </div>
           </div>
@@ -71,34 +76,34 @@ export default function MainLayout({ children }: Props) {
               onClick={() => setIsOpen(false)}
               className="py-2 hover:bg-white/5 rounded-lg transition-colors"
             >
-              Lobby
+              {t("menu.lobby")}
             </Link>
             <Link 
               to={`/profile/${user?.id}`} 
               onClick={() => setIsOpen(false)}
               className="py-2 hover:bg-white/5 rounded-lg transition-colors"
             >
-              Perfil
+              {t("menu.profile")}
             </Link>
             <Link 
               to="/friends" 
               onClick={() => setIsOpen(false)}
               className="py-2 hover:bg-white/5 rounded-lg transition-colors"
             >
-              Amigos
+              {t("menu.friends")}
             </Link>
             <Link 
               to="/friend-requests" 
               onClick={() => setIsOpen(false)}
               className="py-2 hover:bg-white/5 rounded-lg transition-colors"
             >
-              Solicitudes
+              {t("menu.requests")}
             </Link>
             <button 
               onClick={() => { setIsOpen(false); handleLogout(); }}
               className="w-full py-2.5 mt-2 rounded-xl bg-red-500/10 text-red-200 hover:bg-red-500/20 transition-all font-semibold"
             >
-              Salir
+              {t("menu.logout")}
             </button>
           </div>
         </GlassPanel>

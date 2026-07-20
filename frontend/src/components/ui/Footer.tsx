@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function Footer() {
+  const { t } = useTranslation();
   return (
     <footer className="mt-10 border-t border-white/10 pt-6 text-center text-sm text-gray-400">
       <p className="mb-3">
-        © {new Date().getFullYear()} Parchís Online · Academic project developed at
-        42 Madrid.
+        © {new Date().getFullYear()} {t("footer.copyright")}
       </p>
 
       <div className="flex justify-center gap-6">
@@ -13,14 +14,14 @@ export default function Footer() {
           to="/privacy"
           className="hover:text-pink-400 transition-colors"
         >
-          Privacy Policy
+          {t("footer.privacy")}
         </Link>
 
         <Link
           to="/terms"
           className="hover:text-pink-400 transition-colors"
         >
-          Terms of Service
+          {t("footer.terms")}
         </Link>
       </div>
     </footer>

@@ -4,10 +4,12 @@ import { createGame, joinGame } from "../api/game.api";
 import { useAuth } from "../context/AuthContext";
 import LobbyChat from "../components/ui/LobbyChat";
 import Footer from "../components/ui/Footer";
+import { useTranslation } from "react-i18next";
 
 function LobbyPage() {
   const navigate = useNavigate();
   const { token, user } = useAuth();
+  const { t } = useTranslation();
 
   const [gameId, setGameId] = useState("");
   const [loadingCreate, setLoadingCreate] = useState(false);
@@ -41,7 +43,7 @@ function LobbyPage() {
       {
         if (err.message === "Already in a game")
         {
-          alert("You still have an active game. Reconnect to it or wait until it expires.");
+          alert(t("lobby.activeGame"));
           return;
         }
 
@@ -49,7 +51,7 @@ function LobbyPage() {
         return;
       }
 
-      alert("Error creando partida");
+      alert(t("lobby.createError"));
     }
     finally
     {
@@ -65,7 +67,7 @@ function LobbyPage() {
 
       if (!gameId.trim())
       {
-        alert("Introduce un ID de partida");
+        alert(t("lobby.enterGameId"));
         return;
       }
       setLoadingJoin(true);
@@ -83,9 +85,9 @@ function LobbyPage() {
     catch (err)
     {
       alert(
-        err instanceof Error
-          ? err.message
-          : "Error uniéndose a la partida"
+          err instanceof Error
+              ? err.message
+              : t("lobby.joinError")
       );
     }
     finally
@@ -99,7 +101,7 @@ function LobbyPage() {
       <div className="mx-auto w-full max-w-7xl flex flex-col md:flex-row gap-4 md:gap-0 items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-5 md:p-6 backdrop-blur-xl">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent text-center md:text-left">
-            Parchís Online
+            {t("app.title")}
           </h1>
         </div>
         <div className="flex flex-wrap justify-center gap-4 md:gap-6 items-center text-sm md:text-base">
@@ -109,28 +111,28 @@ function LobbyPage() {
               if (user) navigate(`/profile/${user.id}`);
             }}
           >
-            Perfil
+            {t("menu.profile")}
           </button>
 
           <button
             className="hover:text-purple-300 transition-colors"
             onClick={() => navigate("/friends")}
           >
-            Amigos
+            {t("menu.friends")}
           </button>
 
           <button
             className="hover:text-purple-300 transition-colors"
             onClick={() => navigate("/friend-requests")}
           >
-            Solicitudes
+            {t("menu.requests")}
           </button>
 
           <button
             onClick={handleLogout}
             className="rounded-xl bg-red-500/10 px-4 py-2 text-red-200 hover:bg-red-500/20 transition-all text-xs md:text-sm"
           >
-            Logout
+            {t("menu.logout")}
           </button>
         </div>
       </div>
@@ -140,7 +142,7 @@ function LobbyPage() {
           {/* COLUMNA IZQUIERDA: Título de Bienvenida */}
           <div className="max-w-xl text-center lg:text-left">
             <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-purple-200 bg-clip-text text-transparent">
-              Bienvenido al Parchís Online
+              {t("lobby.welcome")}
             </h2>
           </div>
 
@@ -165,7 +167,11 @@ function LobbyPage() {
           text-sm md:text-base
         "
             >
-              {loadingCreate ? "Creando..." : "Crear partida"}
+              {
+                  loadingCreate
+                      ? t("lobby.creating")
+                      : t("lobby.createGame")
+              }
             </button>
 
             {/* Inputs de Unirse a Partida */}
@@ -173,7 +179,7 @@ function LobbyPage() {
               <input
                 value={gameId}
                 onChange={(e) => setGameId(e.target.value)}
-                placeholder="ID de partida"
+                placeholder={t("lobby.gameId")}
                 className="
             flex-1 
             rounded-xl 
@@ -203,7 +209,11 @@ function LobbyPage() {
             text-sm md:text-base
           "
               >
-                {loadingJoin ? "Uniéndose..." : "Unirse"}
+                {
+                    loadingJoin
+                        ? t("lobby.joining")
+                        : t("lobby.join")
+                }
               </button>
             </div>
           </div>

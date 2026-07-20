@@ -1,0 +1,82 @@
+{
+  "app": {
+    "title": "Ludo en ligne"
+  },
+
+  "menu": {
+    "lobby": "Salon",
+    "profile": "Profil",
+    "friends": "Amis",
+    "requests": "Demandes",
+    "logout": "Déconnexion"
+  },
+
+  "accessibility": {
+    "toggleMenu": "Ouvrir le menu"
+  },
+
+  "login": {
+    "welcome": "Bon retour",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "signIn": "Se connecter",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "signUp": "S'inscrire"
+  },
+
+  "register": {
+    "title": "Créer un compte",
+    "username": "Nom d'utilisateur",
+    "signUp": "S'inscrire",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "signIn": "Se connecter"
+  },
+
+  "validation": {
+    "requiredFields": "Tous les champs sont obligatoires",
+    "invalidEmail": "Adresse e-mail invalide",
+    "usernameLength": "Le nom d'utilisateur doit contenir entre 3 et 20 caractères",
+    "passwordLength": "Le mot de passe doit contenir au moins 8 caractères"
+  },
+
+  "footer": {
+    "copyright": "Ludo en ligne · Projet académique développé à 42 Madrid.",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation"
+  },
+
+  "lobby": {
+    "welcome": "Bienvenue sur Ludo en ligne",
+    "createGame": "Créer une partie",
+    "creating": "Création...",
+    "join": "Rejoindre",
+    "joining": "Connexion...",
+    "gameId": "ID de la partie",
+    "enterGameId": "Saisissez un identifiant de partie",
+    "createError": "Erreur lors de la création de la partie",
+    "joinError": "Erreur lors de la connexion à la partie",
+    "activeGame": "Vous avez déjà une partie active. Reconnectez-vous ou attendez qu'elle expire."
+  },
+
+  "chat": {
+    "title": "Chat",
+    "message": "Message",
+    "profile": "Profil",
+    "invite": "Inviter",
+    "block": "Bloquer",
+    "someoneTyping": "Quelqu'un est en train d'écrire...",
+    "gameInvitation": "Invitation à une partie",
+    "wantsToPlay": "veut jouer avec vous.",
+    "accept": "Accepter",
+    "reject": "Refuser",
+    "writeMessage": "Écrivez un message...",
+    "send": "Envoyer",
+    "invitationExpired": "L'invitation a expiré.",
+    "invitationRejected": "Votre invitation a été refusée."
+  },
+
+  "errors": {
+    "connection": "Erreur de connexion"
+  }
+
+}

@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { validateText } from "../../utils/validation";
+import { useTranslation } from "react-i18next";
 
 type LobbyMessage = {
 	id: number;
@@ -21,6 +22,7 @@ type LobbyMessage = {
 export default function LobbyChat() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [messages, setMessages] = useState<LobbyMessage[]>([]);
   const [message, setMessage] = useState("");
@@ -127,11 +129,11 @@ export default function LobbyChat() {
 
     const onInviteExpired = () => {
       setPendingInvite(null);
-      alert("Invitation expired.");
+      alert(t("chat.invitationExpired"));
     };
 
     const onInviteRejected = () => {
-      alert("Your invitation was rejected.");
+      alert(t("chat.invitationRejected"));
     };
 
     socket.on("lobby:history", onHistory);
@@ -165,7 +167,7 @@ export default function LobbyChat() {
   const send = () => {
     const validation = validateText(message, {
       maxLength: 500,
-      fieldName: "Message",
+      fieldName: t("chat.message"),
     });
     if (!validation.ok) {
       alert(validation.error);
@@ -222,7 +224,9 @@ export default function LobbyChat() {
 
   return (
     <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-      <h2 className="text-2xl font-bold mb-4">Chat</h2>
+      <h2 className="text-2xl font-bold mb-4">
+        {t("chat.title")}
+      </h2>
 
       <div className="h-96 overflow-y-auto rounded-xl bg-black/20 p-4 space-y-3">
         {messages.map((m) => {
@@ -287,24 +291,24 @@ export default function LobbyChat() {
               {selectedMessageId === m.id && (
                 <div className="mt-2 ml-4 bg-black rounded p-2 flex gap-2">
                   <button
-                    onClick={() => viewProfile(chatUser.id)}
-                    className="bg-blue-500 px-2 py-1 rounded text-xs"
+                      onClick={() => viewProfile(chatUser.id)}
+                      className="bg-blue-500 px-2 py-1 rounded text-xs"
                   >
-                    Profile
+                      {t("chat.profile")}
                   </button>
 
                   <button
-                    onClick={() => inviteUser(chatUser.id)}
-                    className="bg-green-500 px-2 py-1 rounded text-xs"
+                      onClick={() => inviteUser(chatUser.id)}
+                      className="bg-green-500 px-2 py-1 rounded text-xs"
                   >
-                    Invite
+                      {t("chat.invite")}
                   </button>
 
                   <button
-                    onClick={() => blockUser(chatUser.id)}
-                    className="bg-red-500 px-2 py-1 rounded text-xs"
+                      onClick={() => blockUser(chatUser.id)}
+                      className="bg-red-500 px-2 py-1 rounded text-xs"
                   >
-                    Block
+                      {t("chat.block")}
                   </button>
                 </div>
               )}
@@ -315,7 +319,7 @@ export default function LobbyChat() {
 
       {typing && (
         <p className="text-xs text-white/50 mt-2">
-          Alguien esta escribiendo...
+            {t("chat.someoneTyping")}
         </p>
       )}
 
@@ -325,17 +329,12 @@ export default function LobbyChat() {
           <div className="bg-slate-900 rounded-2xl p-6 w-96 space-y-4">
 
             <h2 className="text-xl font-bold">
-              Game invitation
+                {t("chat.gameInvitation")}
             </h2>
 
             <p>
-
-              <strong>
-                {pendingInvite.fromUsername}
-              </strong>
-
-              {" "}wants to play with you.
-
+                <strong>{pendingInvite.fromUsername}</strong>{" "}
+                {t("chat.wantsToPlay")}
             </p>
 
             <div className="flex justify-end gap-3">
@@ -344,14 +343,14 @@ export default function LobbyChat() {
                 onClick={rejectInvite}
                 className="bg-red-600 px-4 py-2 rounded-lg"
               >
-                Reject
+                {t("chat.reject")}
               </button>
 
               <button
                 onClick={acceptInvite}
                 className="bg-green-600 px-4 py-2 rounded-lg"
               >
-                Accept
+                {t("chat.accept")}
               </button>
 
             </div>
@@ -377,14 +376,14 @@ export default function LobbyChat() {
             if (e.key === "Enter") send();
           }}
           className="flex-1 rounded-xl bg-white/10 px-4 py-3"
-          placeholder="Write a message..."
+          placeholder={t("chat.writeMessage")}
         />
 
         <button
           onClick={send}
           className="rounded-xl bg-purple-500 px-6 py-3"
         >
-          Send
+          {t("chat.send")}
         </button>
       </div>
     </div>

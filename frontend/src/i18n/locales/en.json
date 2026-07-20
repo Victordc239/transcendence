@@ -1,0 +1,81 @@
+{
+  "app": {
+    "title": "Online Ludo"
+  },
+
+  "menu": {
+    "lobby": "Lobby",
+    "profile": "Profile",
+    "friends": "Friends",
+    "requests": "Requests",
+    "logout": "Logout"
+  },
+
+  "accessibility": {
+    "toggleMenu": "Toggle menu"
+  },
+
+  "login": {
+    "welcome": "Welcome back",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign up"
+  },
+
+  "register": {
+    "title": "Create account",
+    "username": "Username",
+    "signUp": "Sign up",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in"
+  },
+
+  "validation": {
+    "requiredFields": "All fields are required",
+    "invalidEmail": "Invalid email",
+    "usernameLength": "Username must be between 3 and 20 characters",
+    "passwordLength": "Password must be at least 8 characters"
+  },
+
+  "footer": {
+    "copyright": "Online Ludo · Academic project developed at 42 Madrid.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  },
+
+  "lobby": {
+    "welcome": "Welcome to Online Ludo",
+    "createGame": "Create game",
+    "creating": "Creating...",
+    "join": "Join",
+    "joining": "Joining...",
+    "gameId": "Game ID",
+    "enterGameId": "Enter a game ID",
+    "createError": "Error creating game",
+    "joinError": "Error joining game",
+    "activeGame": "You still have an active game. Reconnect to it or wait until it expires."
+  },
+
+  "chat": {
+    "title": "Chat",
+    "message": "Message",
+    "profile": "Profile",
+    "invite": "Invite",
+    "block": "Block",
+    "someoneTyping": "Someone is typing...",
+    "gameInvitation": "Game invitation",
+    "wantsToPlay": "wants to play with you.",
+    "accept": "Accept",
+    "reject": "Reject",
+    "writeMessage": "Write a message...",
+    "send": "Send",
+    "invitationExpired": "Invitation expired.",
+    "invitationRejected": "Your invitation was rejected."
+  },
+
+  "errors": {
+    "connection": "Connection error"
+  }
+}

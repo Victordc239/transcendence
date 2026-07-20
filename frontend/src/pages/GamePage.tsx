@@ -132,15 +132,68 @@ export default function GamePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950 text-white flex flex-col justify-between overflow-x-hidden">
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white flex flex-col justify-between">
       
+      {/* Fondo decorativo */}
+      <div className="absolute inset-0 -z-0 overflow-hidden">
+
+        {/* Rosa - esquina superior izquierda */}
+        <div className="
+          absolute
+          -top-40
+          -left-40
+          h-[950px]
+          w-[950px]
+          rounded-full
+          bg-pink-500/20
+          blur-[300px]
+        " />
+
+        {/* Verde - esquina superior derecha */}
+        <div className="
+          absolute
+          -top-40
+          -right-40
+          h-[950px]
+          w-[950px]
+          rounded-full
+          bg-green-500/20
+          blur-[300px]
+        " />
+
+        {/* Azul - esquina inferior izquierda */}
+        <div className="
+          absolute
+          -bottom-40
+          -left-40
+          h-[950px]
+          w-[950px]
+          rounded-full
+          bg-sky-500/20
+          blur-[300px]
+        " />
+
+        {/* Morado - esquina inferior derecha */}
+        <div className="
+          absolute
+          -bottom-40
+          -right-40
+          h-[950px]
+          w-[950px]
+          rounded-full
+          bg-purple-500/20
+          blur-[300px]
+        " />
+
+      </div>
+
       {/* Botón Flotante para Móvil del HUD (Chat/Dados/Players) */}
       <div className="block md:hidden">
         <GameHUD game={game} />
       </div>
 
       {/* Contenedor Principal */}
-      <div className="flex flex-1 flex-col md:flex-row p-4 md:p-6 gap-6 items-stretch">
+      <div className="relative z-10 flex flex-1 flex-col md:flex-row p-4 md:p-6 gap-6 items-stretch">
         
         {/* LADO IZQUIERDO: El Escenario del Juego */}
         <div className="flex-1 flex items-center justify-center relative bg-white/5 backdrop-blur-md rounded-3xl border border-white/5 p-4 min-h-[65vh] md:min-h-0">
@@ -244,7 +297,7 @@ export default function GamePage() {
         </div>
 
         {/* LADO DERECHO: El Panel Lateral Organizado (Solo visible en PC) */}
-        <div className="hidden md:flex w-80 flex-col gap-4">
+        <div className="hidden md:flex w-96 flex-col gap-4">
           
           {/* Cabecera del juego */}
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4">

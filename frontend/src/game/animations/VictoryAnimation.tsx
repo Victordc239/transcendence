@@ -1,0 +1,125 @@
+import Confetti from "react-confetti";
+import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+
+type Props = {
+  winnerName: string;
+  won: boolean;
+  onClose: () => void;
+};
+
+export default function VictoryAnimation({
+  winnerName,
+  onClose,
+}: Props) {
+
+	const [windowSize, setWindowSize] = useState({
+		width: window.innerWidth,
+		height: window.innerHeight,
+	});
+
+	useEffect(() => {
+	const handleResize = () => {
+		setWindowSize({
+			width: window.innerWidth,
+			height: window.innerHeight,
+		});
+	};
+
+	window.addEventListener("resize", handleResize);
+
+	return () => {
+		window.removeEventListener("resize", handleResize);
+	};
+	}, []);
+	
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+
+      <Confetti
+        width={windowSize.width}
+  		height={windowSize.height}
+        recycle={false}
+        numberOfPieces={500}
+        colors={[
+          "#ffffff",
+          "#c084fc",
+          "#9333ea",
+          "#60a5fa",
+          "#22c55e",
+          "#f472b6",
+        ]}
+      />
+
+      <motion.div
+        initial={{
+          opacity: 0,
+          scale: 0.85,
+        }}
+        animate={{
+          opacity: 1,
+          scale: 1,
+        }}
+        transition={{
+          duration: 0.45,
+        }}
+        className="
+          relative
+          rounded-3xl
+          border border-white/10
+          bg-slate-900/90
+          backdrop-blur-xl
+          p-10
+          w-[90%]
+          max-w-lg
+          shadow-2xl
+          text-center
+        "
+      >
+
+        <div className="absolute inset-0 rounded-3xl bg-purple-500/10 blur-3xl" />
+
+        <div className="relative">
+
+          <div className="text-7xl mb-5">
+            won ? "🏆" : "🎮"
+          </div>
+
+          <h1 className="text-5xl font-extrabold text-purple-400 mb-3">
+            won
+              ? "VICTORY"
+              : "GAME OVER"
+          </h1>
+
+          <p className="text-white/70 mb-2">
+            won
+              ? "Congratulations!"
+              : "Winner"
+          </p>
+
+          <p className="text-xl font-bold text-white mb-8">
+            {winnerName}
+          </p>
+
+          <button
+            onClick={onClose}
+            className="
+              rounded-2xl
+              bg-purple-600
+              hover:bg-purple-700
+              transition
+              px-8
+              py-3
+              font-bold
+            "
+          >
+            Return to Lobby
+          </button>
+
+        </div>
+
+      </motion.div>
+
+    </div>
+  );
+}

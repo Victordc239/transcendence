@@ -1,48 +1,30 @@
 
-- Comando archivos backend:
+- Comando archivo backend:
 
-find . -type f \
-! -name "package.json" \
-! -name "package-lock.json" \
-! -name "notasbackend.txt" \
-! -name "comando.txt" \
-! -name ".dockerignore" \
--exec sh -c '
-  for file do
-    echo "=============================="
-    echo "FILE: $file"
-    echo "=============================="
-    cat "$file"
-    echo
-  done
-' sh {} + > notasbackend.txt
+find . \
+  -path "./uploads" -prune -o \
+  -type f \
+  ! -name "package.json" \
+  ! -name "package-lock.json" \
+  ! -name "notasbackend.txt" \
+  ! -name "comando.txt" \
+  ! -name ".dockerignore" \
+  -exec sh -c '
+    for file do
+      echo "=============================="
+      echo "FILE: $file"
+      echo "=============================="
+      cat "$file"
+      echo
+    done
+  ' sh {} + > notasbackend.txt
 
 - Comando logs backend:
 
 docker logs -f transcendence_backend
 
 
-- Comandos archivos frontend:
-
-find . -type f \
-! -name "README.md" \
-! -name "package.json" \
-! -name "package-lock.json" \
-! -name "notas-frontend.txt" \
-! -name ".gitignore" \
-! -name ".dockerignore" \
-! -path "./public/*" \
--exec sh -c '
-  for file do
-    echo "=============================="
-    echo "FILE: $file"
-    echo "=============================="
-    cat "$file"
-    echo
-  done
-' sh {} + > notas-frontend.txt
-
-
+- Comando archivo frontend:
 
 find . \
   -path "./node_modules" -prune -o \

@@ -10,12 +10,17 @@ import PlayersPanel from "../game/hud/PlayersPanel";
 import ChatPanel from "../game/hud/ChatPanel";
 import GameHUD from "../game/hud/GameHUD";
 import { socket } from "../socket/socket";
+import VictoryAnimation from "../game/animations/VictoryAnimation";
 
 export default function GamePage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { token, user } = useAuth();
   const game = useGameStore((s) => s.game);
+  const gameFinished = game?.status === "finished";
+  const hasWon = gameFinished && game?.winner === user?.id;
+  //const hasWon = game?.status === "finished" && game.winner === user?.id;
+  const winner = game?.players.find(p => p.id === game?.winner);
   const showLastPlayerPopup = useGameStore((s) => s.showLastPlayerPopup);
   const setShowLastPlayerPopup = useGameStore((s) => s.setShowLastPlayerPopup);
 
@@ -169,6 +174,16 @@ export default function GamePage() {
               </div>
             </div>
           )}
+
+          {
+              gameFinished && (
+                  <VictoryAnimation
+                      won={hasWon}
+                      winnerName={winner?.username ?? ""}
+                      onClose={handleLeave}
+                  />
+              )
+          }
 
           <GameScene
             game={game}

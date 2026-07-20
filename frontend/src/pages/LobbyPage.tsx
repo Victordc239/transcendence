@@ -142,10 +142,6 @@ function LobbyPage() {
             <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-purple-200 bg-clip-text text-transparent">
               Bienvenido al Parchís Online
             </h2>
-            <p className="mt-2 text-sm text-center md:text-base text-white/50 hidden md:block">
-              Crea una sala privada para jugar con tus amigos o únete a una
-              partida activa ingresando su identificador.
-            </p>
           </div>
 
           {/* COLUMNA DERECHA: Acciones (Crear / Unirse) */}

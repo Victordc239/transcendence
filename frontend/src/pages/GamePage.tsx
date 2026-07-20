@@ -20,7 +20,6 @@ export default function GamePage() {
   const game = useGameStore((s) => s.game);
   const gameFinished = game?.status === "finished";
   const hasWon = gameFinished && game?.winner === user?.id;
-  //const hasWon = game?.status === "finished" && game.winner === user?.id;
   const winner = game?.players.find(p => p.id === game?.winner);
   const showLastPlayerPopup = useGameStore((s) => s.showLastPlayerPopup);
   const setShowLastPlayerPopup = useGameStore((s) => s.setShowLastPlayerPopup);
@@ -256,7 +255,7 @@ export default function GamePage() {
           
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 flex flex-col gap-3">
             <div
-              className={`text-3xl p-3 rounded-xl bg-white/5 border border-white/10 text-center transition ${
+              className={`text-5xl p-6 rounded-xl bg-white/5 border border-white/10 text-center transition ${
                 rolling ? "scale-110 rotate-12" : ""
               }`}
             >

@@ -58,47 +58,52 @@ function RegisterPage() {
 	return (
 		<AuthLayout>
 			<div className="relative">
+				<div className="flex flex-col gap-7">
 
-				<div className="flex flex-col gap-4">
-					<h1 className="text-3xl font-bold text-center text-pink-Primary">
-						{t("register.title")}
-					</h1>
+					<div className="text-center">
+						<h1 className="text-5xl font-bold text-pink-Primary">
+							{t("register.title")}
+						</h1>
+					</div>
 
-					<Input
-						placeholder={t("register.username")}
-						value={username}
-						onChange={(e) => setUsername(e.target.value)}
-					/>
+					<div className="flex flex-col gap-4">
 
-					<Input
-						type="email"
-						placeholder={t("login.email")}
-						value={email}
-						onChange={(e) => setEmail(e.target.value)}
-					/>
+						<Input
+							placeholder={t("register.username")}
+							value={username}
+							onChange={(e) => setUsername(e.target.value)}
+						/>
 
-					<Input
-						type="password"
-						placeholder={t("login.password")}
-						value={password}
-						onChange={(e) => setPassword(e.target.value)}
-					/>
+						<Input
+							type="email"
+							placeholder={t("login.email")}
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+						/>
 
-					<Button onClick={handleRegister}>
-						{t("register.signUp")}
-					</Button>
+						<Input
+							type="password"
+							placeholder={t("login.password")}
+							value={password}
+							onChange={(e) => setPassword(e.target.value)}
+						/>
 
-					<p className="text-center text-sm">
-						{t("register.haveAccount")}{" "}
-						<span
-							onClick={() => navigate("/")}
-							className="cursor-pointer text-pink-Primary"
-						>
-							{t("register.signIn")}
-						</span>
-					</p>
+						<Button onClick={handleRegister}>
+							{t("register.signUp")}
+						</Button>
+
+						<p className="text-center text-base">
+							{t("register.haveAccount")}{" "}
+							<span
+								onClick={() => navigate("/")}
+								className="cursor-pointer text-pink-Primary"
+							>
+								{t("register.signIn")}
+							</span>
+						</p>
+					</div>
+
 				</div>
-
 			</div>
 		</AuthLayout>
 	);

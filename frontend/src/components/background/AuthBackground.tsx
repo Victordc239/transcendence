@@ -49,8 +49,8 @@ export default function AuthBackground() {
 
       {/* Parte superior */}
       <div className="pointer-events-none absolute top-8 left-1/2 -translate-x-1/2 flex gap-12 opacity-15">
-        <img src="/decor/trophy.svg" className="w-16 animate-float" />
-        <img src="/decor/dice.svg" className="w-16 animate-spinSlow" />
+        <img src="/decor/trophy.svg" className="w-16 animate-spinSlow" />
+        <img src="/decor/dice.svg" className="w-16 animate-float" />
         <img src="/decor/controller.svg" className="w-20 animate-floatDelay" />
       </div>
 

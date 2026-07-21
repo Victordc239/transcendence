@@ -16,8 +16,16 @@ Revisar:
 
 Arreglar:
 
-- Cambiar/Mejorar distribución página game (Soraya)
-- Implementar en el frontend lo de ganar (Soraya)
+- En el chat de la partida pone "pink" en vez del nombre de la persona 
+- Poner responsive la gamePage.tsx
+- Hacer que los espectadores puedan mandar mensajes
+- Implementar que al espectador le aparezca quien gana en la pantalla de Victory
+- Hacer lo de los idiomas en gamePage.tsx
+- Añadir en gamePage.tsx un reloj de la duracion de la partida
+- Ampliar pantallas lobby  
+- Poder dar botón enter
+- Revisar botón "lanzar dado" gamePage.tsx para espectadores (isSpectator || game.pendingBonus != null)
+- Cambiar/Mejorar distribución página game 
 
 - Arreglar las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend), modificar las coordenadas de las fichas en el tablero (Manuel)✅
 - Hacer la página responsive (Manuel) ✅

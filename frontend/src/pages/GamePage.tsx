@@ -45,6 +45,21 @@ export default function GamePage() {
     game && !game.players.some((p: any) => p.id === user?.id)
   );
 
+  const currentUserPlayer = game?.players.find(
+    (p) => p.id === user?.id
+  );
+
+  const currentTurnPlayer = game?.players.find(
+    (p) => p.id === game?.turn
+  );
+
+  const avatarBorderColors = {
+    pink: "border-pink-400 shadow-pink-500/30",
+    purple: "border-purple-400 shadow-purple-500/30",
+    blue: "border-sky-400 shadow-sky-500/30",
+    green: "border-green-400 shadow-green-500/30",
+  };
+
   const handleRoll = async () => {
     if (!token || !id || isSpectator)
       return;
@@ -200,6 +215,7 @@ export default function GamePage() {
         {/* PANEL IZQUIERDO */}
         <div className="hidden xl:flex w-72 flex-col gap-6">
 
+          {/* Logo */}
           <h1
             className="
               text-7xl
@@ -217,12 +233,63 @@ export default function GamePage() {
             {t("app.title")}
           </h1>
 
+          {/* Perfil del jugador */}
+          {currentUserPlayer && (
+            <div
+              className="
+                rounded-3xl
+                border
+                border-white/10
+                bg-white/5
+                backdrop-blur-xl
+                p-5
+                shadow-xl
+                shadow-purple-500/10
+              "
+            >
+              <div className="flex flex-col items-center text-center">
+
+                <img
+                  src={currentUserPlayer.avatar_url}
+                  alt={currentUserPlayer.username}
+                  className={`
+                    w-24
+                    h-24
+                    rounded-full
+                    object-cover
+                    border-4
+                    shadow-lg
+                    ${
+                      avatarBorderColors[
+                        currentUserPlayer.color as keyof typeof avatarBorderColors
+                      ]
+                    }
+                  `}
+                />
+
+                <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">
+                  {t("game.you")}
+                </p>
+
+                <h2 className="mt-1 text-3xl font-extrabold text-white break-all">
+                  {currentUserPlayer.username}
+                </h2>
+
+                <div className="mt-3 rounded-full bg-emerald-500/20 border border-emerald-500/30 px-4 py-1">
+                  <span className="text-sm font-semibold text-emerald-300">
+                    {t("game.playing")}
+                  </span>
+                </div>
+
+              </div>
+            </div>
+          )}
+
           <SpectatorsPanel
             spectators={game.spectators ?? []}
           />
 
         </div>
-
 
         {/* LADO IZQUIERDO: El Escenario del Juego */}
         <div className="flex-1 flex flex-col gap-4">
@@ -337,8 +404,18 @@ export default function GamePage() {
               {t("game.header.title", { id: game.id })}
             </h1>
             <div className="flex justify-between text-xs text-white/50 mt-1">
-              <div>{t("game.header.turn", {turn: game.turn})}</div>
-              <div>{t("game.header.spectators", {count: game.spectators?.length || 0})}</div>
+              <div>
+                {t("game.header.turn")}:{" "}
+                <span className="font-semibold text-white">
+                  {currentTurnPlayer?.username ?? "-"}
+                </span>
+              </div>
+
+              <div>
+                {t("game.header.spectators", {
+                  count: game.spectators?.length || 0,
+                })}
+              </div>
             </div>
           </div>
 

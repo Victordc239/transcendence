@@ -280,6 +280,8 @@
     "loading": "Loading game...",
     "leave": "Leave Game",
     "spectatorMode": "👁 Spectator Mode",
+    "you": "You",
+    "playing": "Playing",
 
     "hud": {
       "panel": "Game Panel",
@@ -294,7 +296,7 @@
 
     "header": {
       "title": "Game {{id}}",
-      "turn": "Turn: {{turn}}",
+      "turn": "Turn",
       "spectators": "Spectators: {{count}}"
     },
 

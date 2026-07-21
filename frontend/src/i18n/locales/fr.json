@@ -280,6 +280,8 @@
     "loading": "Chargement de la partie...",
     "leave": "Quitter la partie",
     "spectatorMode": "👁 Mode spectateur",
+    "you": "Tu",
+    "playing": "En cours de jeu",
 
     "hud": {
       "panel": "Panneau de jeu",
@@ -294,7 +296,7 @@
 
     "header": {
       "title": "Partie {{id}}",
-      "turn": "Tour : {{turn}}",
+      "turn": "Tour",
       "spectators": "Spectateurs : {{count}}"
     },
 

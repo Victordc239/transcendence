@@ -280,6 +280,8 @@
     "loading": "Cargando partida...",
     "leave": "Salir de la partida",
     "spectatorMode": "👁 Modo espectador",
+    "you": "Tú",
+    "playing": "En partida",
 
     "hud": {
       "panel": "Panel de Juego",
@@ -294,7 +296,7 @@
 
     "header": {
       "title": "Partida {{id}}",
-      "turn": "Turno: {{turn}}",
+      "turn": "Turno",
       "spectators": "Espectadores: {{count}}"
     },
 

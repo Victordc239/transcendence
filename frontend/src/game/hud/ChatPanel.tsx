@@ -40,7 +40,12 @@ export default function ChatPanel({
   }, []);
 
   const send = () => {
-    if (!msg.trim()) return;
+    const clean = msg.trim();
+
+    if (!clean || clean.length > 30)
+      return;
+
+    //if (!msg.trim()) return;
 
     socket.emit("chat:send", {
       gameId: game.id,
@@ -103,6 +108,7 @@ export default function ChatPanel({
       <div className="flex gap-2 items-center">
         <input
           value={msg}
+          maxLength={30}
           onChange={(e) =>
             setMsg(
               e.target.value

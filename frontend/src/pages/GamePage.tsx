@@ -149,8 +149,9 @@ export default function GamePage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white flex flex-col justify-between">
-      
+    //<div className="relative min-h-screen overflow-hidden bg-slate-950 text-white flex flex-col justify-between">
+    <div className="relative h-screen overflow-hidden bg-slate-950 text-white flex flex-col">
+        
       {/* Fondo decorativo */}
       <div className="absolute inset-0 -z-0 overflow-hidden">
 
@@ -210,8 +211,8 @@ export default function GamePage() {
       </div>
 
       {/* Contenedor Principal */}
-      <div className="relative z-10 flex flex-1 flex-col md:flex-row p-4 md:p-6 gap-6 items-stretch">
-        
+      <div className="relative z-10 flex-1 min-h-0 flex flex-col md:flex-row p-4 md:p-6 gap-6 items-stretch">
+         
         {/* PANEL IZQUIERDO */}
         <div className="hidden xl:flex w-72 flex-col gap-6">
 
@@ -397,7 +398,7 @@ export default function GamePage() {
         </div>
 
         {/* LADO DERECHO: El Panel Lateral Organizado (Solo visible en PC) */}
-        <div className="hidden md:flex w-108 flex-col gap-4">
+        <div className="hidden md:flex w-108 flex-col gap-4 min-h-0">
           
           {/* Cabecera del juego */}
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4">

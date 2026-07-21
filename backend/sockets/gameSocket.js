@@ -27,12 +27,12 @@ async function disconnectPlayer(io, gameId, userId) {
 	const timer = setTimeout(async () => {
 		await withGameLock(gameId, async (game) => {
 			if (!game)
-				return;
+				return { error: "Game not found" };
 			const player = game.players.find(p => p.id === userId);
 			if (!player)
-				return;
+				return { ok: true };
 			if (player.connected)
-				return;
+				return { ok: true };
 			player.abandoned = true;
 			checkPausedState(game);
 			const activePlayers = game.players.filter(p => !p.abandoned);

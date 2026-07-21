@@ -16,16 +16,13 @@ Revisar:
 
 Arreglar:
 
-- En el chat de la partida pone "pink" en vez del nombre de la persona ✅
-- Poner responsive la gamePage.tsx ✅
+- Poner responsive la gamePage.tsx 
 - Hacer que los espectadores puedan mandar mensajes (opcional segun el modulo pasando)
-- Implementar que al espectador le aparezca quien gana en la pantalla de Victory✅
 - Hacer lo de los idiomas en gamePage.tsx (no se que idiomas)
-- Añadir en gamePage.tsx un reloj de la duracion de la partida (movidon)
 - Ampliar pantallas lobby
 - Poder dar botón enter (pasando)
 - Revisar botón "lanzar dado" gamePage.tsx para espectadores (isSpectator || game.pendingBonus != null) (no se que problema hay)
-- Cambiar/Mejorar distribución página game 
+ 
 
 - Arreglar las coordenadas de las fichas cuando suben a casa y cuando hacen barrera (frontend), modificar las coordenadas de las fichas en el tablero (Manuel)✅
 - Hacer la página responsive (Manuel) ✅

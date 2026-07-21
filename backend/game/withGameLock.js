@@ -57,6 +57,17 @@ async function withGameLock(gameId, callback)
 
 		const callbackResult = await callback(game, client);
 
+		if (callbackResult == null)
+		{
+			await client.query("ROLLBACK");
+			return {
+				game,
+				result: {
+					error: "Callback returned invalid result"
+				}
+			};
+		}
+
 		if (callbackResult.deleteGame)
 		{
 			await client.query(
@@ -72,16 +83,10 @@ async function withGameLock(gameId, callback)
 			return null;
 		}
 
-		/*if (!callbackResult)
-		{
-			await client.query('ROLLBACK');
-			return null;
-		}*/
-
-		if (callbackResult === undefined || callbackResult === null) {
+		/*if (callbackResult === undefined || callbackResult === null) {
 			await client.query('ROLLBACK');
 			return { game, result: { error: 'Callback returned invalid result' } };
-		}
+		}*/
 
 		if (callbackResult.error)
 		{

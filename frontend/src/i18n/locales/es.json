@@ -364,7 +364,8 @@
     "titleGameOver": "FIN DE LA PARTIDA",
     "congratulations": "¡Enhorabuena!",
     "winnerIs": "El ganador es",
-    "returnLobby": "Volver al Lobby"
+    "returnLobby": "Volver al Lobby",
+    "titleWinner": "Ganador"
   },
 
   "chatPanel": {

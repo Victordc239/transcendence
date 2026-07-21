@@ -68,8 +68,10 @@ export default function ChatPanel({
           space-y-2
         "
       >
-        {messages.map(
-          (m, index) => (
+        {messages.map((m, index) => {
+          const username = game.players.find((p: any) => p.id === m.userId)?.username ?? m.color;
+
+          return (
             <div
               key={index}
               className="
@@ -83,7 +85,7 @@ export default function ChatPanel({
                   text-cyan-400
                 "
               >
-                {m.color}
+                {username}
               </span>
 
               <span className="mx-2">
@@ -94,8 +96,8 @@ export default function ChatPanel({
                 {m.message}
               </span>
             </div>
-          )
-        )}
+          );
+        })}
       </div>
 
       <div className="flex gap-2 items-center">

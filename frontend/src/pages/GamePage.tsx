@@ -352,6 +352,7 @@ export default function GamePage() {
                 gameFinished && (
                     <VictoryAnimation
                         won={hasWon}
+                        isSpectator={isSpectator}
                         winnerName={winner?.username ?? ""}
                         onClose={handleLeave}
                     />

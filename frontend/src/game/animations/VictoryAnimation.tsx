@@ -6,12 +6,14 @@ import { useTranslation } from "react-i18next";
 type Props = {
   winnerName: string;
   won: boolean;
+  isSpectator: boolean;
   onClose: () => void;
 };
 
 export default function VictoryAnimation({
   winnerName,
   won,
+  isSpectator,
   onClose,
 }: Props) {
   const { t } = useTranslation();
@@ -100,7 +102,9 @@ export default function VictoryAnimation({
           <h1 className="text-5xl font-extrabold text-purple-400 mb-3">
             {won
               ? t("victory.titleVictory")
-              : t("victory.titleGameOver")}
+              : isSpectator
+                ? t("victory.titleWinner")
+                : t("victory.titleGameOver")}
           </h1>
 
           <p className="text-white/70 mb-2">

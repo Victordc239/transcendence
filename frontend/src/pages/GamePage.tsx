@@ -207,7 +207,12 @@ export default function GamePage() {
 
       {/* Botón Flotante para Móvil del HUD (Chat/Dados/Players) */}
       <div className="block md:hidden">
-        <GameHUD game={game} />
+        <GameHUD
+          game={game}
+          onRoll={handleRoll}
+          rolling={rolling}
+          isSpectator={isSpectator}
+        />
       </div>
 
       {/* Contenedor Principal */}

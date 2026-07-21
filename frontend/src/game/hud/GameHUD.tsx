@@ -4,7 +4,8 @@ import DicePanel from "./DicePanel";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-export default function GameHUD({ game }: any) {
+//export default function GameHUD({ game }: any) {
+export default function GameHUD({ game, onRoll, rolling, isSpectator,}: any) {
   const [isOpen, setIsOpen] = useState(false);
   const { t } = useTranslation();
 
@@ -71,7 +72,12 @@ export default function GameHUD({ game }: any) {
 
         <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto md:overflow-visible">
           <PlayersPanel game={game} />
-          <DicePanel game={game} />
+          <DicePanel
+            game={game}
+            onRoll={onRoll}
+            rolling={rolling}
+            isSpectator={isSpectator}
+          />
           <ChatPanel game={game} />
         </div>
       </div>

@@ -1,5 +1,5 @@
 import type { Game } from "../../types/game";
-import {bases, finishedPositions, mainTrack} from "../boardPositions";
+import {bases, finishedPositions} from "../boardPositions";
 
 const pieceImages: Record<string, string> = {
   pink: "/pieces/pink-piece.png",
@@ -18,6 +18,15 @@ type PieceRenderData = {
 };
 
 const STACK_OFFSET = 60;
+
+const VERTICAL_TRACK = new Set([
+  1, 2, 3, 4, 5, 6, 7, 8,
+  26, 27, 28, 29, 30, 31, 32, 33,
+  34,
+  35, 36, 37, 38, 39, 40, 41, 42,
+  
+  60, 61, 62, 63, 64, 65, 66, 67, 68,
+]);
 
 export default function GamePieces({
   game,
@@ -78,12 +87,12 @@ export default function GamePieces({
       return;
     }
 
-    const baseX = group[0].x;
-    const baseY = group[0].y;
+    //const baseX = group[0].x;
+    //const baseY = group[0].y;
 
-    const trackPos = group[0].position;
+    //const trackPos = group[0].position;
 
-    let isVerticalTrack = true;
+    /*let isVerticalTrack = true;
 
     if (trackPos >= 0 && trackPos < mainTrack.length)
     {
@@ -92,11 +101,12 @@ export default function GamePieces({
       const dx = Math.abs(next.x - prev.x);
       const dy = Math.abs(next.y - prev.y);
       isVerticalTrack = dy > dx;
-    }
+    }*/
+    /*const isVerticalTrack = VERTICAL_TRACK.has(trackPos);
 
-    const center = (group.length - 1) / 2;
+    const center = (group.length - 1) / 2;*/
 
-    group.forEach((piece, idx) => {
+    /*group.forEach((piece, idx) => {
       const offset = (idx - center) * STACK_OFFSET;
 
       if (isVerticalTrack) {
@@ -110,7 +120,66 @@ export default function GamePieces({
           y: baseY + offset,
         });
       }
+    });*/
+    groups.forEach((group) => {
+      if (group.length === 1) {
+        finalPieces.push(group[0]);
+        return;
+      }
+
+      const baseX = group[0].x;
+      const baseY = group[0].y;
+      const trackPos = group[0].position;
+
+      // ¿Todas las fichas del grupo están en la recta final?
+      const isFinalStretch = group.every((piece) => {
+        const player = game.players.find(
+          (p) => p.id === piece.playerId
+        );
+
+        return (
+          player?.pieces[piece.index].state ===
+          "final"
+        );
+      });
+
+      let isVerticalTrack: boolean;
+
+      if (isFinalStretch) {
+        // Rectas finales:
+        // Rosa y Morado -> horizontal
+        // Verde y Azul -> vertical
+        const color = group[0].color;
+
+        isVerticalTrack =
+          color === "green" ||
+          color === "blue";
+      } else {
+        // Tablero principal
+        isVerticalTrack =
+          VERTICAL_TRACK.has(trackPos);
+      }
+
+      const center = (group.length - 1) / 2;
+
+      group.forEach((piece, idx) => {
+        const offset =
+          (idx - center) * STACK_OFFSET;
+
+        if (isVerticalTrack) {
+          finalPieces.push({
+            ...piece,
+            x: baseX + offset,
+          });
+        } else {
+          finalPieces.push({
+            ...piece,
+            y: baseY + offset,
+          });
+        }
+      });
     });
+
   });
 
   return (

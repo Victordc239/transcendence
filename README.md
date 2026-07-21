@@ -33,14 +33,17 @@ Key features:
 ```env
 PORT=3000
 DB_HOST=db
-DB_USER=user_transcendence
-DB_PASSWORD=password_transcendence
 DB_NAME=transcendence
 DB_PORT=5432
-JWT_SECRET=jwtsecret_transcendence
-```
+VAULT_ADDR=http://vault:8200
+VAULT_AUTH_METHOD=approle
+VAULT_SECRET_PATH=transcendence/data
+VITE_API_PORT=3000
 
-> ⚠️ _The exact variable names above should be confirmed against `docker-compose.yml` and each service's configuration files before running the project.
+⚠️ Database credentials (`DB_USER`, `DB_PASSWORD`) and `JWT_SECRET` are no longer
+stored in `.env`. They are generated and managed by HashiCorp Vault
+(see `vault/init-vault.sh`) and injected into the backend at runtime
+via AppRole authentication.
 
 ### Running the project
 

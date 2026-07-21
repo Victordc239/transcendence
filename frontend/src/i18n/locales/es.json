@@ -374,6 +374,11 @@
     "send": "Enviar"
   },
 
+  "spectators": {
+    "title": "Espectadores",
+    "empty": "Sin espectadores"
+  },
+
   "errors": {
     "connection": "Error de conexión"
   }

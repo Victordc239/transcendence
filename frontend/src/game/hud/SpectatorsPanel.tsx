@@ -1,19 +1,22 @@
 import type { Spectator } from "../../types/game";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   spectators: Spectator[];
 };
 
 export default function SpectatorsPanel({ spectators }: Props) {
+  const { t } = useTranslation();
+
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4">
       <h2 className="text-sm font-bold text-white mb-3">
-        Espectadores ({spectators.length})
+        {t("spectators.title")} ({spectators.length})
       </h2>
 
       {spectators.length === 0 ? (
         <p className="text-white/40 text-sm">
-          Sin espectadores
+          {t("spectators.empty")}
         </p>
       ) : (
         <div className="flex flex-col gap-3">

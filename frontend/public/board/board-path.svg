@@ -11,8 +11,6 @@
 
 </defs>
 
-<rect x="0.5" y="0.5" width="731" height="731" rx="22" fill="none" stroke="#6f7190ff" stroke-width="2" opacity="0.5" filter="url(#glow)"/>
-
 <rect x="341" y="657" width="50" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#6f7190ff" stroke-width="0.5"/>
 <rect x="341" y="621" width="50" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#6f7190ff" stroke-width="0.5"/>
 <rect x="341" y="585" width="50" height="36" fill="url(#gPurple)" opacity="0.3" stroke="#6f7190ff" stroke-width="0.5"/>

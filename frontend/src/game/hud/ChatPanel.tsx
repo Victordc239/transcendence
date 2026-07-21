@@ -135,7 +135,7 @@ export default function ChatPanel({
             rounded-xl
             bg-purple-500
             border
-            border-cyan-400/30
+            border-white/30
           "
         >
           {t("chatPanel.send")}

@@ -300,7 +300,7 @@
 
     "dice": {
       "roll": "Lancer le dé",
-      "spectating": "Spectateur"
+      "spectating": "En attente..."
     },
 
     "errors": {

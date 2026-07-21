@@ -300,7 +300,7 @@
 
     "dice": {
       "roll": "Roll Dice",
-      "spectating": "Spectating"
+      "spectating": "Waiting..."
     },
 
     "errors": {

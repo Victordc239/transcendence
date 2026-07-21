@@ -44,6 +44,7 @@ VITE_API_PORT=3000
 stored in `.env`. They are generated and managed by HashiCorp Vault
 (see `vault/init-vault.sh`) and injected into the backend at runtime
 via AppRole authentication.
+```
 
 ### Running the project
 
